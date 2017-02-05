@@ -1,13 +1,23 @@
 module Data.Blockchain.Types.Blockheader
     ( Blockheader
+    , blockHeaderVersion
+    , blockHeaderPrevBlockHash
+    , blockHeaderTransactionHashTreeRoot
+    , blockHeaderTime
+    , blockHeaderDifficulty
+    , blockHeaderNonce
+    , newBlockheader
+    , incNonce
     ) where
 
-import qualified Data.Aeson      as Aeson
-import           Data.Aeson      ((.=))
-import qualified Data.Time.Clock as Time
+import qualified Data.Aeson         as Aeson
+import           Data.Aeson         ((.=))
+import qualified Data.Time.Clock    as Time
+import qualified Data.Time.Calendar as Time
 
 
 import Data.Blockchain.Crypto.Hash
+import Data.Blockchain.Types.Difficulty
 
 
 -- Field	Purpose	Updated when...	Size (Bytes)
@@ -20,23 +30,38 @@ import Data.Blockchain.Crypto.Hash
 
 -- https://en.bitcoin.it/wiki/Block_hashing_algorithm
 data Blockheader = Blockheader
-    { version                 :: Int
-    , prevBlockHash           :: Hash
-    , transactionHashTreeRoot :: Hash
-    , time                    :: Time.UTCTime
-    , difficulty              :: Hash
-    , nonce                   :: Int
+    { blockHeaderVersion                 :: Int
+    , blockHeaderPrevBlockHash           :: Hash
+    , blockHeaderTransactionHashTreeRoot :: Hash
+    , blockHeaderTime                    :: Time.UTCTime
+    , blockHeaderDifficulty              :: Difficulty
+    , blockHeaderNonce                   :: Int
     }
+
+newBlockheader :: Hash -> Hash -> Difficulty -> Blockheader
+newBlockheader
+    blockHeaderPrevBlockHash
+    blockHeaderTransactionHashTreeRoot
+    blockHeaderDifficulty =
+      Blockheader{..}
+  where
+    blockHeaderVersion = 1
+    -- Hardcoded, don't care for now...
+    blockHeaderTime    = Time.UTCTime (Time.ModifiedJulianDay 0) (Time.secondsToDiffTime 0)
+    blockHeaderNonce   = 0
+
+incNonce :: Blockheader -> Blockheader
+incNonce header = header { blockHeaderNonce = blockHeaderNonce header + 1 }
 
 instance Hashable Blockheader where
     toHash = hashJSON
 
 instance Aeson.ToJSON Blockheader where
     toJSON Blockheader{..} = Aeson.object
-        [ "version"                 .= version
-        , "prevBlockHash"           .= prevBlockHash
-        , "transactionHashTreeRoot" .= transactionHashTreeRoot
-        , "time"                    .= time
-        , "difficulty"              .= difficulty
-        , "nonce"                   .= nonce
+        [ "version"                 .= blockHeaderVersion
+        , "prevBlockHash"           .= blockHeaderPrevBlockHash
+        , "transactionHashTreeRoot" .= blockHeaderTransactionHashTreeRoot
+        , "time"                    .= blockHeaderTime
+        , "difficulty"              .= blockHeaderDifficulty
+        , "nonce"                   .= blockHeaderNonce
         ]
