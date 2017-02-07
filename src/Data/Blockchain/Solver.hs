@@ -6,11 +6,10 @@ import Data.Blockchain.Crypto.Hash
 import Data.Blockchain.Types.Block
 import Data.Blockchain.Types.Difficulty
 
-findNextBlock :: Block -> Block
-findNextBlock prevBlock = searchForValidBlock (newBlock prevBlockHash difficulty)
+findNextBlock :: Difficulty -> Block -> Block
+findNextBlock difficulty prevBlock = searchForValidBlock (newBlock prevBlockHash difficulty)
   where
     prevBlockHash = toHash prevBlock
-    difficulty    = blockDifficulty prevBlock
     searchForValidBlock block =
         if isValidBlock difficulty block
             then block

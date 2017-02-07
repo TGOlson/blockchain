@@ -17,6 +17,7 @@ default-extensions:
   - OverloadedStrings
   - RecordWildCards
   - GeneralizedNewtypeDeriving
+  - ScopedTypeVariables
 
 dependencies:
   - base >= 4.7 && < 5
@@ -58,7 +59,7 @@ tests:
     dependencies:
       - blockchain
       - QuickCheck
-      # - hspec == 2.*
+      - hspec
 
 # executables:
 #   blockchain:

@@ -29,6 +29,7 @@ data Block = Block
     , blockTransactionCount :: Int
     , blockTransactions     :: [Transaction]
     }
+  deriving (Show)
 
 newBlock :: Hash -> Difficulty -> Block
 newBlock prevBlockHash difficulty = Block{..}

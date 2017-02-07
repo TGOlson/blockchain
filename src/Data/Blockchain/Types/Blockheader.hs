@@ -37,6 +37,7 @@ data Blockheader = Blockheader
     , blockHeaderDifficulty              :: Difficulty
     , blockHeaderNonce                   :: Int
     }
+  deriving (Show)
 
 newBlockheader :: Hash -> Hash -> Difficulty -> Blockheader
 newBlockheader

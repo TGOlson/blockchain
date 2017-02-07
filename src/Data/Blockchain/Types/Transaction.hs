@@ -7,7 +7,7 @@ import qualified Data.Aeson as Aeson
 import Data.Blockchain.Crypto.Hash
 
 -- https://en.bitcoin.it/wiki/Transaction
-data Transaction = Transaction
+data Transaction = Transaction deriving (Show)
 
 instance Hashable Transaction where
     toHash = hashJSON
