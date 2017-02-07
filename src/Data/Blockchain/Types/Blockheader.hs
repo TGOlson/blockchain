@@ -43,8 +43,7 @@ newBlockheader :: Hash -> Hash -> Difficulty -> Blockheader
 newBlockheader
     blockHeaderPrevBlockHash
     blockHeaderTransactionHashTreeRoot
-    blockHeaderDifficulty =
-      Blockheader{..}
+    blockHeaderDifficulty = Blockheader{..}
   where
     blockHeaderVersion = 1
     -- Hardcoded, don't care for now...

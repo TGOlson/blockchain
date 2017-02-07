@@ -29,17 +29,6 @@ dependencies:
   - text
   - memory
 
-  # - directory
-  # - base-compat >= 0.8
-  # - deepseq
-  # - filepath
-  # - Glob
-  # - text
-  # - containers
-  # - unordered-containers
-  # - yaml
-  # - aeson >= 0.11
-
 library:
   source-dirs: src
   exposed-modules:
@@ -60,8 +49,3 @@ tests:
       - blockchain
       - QuickCheck
       - hspec
-
-# executables:
-#   blockchain:
-#     source-dirs:      src
-#     main:             Main.hs

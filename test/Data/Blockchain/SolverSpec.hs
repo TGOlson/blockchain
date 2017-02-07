@@ -10,6 +10,6 @@ spec :: Spec
 spec =
     describe "Solver" $
         context "newBlock" $
-            prop "should finds blocks with a lower hash than the difficulty" $
+            prop "should find blocks with a lower hash than the difficulty" $
                 \block hash -> hash > minHash ==>
                     toHash (findNextBlock (Difficulty hash) block) < hash

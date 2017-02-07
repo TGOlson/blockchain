@@ -35,7 +35,7 @@ newBlock :: Hash -> Difficulty -> Block
 newBlock prevBlockHash difficulty = Block{..}
   where
     blockHeader = newBlockheader prevBlockHash transactionHashTreeRoot difficulty
-    -- TODO: this necessarily needs to have 1 transaction, the initial
+    -- TODO: this should necessarily have 1 transaction, the initial
     -- transaction for the "reward" for solving this block
     -- for now leave empty...
     blockTransactions     = [] :: [Transaction]
