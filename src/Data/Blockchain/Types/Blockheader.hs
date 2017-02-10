@@ -8,6 +8,7 @@ module Data.Blockchain.Types.Blockheader
     , blockHeaderNonce
     , newBlockheader
     , incNonce
+    , BlockHash(..)
     ) where
 
 import qualified Data.Aeson         as Aeson
@@ -31,7 +32,7 @@ import Data.Blockchain.Types.Difficulty
 -- https://en.bitcoin.it/wiki/Block_hashing_algorithm
 data Blockheader = Blockheader
     { blockHeaderVersion                 :: Int
-    , blockHeaderPrevBlockHash           :: Hash
+    , blockHeaderPrevBlockHash           :: BlockHash
     , blockHeaderTransactionHashTreeRoot :: Hash
     , blockHeaderTime                    :: Time.UTCTime
     , blockHeaderDifficulty              :: Difficulty
@@ -39,7 +40,10 @@ data Blockheader = Blockheader
     }
   deriving (Show)
 
-newBlockheader :: Hash -> Hash -> Difficulty -> Blockheader
+newtype BlockHash = BlockHash { unBlockHash :: Hash }
+  deriving (Eq, Ord, Aeson.ToJSON, Show)
+
+newBlockheader :: BlockHash -> Hash -> Difficulty -> Blockheader
 newBlockheader
     blockHeaderPrevBlockHash
     blockHeaderTransactionHashTreeRoot

@@ -14,6 +14,7 @@ import qualified Data.Maybe            as Maybe
 
 import Data.Blockchain.Crypto.Hash
 import Data.Blockchain.Types.Block
+import Data.Blockchain.Types.Blockheader
 import Data.Blockchain.Types.Difficulty
 
 -- Used in some tests to filter hashes that are too low.
@@ -28,14 +29,13 @@ unsafefromByteString = Maybe.fromMaybe (error "Invalid hash string") . fromByteS
 instance Arbitrary Block where
     arbitrary = newBlock <$> arbitrary <*> arbitrary
 
+instance Arbitrary BlockHash where
+    arbitrary = BlockHash <$> arbitrary
+
 instance Arbitrary Difficulty where
     arbitrary = Difficulty <$> arbitrary
 
 instance Arbitrary Hash where
-    arbitrary = unsafefromByteString . unHex <$> arbitrary
-
-newtype Hex = Hex { unHex :: BS.ByteString }
-
-instance Arbitrary Hex where
-    arbitrary = Hex . BS.pack <$> vectorOf 64 hex
-      where hex = elements $ ['0' .. '9'] ++ ['a' .. 'f']
+    arbitrary = unsafefromByteString . BS.pack <$> vectorOf 64 hexChar
+      where
+        hexChar = elements $ ['0' .. '9'] ++ ['a' .. 'f']

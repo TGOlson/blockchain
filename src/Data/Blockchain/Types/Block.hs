@@ -1,7 +1,6 @@
 module Data.Blockchain.Types.Block
     ( Block
     , blockHeader
-    , blockTransactionCount
     , blockTransactions
     , newBlock
     , blockDifficulty
@@ -25,21 +24,19 @@ import Data.Blockchain.Types.Transaction
 
 -- https://en.bitcoin.it/wiki/Block
 data Block = Block
-    { blockHeader           :: Blockheader
-    , blockTransactionCount :: Int
-    , blockTransactions     :: [Transaction]
+    { blockHeader       :: Blockheader
+    , blockTransactions :: [Transaction]
     }
   deriving (Show)
 
-newBlock :: Hash -> Difficulty -> Block
+newBlock :: BlockHash -> Difficulty -> Block
 newBlock prevBlockHash difficulty = Block{..}
   where
     blockHeader = newBlockheader prevBlockHash transactionHashTreeRoot difficulty
     -- TODO: this should necessarily have 1 transaction, the initial
     -- transaction for the "reward" for solving this block
     -- for now leave empty...
-    blockTransactions     = [] :: [Transaction]
-    blockTransactionCount = length blockTransactions
+    blockTransactions       = [] :: [Transaction]
     transactionHashTreeRoot = hashJSON blockTransactions
 
 blockDifficulty :: Block -> Difficulty
@@ -54,6 +51,6 @@ instance Hashable Block where
 instance Aeson.ToJSON Block where
     toJSON Block{..} = Aeson.object
         [ "header"           .= blockHeader
-        , "transactionCount" .= blockTransactionCount
+        , "transactionCount" .= length blockTransactions
         , "transactions"     .= blockTransactions
         ]
