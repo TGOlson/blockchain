@@ -3,9 +3,7 @@ module Data.Blockchain.Solver
     ) where
 
 import Data.Blockchain.Crypto.Hash
-import Data.Blockchain.Types.Block
-import Data.Blockchain.Types.Blockheader
-import Data.Blockchain.Types.Difficulty
+import Data.Blockchain.Types
 
 findNextBlock :: BlockHash -> Difficulty -> Block
 findNextBlock prevBlockHash difficulty = searchForValidBlock (newBlock prevBlockHash difficulty)

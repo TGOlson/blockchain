@@ -13,9 +13,7 @@ import qualified Data.ByteString.Char8 as BS
 import qualified Data.Maybe            as Maybe
 
 import Data.Blockchain.Crypto.Hash
-import Data.Blockchain.Types.Block
-import Data.Blockchain.Types.Blockheader
-import Data.Blockchain.Types.Difficulty
+import Data.Blockchain.Types
 
 -- Used in some tests to filter hashes that are too low.
 minHash :: Hash
