@@ -50,7 +50,6 @@ instance Hashable Block where
 
 instance Aeson.ToJSON Block where
     toJSON Block{..} = Aeson.object
-        [ "header"           .= blockHeader
-        , "transactionCount" .= length blockTransactions
-        , "transactions"     .= blockTransactions
+        [ "header"       .= blockHeader
+        , "transactions" .= blockTransactions
         ]
