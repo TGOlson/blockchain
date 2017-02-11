@@ -11,5 +11,5 @@ spec =
     describe "Solver" $
         context "newBlock" $
             prop "should find blocks with a lower hash than the difficulty" $
-                \blockHash hash -> hash > minHash ==>
-                    toHash (findNextBlock blockHash (Difficulty hash)) < hash
+                \blockHash time hash -> hash > minHash ==>
+                    toHash (findNextBlock  blockHash time (Difficulty hash)) < hash

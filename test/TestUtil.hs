@@ -11,6 +11,8 @@ import Test.Hspec.QuickCheck as X
 
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.Maybe            as Maybe
+import qualified Data.Time.Clock       as Time
+import qualified Data.Time.Calendar    as Time
 
 import Data.Blockchain.Crypto.Hash
 import Data.Blockchain.Types
@@ -24,8 +26,7 @@ unsafefromByteString = Maybe.fromMaybe (error "Invalid hash string") . fromByteS
 
 -- Instances -------------------------------------------------------------------------------------------------
 
-instance Arbitrary Block where
-    arbitrary = newBlock <$> arbitrary <*> arbitrary
+-- Blockchain types
 
 instance Arbitrary BlockHash where
     arbitrary = BlockHash <$> arbitrary
@@ -37,3 +38,13 @@ instance Arbitrary Hash where
     arbitrary = unsafefromByteString . BS.pack <$> vectorOf 64 hexChar
       where
         hexChar = elements $ ['0' .. '9'] ++ ['a' .. 'f']
+
+-- Other Types
+
+instance Arbitrary Time.UTCTime where
+    arbitrary = Time.UTCTime <$> dayDen <*> dayTimeGen
+      where
+        -- The Modified Julian Day is a standard count of days, with zero being the day 1858-11-17.
+        dayDen    = Time.ModifiedJulianDay <$> elements [0 .. 60000]
+        -- The time from midnight, 0 <= t < 86401s (because of leap-seconds)
+        dayTimeGen = Time.secondsToDiffTime <$> elements [0 .. 86400]

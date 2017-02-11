@@ -2,13 +2,14 @@ module Data.Blockchain.Types.Block
     ( Block
     , BlockHeader
     , blockTransactions
-    , newBlock
+    , makeBlock
     , blockDifficulty
     , incBlockNonce
     ) where
 
-import qualified Data.Aeson as Aeson
-import           Data.Aeson ((.=))
+import qualified Data.Aeson      as Aeson
+import           Data.Aeson      ((.=))
+import qualified Data.Time.Clock as Time
 
 import Data.Blockchain.Crypto.Hash
 import Data.Blockchain.Types.BlockHeader
@@ -29,15 +30,13 @@ data Block = Block
     }
   deriving (Show)
 
-newBlock :: BlockHash -> Difficulty -> Block
-newBlock prevBlockHash difficulty = Block{..}
+-- TODO: should garuantee there at least on transaction in block,
+-- the transaction for the "reward" for solving this block
+makeBlock :: [Transaction] -> BlockHash -> Time.UTCTime -> Difficulty -> Block
+makeBlock blockTransactions prevBlockHash time difficulty = Block{..}
   where
-    blockHeader = newBlockHeader prevBlockHash transactionHashTreeRoot difficulty
-    -- TODO: this should necessarily have 1 transaction, the initial
-    -- transaction for the "reward" for solving this block
-    -- for now leave empty...
-    blockTransactions       = [] :: [Transaction]
-    transactionHashTreeRoot = hashJSON blockTransactions
+    blockHeader = makeBlockHeader prevBlockHash transactionHashTreeRoot time difficulty
+    transactionHashTreeRoot = hashJSON blockTransactions -- Needs to be merkle root
 
 blockDifficulty :: Block -> Difficulty
 blockDifficulty = blockHeaderDifficulty . blockHeader

@@ -6,7 +6,7 @@ module Data.Blockchain.Types.BlockHeader
     , blockHeaderTime
     , blockHeaderDifficulty
     , blockHeaderNonce
-    , newBlockHeader
+    , makeBlockHeader
     , incNonce
     , BlockHash(..)
     ) where
@@ -14,8 +14,6 @@ module Data.Blockchain.Types.BlockHeader
 import qualified Data.Aeson         as Aeson
 import           Data.Aeson         ((.=))
 import qualified Data.Time.Clock    as Time
-import qualified Data.Time.Calendar as Time
-
 
 import Data.Blockchain.Crypto.Hash
 import Data.Blockchain.Types.BlockHash
@@ -41,15 +39,14 @@ data BlockHeader = BlockHeader
     }
   deriving (Show)
 
-newBlockHeader :: BlockHash -> Hash -> Difficulty -> BlockHeader
-newBlockHeader
+makeBlockHeader :: BlockHash -> Hash -> Time.UTCTime -> Difficulty -> BlockHeader
+makeBlockHeader
     blockHeaderPrevBlockHash
     blockHeaderTransactionHashTreeRoot
+    blockHeaderTime
     blockHeaderDifficulty = BlockHeader{..}
   where
     blockHeaderVersion = 1
-    -- Hardcoded, don't care for now...
-    blockHeaderTime    = Time.UTCTime (Time.ModifiedJulianDay 0) (Time.secondsToDiffTime 0)
     blockHeaderNonce   = 0
 
 incNonce :: BlockHeader -> BlockHeader
