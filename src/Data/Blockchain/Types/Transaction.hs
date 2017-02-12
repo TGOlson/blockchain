@@ -7,7 +7,6 @@ import           Data.Aeson  ((.=))
 
 import Data.Blockchain.Crypto.Hash
 
--- https://en.bitcoin.it/wiki/Transaction
 data Transaction = Transaction
     { transactionIn  :: [TransactionIn]
     , transactionOut :: [TransactionOut]
@@ -24,9 +23,9 @@ instance Aeson.ToJSON Transaction where
         ]
 
 data TransactionIn = TransactionIn
-    { transactionInPreviousTransactionHash     :: Hash
-    , transactionInPreviousTransactionOutIndex :: Int
-    , transactionInSignature                   :: String
+    { previousTransactionHash     :: Hash
+    , previousTransactionOutIndex :: Int
+    , signature                   :: String
     }
   deriving (Show)
 
@@ -35,14 +34,14 @@ instance Hashable TransactionIn where
 
 instance Aeson.ToJSON TransactionIn where
     toJSON TransactionIn{..} = Aeson.object
-        [ "previosTransactionHas"       .= transactionInPreviousTransactionHash
-        , "previousTransactionOutIndex" .= transactionInPreviousTransactionOutIndex
-        , "signature"                   .= transactionInSignature
+        [ "previosTransactionHas"       .= previousTransactionHash
+        , "previousTransactionOutIndex" .= previousTransactionOutIndex
+        , "signature"                   .= signature
         ]
 
 data TransactionOut = TransactionOut
-    { transactionOutValue           :: Int
-    , transactionOutSignaturePubKey :: String
+    { value           :: Int
+    , signaturePubKey :: String
     }
   deriving (Show)
 
@@ -51,6 +50,6 @@ instance Hashable TransactionOut where
 
 instance Aeson.ToJSON TransactionOut where
     toJSON TransactionOut{..} = Aeson.object
-        [ "value"           .= transactionOutValue
-        , "signaturePubKey" .= transactionOutSignaturePubKey
+        [ "value"           .= value
+        , "signaturePubKey" .= signaturePubKey
         ]

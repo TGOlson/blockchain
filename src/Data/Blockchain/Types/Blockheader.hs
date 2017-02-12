@@ -1,14 +1,7 @@
 module Data.Blockchain.Types.BlockHeader
-    ( BlockHeader
-    , blockHeaderVersion
-    , blockHeaderPrevBlockHash
-    , blockHeaderTransactionHashTreeRoot
-    , blockHeaderTime
-    , blockHeaderDifficulty
-    , blockHeaderNonce
-    , makeBlockHeader
+    ( BlockHeader(..)
+    , BlockHeaderHash(..)
     , incNonce
-    , BlockHash(..)
     ) where
 
 import qualified Data.Aeson         as Aeson
@@ -16,51 +9,33 @@ import           Data.Aeson         ((.=))
 import qualified Data.Time.Clock    as Time
 
 import Data.Blockchain.Crypto.Hash
-import Data.Blockchain.Types.BlockHash
 import Data.Blockchain.Types.Difficulty
 
-
--- Field	Purpose	Updated when...	Size (Bytes)
--- Version	Block version number	You upgrade the software and it specifies a new version	4
--- hashPrevBlock	256-bit hash of the previous block header	A new block comes in	32
--- hashMerkleRoot	256-bit hash based on all of the transactions in the block	A transaction is accepted	32
--- Time	Current timestamp as seconds since 1970-01-01T00:00 UTC	Every few seconds	4
--- Bits	Current target in compact format	The difficulty is adjusted	4
--- Nonce	32-bit number (starts at 0)	A hash is tried (increments)	4
-
--- https://en.bitcoin.it/wiki/Block_hashing_algorithm
 data BlockHeader = BlockHeader
-    { blockHeaderVersion                 :: Int
-    , blockHeaderPrevBlockHash           :: BlockHash
-    , blockHeaderTransactionHashTreeRoot :: Hash
-    , blockHeaderTime                    :: Time.UTCTime
-    , blockHeaderDifficulty              :: Difficulty
-    , blockHeaderNonce                   :: Int
+    { version                 :: Int
+    , prevBlockHeaderHash     :: BlockHeaderHash
+    , transactionHashTreeRoot :: Hash
+    , time                    :: Time.UTCTime
+    , difficulty              :: Difficulty
+    , nonce                   :: Int
     }
   deriving (Show)
 
-makeBlockHeader :: BlockHash -> Hash -> Time.UTCTime -> Difficulty -> BlockHeader
-makeBlockHeader
-    blockHeaderPrevBlockHash
-    blockHeaderTransactionHashTreeRoot
-    blockHeaderTime
-    blockHeaderDifficulty = BlockHeader{..}
-  where
-    blockHeaderVersion = 1
-    blockHeaderNonce   = 0
-
 incNonce :: BlockHeader -> BlockHeader
-incNonce header = header { blockHeaderNonce = blockHeaderNonce header + 1 }
+incNonce header = header { nonce = nonce header + 1 }
 
 instance Hashable BlockHeader where
     toHash = hashJSON
 
 instance Aeson.ToJSON BlockHeader where
     toJSON BlockHeader{..} = Aeson.object
-        [ "version"                 .= blockHeaderVersion
-        , "prevBlockHash"           .= blockHeaderPrevBlockHash
-        , "transactionHashTreeRoot" .= blockHeaderTransactionHashTreeRoot
-        , "time"                    .= blockHeaderTime
-        , "difficulty"              .= blockHeaderDifficulty
-        , "nonce"                   .= blockHeaderNonce
+        [ "version"                 .= version
+        , "prevBlockHeaderHash"     .= prevBlockHeaderHash
+        , "transactionHashTreeRoot" .= transactionHashTreeRoot
+        , "time"                    .= time
+        , "difficulty"              .= difficulty
+        , "nonce"                   .= nonce
         ]
+
+newtype BlockHeaderHash = BlockHeaderHash { unBlockHash :: Hash }
+  deriving (Eq, Ord, Aeson.ToJSON, Show)

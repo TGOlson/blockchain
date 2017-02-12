@@ -37,7 +37,6 @@ library:
     - Data.Blockchain.Solver
     - Data.Blockchain.Types
     - Data.Blockchain.Types.Block
-    - Data.Blockchain.Types.BlockHash
     - Data.Blockchain.Types.BlockHeader
     - Data.Blockchain.Types.Difficulty
     - Data.Blockchain.Types.Transaction

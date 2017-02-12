@@ -28,8 +28,8 @@ unsafefromByteString = Maybe.fromMaybe (error "Invalid hash string") . fromByteS
 
 -- Blockchain types
 
-instance Arbitrary BlockHash where
-    arbitrary = BlockHash <$> arbitrary
+instance Arbitrary BlockHeaderHash where
+    arbitrary = BlockHeaderHash <$> arbitrary
 
 instance Arbitrary Difficulty where
     arbitrary = Difficulty <$> arbitrary
