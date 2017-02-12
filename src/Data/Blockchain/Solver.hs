@@ -1,6 +1,6 @@
 module Data.Blockchain.Solver
     ( findNextBlock
-    , isValidBlockHeader
+    , isValidBlock
     ) where
 
 import qualified Data.Time.Clock as Time
@@ -10,19 +10,24 @@ import Data.Blockchain.Types
 
 
 -- TODO: should this be in IO and find the current time?
--- Also, should it take in a list of transactions, or is creating the coinbase transaction
--- part of the utility of this function?
-findNextBlock :: BlockHeaderHash -> Time.UTCTime -> Difficulty -> Block
-findNextBlock prevBlockHeaderHash time difficulty = searchForValidBlockHeader BlockHeader{..}
+-- Note: this also does not modify the coinbase transaction incase
+-- of an int overflow on the nonce... TODO
+findNextBlock :: Hash BlockHeader -> Time.UTCTime -> Difficulty -> [Transaction] -> Block
+findNextBlock prevBlockHeaderHash time difficulty transactions = searchForValidBlockHeader BlockHeader{..}
   where
     version = 1
     nonce   = 0
-    transactions = [] :: [Transaction]
     transactionHashTreeRoot = hash "" -- TODO
     searchForValidBlockHeader header =
         if isValidBlockHeader header
             then Block header transactions
             else searchForValidBlockHeader (incNonce header)
 
+isValidBlock :: Block -> Bool
+isValidBlock = isValidBlockHeader . blockHeader
+
 isValidBlockHeader :: BlockHeader -> Bool
-isValidBlockHeader blockHeader = toHash blockHeader < unDifficulty (difficulty blockHeader)
+isValidBlockHeader blockHeader = rawHash headerHash < rawHash difficultyHash
+  where
+    headerHash     = toHash blockHeader
+    difficultyHash = unDifficulty (difficulty blockHeader)

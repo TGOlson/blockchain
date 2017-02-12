@@ -1,6 +1,5 @@
 module Data.Blockchain.Types.BlockHeader
     ( BlockHeader(..)
-    , BlockHeaderHash(..)
     , incNonce
     ) where
 
@@ -13,8 +12,8 @@ import Data.Blockchain.Types.Difficulty
 
 data BlockHeader = BlockHeader
     { version                 :: Int
-    , prevBlockHeaderHash     :: BlockHeaderHash
-    , transactionHashTreeRoot :: Hash
+    , prevBlockHeaderHash     :: Hash BlockHeader
+    , transactionHashTreeRoot :: ByteStringHash -- TODO
     , time                    :: Time.UTCTime
     , difficulty              :: Difficulty
     , nonce                   :: Int
@@ -36,6 +35,3 @@ instance Aeson.ToJSON BlockHeader where
         , "difficulty"              .= difficulty
         , "nonce"                   .= nonce
         ]
-
-newtype BlockHeaderHash = BlockHeaderHash { unBlockHash :: Hash }
-  deriving (Eq, Ord, Aeson.ToJSON, Show)

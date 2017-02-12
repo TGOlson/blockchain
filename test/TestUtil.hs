@@ -2,7 +2,7 @@
 
 module TestUtil
     ( module X
-    , minHash
+    , maxDifficulty
     ) where
 
 import Test.QuickCheck       as X
@@ -17,24 +17,21 @@ import qualified Data.Time.Calendar    as Time
 import Data.Blockchain.Crypto.Hash
 import Data.Blockchain.Types
 
--- Used in some tests to filter hashes that are too low.
-minHash :: Hash
-minHash = unsafefromByteString $ BS.append "0000" $ BS.replicate 60 'f'
+-- Used in some tests to filter generated difficulties that would be too hard to solve.
+maxDifficulty :: Difficulty
+maxDifficulty = Difficulty $ unsafefromByteString $ BS.append "0000" $ BS.replicate 60 'f'
 
-unsafefromByteString :: BS.ByteString -> Hash
+unsafefromByteString :: BS.ByteString -> Hash a
 unsafefromByteString = Maybe.fromMaybe (error "Invalid hash string") . fromByteString
 
 -- Instances -------------------------------------------------------------------------------------------------
 
 -- Blockchain types
 
-instance Arbitrary BlockHeaderHash where
-    arbitrary = BlockHeaderHash <$> arbitrary
-
 instance Arbitrary Difficulty where
     arbitrary = Difficulty <$> arbitrary
 
-instance Arbitrary Hash where
+instance Arbitrary (Hash a) where
     arbitrary = unsafefromByteString . BS.pack <$> vectorOf 64 hexChar
       where
         hexChar = elements $ ['0' .. '9'] ++ ['a' .. 'f']

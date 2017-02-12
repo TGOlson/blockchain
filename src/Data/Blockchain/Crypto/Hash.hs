@@ -1,5 +1,7 @@
 module Data.Blockchain.Crypto.Hash
     ( Hash
+    , rawHash
+    , ByteStringHash
     , hash
     , hashJSON
     , Hashable(..)
@@ -15,25 +17,28 @@ import qualified Data.ByteString.Lazy  as Lazy
 import qualified Data.Text             as Text
 import qualified Data.ByteArray.Encoding as Byte
 
-newtype Hash = Hash { unHash :: Crypto.Digest Crypto.SHA256 }
+
+data Hash a = Hash { rawHash :: Crypto.Digest Crypto.SHA256 }
   deriving (Eq, Ord)
 
-instance Show Hash where
-    show = show . unHash
+type ByteStringHash = Hash BS.ByteString
 
-hash :: BS.ByteString -> Hash
+instance Show (Hash a) where
+    show = show . rawHash
+
+hash :: BS.ByteString -> Hash a
 hash = Hash . Crypto.hash
 
-hashJSON :: Aeson.ToJSON a => a -> Hash
+hashJSON :: Aeson.ToJSON a => a -> Hash a
 hashJSON = hash . Lazy.toStrict . Aeson.encode
 
-fromByteString :: BS.ByteString -> Maybe Hash
+fromByteString :: BS.ByteString -> Maybe (Hash a)
 fromByteString bs = case Byte.convertFromBase Byte.Base16 bs of
     Left _    -> Nothing
     Right bs' -> Hash <$> Crypto.digestFromByteString bs'
 
 class Hashable a where
-    toHash :: a -> Hash
+    toHash :: a -> Hash a
 
-instance Aeson.ToJSON Hash where
-    toJSON = Aeson.String . Text.pack . show . unHash
+instance Aeson.ToJSON (Hash a) where
+    toJSON = Aeson.String . Text.pack . show . rawHash

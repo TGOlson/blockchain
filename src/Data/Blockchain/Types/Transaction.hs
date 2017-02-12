@@ -23,7 +23,7 @@ instance Aeson.ToJSON Transaction where
         ]
 
 data TransactionIn = TransactionIn
-    { previousTransactionHash     :: Hash
+    { previousTransactionHash     :: Hash Transaction
     , previousTransactionOutIndex :: Int
     , signature                   :: String
     }
