@@ -35,7 +35,7 @@ hashJSON = hash . Lazy.toStrict . Aeson.encode
 fromByteString :: BS.ByteString -> Maybe (Hash a)
 fromByteString bs = case Byte.convertFromBase Byte.Base16 bs of
     Left _    -> Nothing
-    Right bs' -> Hash <$> Crypto.digestFromByteString bs'
+    Right bs' -> Hash <$> Crypto.digestFromByteString (bs' :: BS.ByteString)
 
 class Hashable a where
     toHash :: a -> Hash a

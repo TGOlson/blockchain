@@ -21,13 +21,13 @@ default-extensions:
 
 dependencies:
   - base >= 4.7 && < 5
-  - cryptohash
   - bytestring
   - byteable
   - time
   - aeson
   - text
   - memory
+  - cryptonite
 
 library:
   source-dirs: src
