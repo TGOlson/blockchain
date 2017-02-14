@@ -34,7 +34,7 @@ instance Hashable TransactionIn where
 
 instance Aeson.ToJSON TransactionIn where
     toJSON TransactionIn{..} = Aeson.object
-        [ "previosTransactionHas"       .= previousTransactionHash
+        [ "previosTransactionHash"      .= previousTransactionHash
         , "previousTransactionOutIndex" .= previousTransactionOutIndex
         , "signature"                   .= signature
         ]
