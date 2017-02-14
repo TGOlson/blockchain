@@ -8,13 +8,11 @@ module Data.Blockchain.Crypto.Hash
     , fromByteString
     ) where
 
-import qualified Crypto.Hash           as Crypto
--- Note: using json probably isn't super efficient for all the hashing and data storage we plan on doing
--- consider using a more condensed binary format (cereal?)
-import qualified Data.Aeson            as Aeson
-import qualified Data.ByteString       as BS
-import qualified Data.ByteString.Lazy  as Lazy
-import qualified Data.Text             as Text
+import qualified Crypto.Hash             as Crypto
+import qualified Data.Aeson              as Aeson
+import qualified Data.ByteString         as BS
+import qualified Data.ByteString.Lazy    as Lazy
+import qualified Data.Text               as Text
 import qualified Data.ByteArray.Encoding as Byte
 
 

@@ -8,3 +8,8 @@ Something something blockchain!
 * https://en.bitcoin.it/wiki/Block_hashing_algorithm
 * https://en.bitcoin.it/wiki/Hashcash
 * https://en.bitcoin.it/wiki/Genesis_block
+
+
+TODO:
+
+* Consider more efficient data format than json

@@ -5,6 +5,7 @@ module Data.Blockchain.Types.Transaction
 import qualified Data.Aeson  as Aeson
 import           Data.Aeson  ((.=))
 
+import Data.Blockchain.Crypto.ECDSA
 import Data.Blockchain.Crypto.Hash
 
 data Transaction = Transaction
@@ -25,7 +26,7 @@ instance Aeson.ToJSON Transaction where
 data TransactionIn = TransactionIn
     { previousTransactionHash     :: Hash Transaction
     , previousTransactionOutIndex :: Int
-    , signature                   :: String
+    , signature                   :: Signature
     }
   deriving (Show)
 
@@ -41,7 +42,7 @@ instance Aeson.ToJSON TransactionIn where
 
 data TransactionOut = TransactionOut
     { value           :: Int
-    , signaturePubKey :: String
+    , signaturePubKey :: PublicKey
     }
   deriving (Show)
 

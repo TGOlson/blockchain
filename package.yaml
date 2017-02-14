@@ -33,6 +33,7 @@ library:
   source-dirs: src
   exposed-modules:
     - Data.Blockchain
+    - Data.Blockchain.Crypto.ECDSA
     - Data.Blockchain.Crypto.Hash
     - Data.Blockchain.Solver
     - Data.Blockchain.Types
