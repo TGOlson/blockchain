@@ -11,13 +11,14 @@ category:            Web
 extra-source-files:
   - README.md
 
-ghc-options: -Wall
+ghc-options: -Wall -Werror
 
 default-extensions:
   - OverloadedStrings
   - RecordWildCards
   - GeneralizedNewtypeDeriving
   - ScopedTypeVariables
+  - BangPatterns
 
 dependencies:
   - base >= 4.7 && < 5

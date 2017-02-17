@@ -15,7 +15,7 @@ data Transaction = Transaction
   deriving (Show)
 
 instance Hashable Transaction where
-    toHash = hashJSON
+    hash = hashJSON
 
 instance Aeson.ToJSON Transaction where
     toJSON Transaction{..} = Aeson.object
@@ -31,7 +31,7 @@ data TransactionIn = TransactionIn
   deriving (Show)
 
 instance Hashable TransactionIn where
-    toHash = hashJSON
+    hash = hashJSON
 
 instance Aeson.ToJSON TransactionIn where
     toJSON TransactionIn{..} = Aeson.object
@@ -47,7 +47,7 @@ data TransactionOut = TransactionOut
   deriving (Show)
 
 instance Hashable TransactionOut where
-    toHash = hashJSON
+    hash = hashJSON
 
 instance Aeson.ToJSON TransactionOut where
     toJSON TransactionOut{..} = Aeson.object

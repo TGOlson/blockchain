@@ -3,10 +3,10 @@ module Data.Blockchain.Crypto.Hash
     , rawHash
     , ByteStringHash
     , joinHash
-    , hash
     , hashJSON
     , Hashable(..)
     , fromByteString
+    , toByteStringHash
     ) where
 
 import qualified Crypto.Hash             as Crypto
@@ -28,11 +28,11 @@ joinHash (Hash h1) (Hash h2) = Hash $ Crypto.hashFinalize $ Crypto.hashUpdates C
 instance Show (Hash a) where
     show = show . rawHash
 
-hash :: BS.ByteString -> Hash a
-hash = Hash . Crypto.hash
+toByteStringHash :: Hash a -> ByteStringHash
+toByteStringHash = Hash . rawHash
 
 hashJSON :: Aeson.ToJSON a => a -> Hash a
-hashJSON = hash . Lazy.toStrict . Aeson.encode
+hashJSON = Hash . Crypto.hash . Lazy.toStrict . Aeson.encode
 
 fromByteString :: BS.ByteString -> Maybe (Hash a)
 fromByteString bs = case Byte.convertFromBase Byte.Base16 bs of
@@ -40,7 +40,10 @@ fromByteString bs = case Byte.convertFromBase Byte.Base16 bs of
     Right bs' -> Hash <$> Crypto.digestFromByteString (bs' :: BS.ByteString)
 
 class Hashable a where
-    toHash :: a -> Hash a
+    hash :: a -> Hash a
+
+instance Hashable BS.ByteString where
+    hash = Hash . Crypto.hash
 
 instance Aeson.ToJSON (Hash a) where
     toJSON = Aeson.String . Text.pack . show . rawHash

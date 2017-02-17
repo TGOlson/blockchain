@@ -6,6 +6,7 @@ module Data.Blockchain.Solver
 import qualified Data.Time.Clock as Time
 
 import Data.Blockchain.Crypto.Hash
+import Data.Blockchain.Crypto.HashTree
 import Data.Blockchain.Types
 
 
@@ -17,7 +18,7 @@ findNextBlock prevBlockHeaderHash time difficulty transactions = searchForValidB
   where
     version = 1
     nonce   = 0
-    transactionHashTreeRoot = hash "" -- TODO
+    transactionHashTreeRoot = hashTreeRoot transactions
     searchForValidBlockHeader header =
         if isValidBlockHeader header
             then Block header transactions
@@ -29,5 +30,5 @@ isValidBlock = isValidBlockHeader . blockHeader
 isValidBlockHeader :: BlockHeader -> Bool
 isValidBlockHeader blockHeader = rawHash headerHash < rawHash difficultyHash
   where
-    headerHash     = toHash blockHeader
+    headerHash     = hash blockHeader
     difficultyHash = unDifficulty (difficulty blockHeader)

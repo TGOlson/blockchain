@@ -2,27 +2,32 @@ module Data.Blockchain.Crypto.HashTreeSpec (spec) where
 
 import TestUtil
 
-import qualified Data.ByteString as BS
+import qualified Data.ByteString       as BS
 import qualified Data.ByteString.Char8 as Char8
 
 import Data.Blockchain.Crypto.Hash
 import Data.Blockchain.Crypto.HashTree
 
-testData :: BS.ByteString
-testData = Char8.replicate numBytes '\000'
-  where numBytes = (2 ^ (22 :: Int)) + 32
+testData :: [BS.ByteString]
+testData = replicate (numBytes `div` blockSize) block ++ [partialBlock]
+  where
+    blockSize    = 64
+    numBytes     = (2 ^ (22 :: Int)) + 32
+    block        = Char8.replicate blockSize '\000'
+    partialBlock = Char8.replicate (numBytes `mod` blockSize) '\000'
 
 expectedRootHash :: ByteStringHash
 expectedRootHash = unsafefromByteString "e9683665a90bd70aabd7705cba57c2be2a4e913a0ca1a14d765497112c178120"
 
 spec :: Spec
 spec =
-    describe "HashTree" $
-        -- Slow... try to optimize hashing code...
-        prop "should create a hash tree for a known hash" $ once $
-            rootHash (hashTree testData) === expectedRootHash
+    describe "HashTree" $ do
+        it "should create a hash tree for a known hash" $
+            unHashTreeRoot (hashTreeRoot testData) === expectedRootHash
 
-        -- TODO: this takes too long... why?
-        -- prop "should create a hash tree for a known hash" $
-        --     \bs -> (BS.length bs) < 10 ==>
-        --         rootHash (hashTree bs) === hash bs
+        prop "should hash a single item correctly" $
+            \(bs :: BS.ByteString) ->
+                unHashTreeRoot (hashTreeRoot (pure bs)) === hash bs
+
+        prop "should complete for any data" $
+            \(bs :: [BS.ByteString]) -> let !_x = unHashTreeRoot (hashTreeRoot bs) in True

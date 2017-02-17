@@ -13,5 +13,5 @@ spec =
             prop "should find blocks with a lower hash than the difficulty" $
                 \blockHash time diff -> diff > maxDifficulty ==>
                     let block      = findNextBlock blockHash time diff []
-                        headerHash = toHash (blockHeader block) in
+                        headerHash = hash (blockHeader block) in
                     rawHash headerHash < rawHash (unDifficulty diff)
