@@ -8,6 +8,7 @@ spec :: Spec
 spec =
     describe "ECDSA" $
         prop "should sign and verify correctly" $ once $
-            \bs (KeyPair publicKey privateKey) -> ioProperty $ do
+            \bs -> ioProperty $ do
+                (KeyPair publicKey privateKey) <- generate
                 sig <- sign privateKey bs
                 return $ verify publicKey sig bs

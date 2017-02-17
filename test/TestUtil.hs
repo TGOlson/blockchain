@@ -5,19 +5,15 @@ module TestUtil
     , maxDifficulty
     ) where
 
-import Test.QuickCheck       as X
 import Test.Hspec            as X
 import Test.Hspec.QuickCheck as X
+import Test.QuickCheck       as X hiding (generate)
 
-import qualified Crypto.PubKey.ECC.ECDSA    as Crypto
-import qualified Crypto.PubKey.ECC.Generate as Crypto
-import qualified Crypto.PubKey.ECC.Types    as Crypto
 import qualified Data.ByteString.Char8      as BS
 import qualified Data.Maybe                 as Maybe
 import qualified Data.Time.Clock            as Time
 import qualified Data.Time.Calendar         as Time
 
-import Data.Blockchain.Crypto.ECDSA
 import Data.Blockchain.Crypto.Hash
 import Data.Blockchain.Types
 
@@ -35,19 +31,7 @@ unsafefromByteString = Maybe.fromMaybe (error "Invalid hash string") . fromByteS
 instance Arbitrary Difficulty where
     arbitrary = Difficulty <$> arbitrary
 
--- Crypto types
-
-instance Arbitrary KeyPair where
-    arbitrary = do
-        (Positive d) <- arbitrary
-
-        let curve   = Crypto.getCurveByName Crypto.SEC_p256k1
-            q       = Crypto.generateQ curve d
-            keyPair = Crypto.KeyPair curve q d
-            pubKey  = PublicKey $ Crypto.toPublicKey keyPair
-            privKey = PrivateKey $ Crypto.toPrivateKey keyPair
-
-        return $ KeyPair pubKey privKey
+-- Crypto Types
 
 instance Arbitrary (Hash a) where
     arbitrary = unsafefromByteString . BS.pack <$> vectorOf 64 hexChar
