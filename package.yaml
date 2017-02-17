@@ -35,6 +35,7 @@ library:
     - Data.Blockchain
     - Data.Blockchain.Crypto.ECDSA
     - Data.Blockchain.Crypto.Hash
+    - Data.Blockchain.Crypto.HashTree
     - Data.Blockchain.Solver
     - Data.Blockchain.Types
     - Data.Blockchain.Types.Block

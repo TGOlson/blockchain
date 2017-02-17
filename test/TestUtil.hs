@@ -3,6 +3,7 @@
 module TestUtil
     ( module X
     , maxDifficulty
+    , unsafefromByteString
     ) where
 
 import Test.Hspec            as X

@@ -2,6 +2,7 @@ module Data.Blockchain.Crypto.Hash
     ( Hash
     , rawHash
     , ByteStringHash
+    , joinHash
     , hash
     , hashJSON
     , Hashable(..)
@@ -20,6 +21,9 @@ data Hash a = Hash { rawHash :: Crypto.Digest Crypto.SHA256 }
   deriving (Eq, Ord)
 
 type ByteStringHash = Hash BS.ByteString
+
+joinHash :: Hash a -> Hash a -> Hash a
+joinHash (Hash h1) (Hash h2) = Hash $ Crypto.hashFinalize $ Crypto.hashUpdates Crypto.hashInit [h1, h2]
 
 instance Show (Hash a) where
     show = show . rawHash
