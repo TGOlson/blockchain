@@ -12,8 +12,9 @@ data Block = Block
     { blockHeader  :: BlockHeader
     , transactions :: [Transaction]
     }
-  deriving (Show)
+  deriving (Eq, Show)
 
+-- TODO: add block header hash for more efficient has comparision
 instance Aeson.ToJSON Block where
     toJSON Block{..} = Aeson.object
         [ "header"       .= blockHeader

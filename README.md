@@ -11,5 +11,7 @@ Something something blockchain!
 
 
 TODO:
-
+* Make a block chain data type
+* function that validates transactions
+* function that integrates transactions into chain
 * Consider more efficient data format than json

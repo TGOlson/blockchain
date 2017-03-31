@@ -23,13 +23,13 @@ data KeyPair = KeyPair
   deriving (Show)
 
 newtype Signature = Signature { unSignature :: Crypto.Signature }
-  deriving (Show)
+  deriving (Eq, Show)
 
 instance Aeson.ToJSON Signature where
     toJSON = Aeson.String . Text.pack . show . unSignature
 
 newtype PublicKey = PublicKey { unPublicKey :: Crypto.PublicKey }
-  deriving (Show)
+  deriving (Eq, Show)
 
 instance Aeson.ToJSON PublicKey where
     toJSON = Aeson.String . Text.pack . show . unPublicKey

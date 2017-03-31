@@ -20,7 +20,7 @@ data BlockHeader = BlockHeader
     , difficulty              :: Difficulty
     , nonce                   :: Int
     }
-  deriving (Show)
+  deriving (Eq, Show)
 
 incNonce :: BlockHeader -> BlockHeader
 incNonce header = header { nonce = nonce header + 1 }

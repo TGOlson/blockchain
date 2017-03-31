@@ -12,7 +12,7 @@ data Transaction = Transaction
     { transactionIn  :: [TransactionIn]
     , transactionOut :: [TransactionOut]
     }
-  deriving (Show)
+  deriving (Eq, Show)
 
 instance Hashable Transaction where
     hash = hashJSON
@@ -28,7 +28,7 @@ data TransactionIn = TransactionIn
     , previousTransactionOutIndex :: Int
     , signature                   :: Signature
     }
-  deriving (Show)
+  deriving (Eq, Show)
 
 instance Hashable TransactionIn where
     hash = hashJSON
@@ -44,7 +44,7 @@ data TransactionOut = TransactionOut
     { value           :: Int
     , signaturePubKey :: PublicKey
     }
-  deriving (Show)
+  deriving (Eq, Show)
 
 instance Hashable TransactionOut where
     hash = hashJSON

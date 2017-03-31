@@ -16,6 +16,7 @@ import qualified Data.Time.Clock            as Time
 import qualified Data.Time.Calendar         as Time
 
 import Data.Blockchain.Crypto.Hash
+import Data.Blockchain.Crypto.HashTree
 import Data.Blockchain.Types
 
 -- Used in some tests to filter generated difficulties that would be too hard to solve.
@@ -28,6 +29,18 @@ unsafefromByteString = Maybe.fromMaybe (error "Invalid hash string") . fromByteS
 -- Instances -------------------------------------------------------------------------------------------------
 
 -- Blockchain types
+
+instance Arbitrary Block where
+    arbitrary = Block <$> arbitrary <*> (return []) -- TODO: arbitrary Transaction
+
+instance Arbitrary BlockHeader where
+    arbitrary = BlockHeader
+        <$> arbitrary
+        <*> arbitrary
+        <*> (return $ hashTreeRoot []) -- TODO: arbitrary Transaction
+        <*> arbitrary
+        <*> arbitrary
+        <*> arbitrary
 
 instance Arbitrary Difficulty where
     arbitrary = Difficulty <$> arbitrary
