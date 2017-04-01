@@ -8,12 +8,16 @@ module Data.Blockchain
     -- Testing utilities
     , BlockchainSpec(..)
     , toSpec
+    , fromSpec
     , (~~)
     ) where
 
-import qualified Data.Either as Either
-import qualified Data.List   as List
-import qualified Data.Ord    as Ord
+import qualified Data.Either             as Either (partitionEithers)
+import qualified Data.Either.Combinators as Either
+import qualified Data.Foldable           as Foldable
+import qualified Data.List               as List
+import qualified Data.Ord                as Ord
+
 
 import Data.Blockchain.Crypto.Hash
 import Data.Blockchain.Types
@@ -31,18 +35,41 @@ singleton block = BlockchainNode block []
 
 addBlock :: Block -> Blockchain -> Either AddBlockException Blockchain
 addBlock newBlock (BlockchainNode block blockchains) =
-    if block == newBlock then Left BlockAlreadyExists
-    else if hash (blockHeader block) == prevBlockHeaderHash (blockHeader newBlock)
-        then Right (BlockchainNode block $ singleton newBlock : blockchains)
-        else let newBlockchains = fmap (addBlock newBlock) blockchains
-            -- can we use: lefts :: [Either a b] -> [a]
-            -- here to cleanup?
-            -- or: partitionEithers :: [Either a b] -> ([a], [b])
-            in if any Either.isRight newBlockchains
-                then Right $ BlockchainNode block $ zipWith (\eBc bc -> Either.either (const bc) id eBc) newBlockchains blockchains
-                -- this eats other errors, possible to have BlockAlreadyExists take preference?
-                else Left NoPreviousBlockFound
-
+    -- TODO: block headers should contain a hash of themselves,
+    -- so that we don't have to hash every single time
+    -- Found correct parent node
+    if hash (blockHeader block) == prevBlockHeaderHash (blockHeader newBlock)
+        then
+            -- But first make sure it's not already in the leaves
+            if any (\(BlockchainNode blk _) -> blk == newBlock) blockchains
+                then Left BlockAlreadyExists
+                else Right (BlockchainNode block $ singleton newBlock : blockchains)
+        else
+            let eBlockchains = fmap (\bs -> Either.mapLeft (\e -> (e, bs)) (addBlock newBlock bs)) blockchains in
+            BlockchainNode block <$> reduceAddBlockResults eBlockchains
+  where
+    -- Rules:
+    --   If all results are `Left NoPreviousBlockFound` the result is `Left NoPreviousBlockFound`.
+    --   If any result is `Left BlockAlreadyExists` the result is `Left BlockAlreadyExists`.
+    --   If one result is `Right Blockchain` and the rest are `Left NoPreviousBlockFound`
+    --      the result is that new block chain and all the previous chains.
+    --   If more than one result is `Right Blockchain` it is an unexpected result and the function will error.
+    reduceAddBlockResults :: [Either (AddBlockException, Blockchain) Blockchain] -> Either AddBlockException [Blockchain]
+    reduceAddBlockResults results = case (blockAlreadyExists, rightResults) of
+        (True, [])   -> Left BlockAlreadyExists
+        (False, [])  -> Left NoPreviousBlockFound
+        (True, [_])  -> Left BlockAlreadyExists
+        -- Add new chain to list of old chains
+        -- Note: this will cause re-ordering, where newest chain will always appear first
+        -- in list of subsequent chains.
+        (False, [x]) -> Right (x : oldBlockChains)
+        (_, _)       -> error "Unexpected error - block can be interested into multiple chains"
+      where
+        (leftResults, rightResults) = Either.partitionEithers results
+        (exceptions, oldBlockChains) = unzip leftResults
+        -- Note: this ignores invariant where multiple `BlockAlreadyExists` errors are found
+        -- However, we do expect our reducing function to monitor for that invariant during original insert.
+        blockAlreadyExists = any (== BlockAlreadyExists) exceptions
 
 flatten :: Blockchain -> [[Block]]
 flatten = \case
@@ -59,11 +86,17 @@ longestChain = List.maximumBy (Ord.comparing length) . flatten
 
 -- TODO: fromSpec, that validates structure!!!
 
-data BlockchainSpec = BlockchainSpec (Block, [BlockchainSpec])
+data BlockchainSpec = BlockchainSpec Block [BlockchainSpec]
   deriving (Eq, Show)
 
 toSpec :: Blockchain -> BlockchainSpec
-toSpec (BlockchainNode block blockchains) = BlockchainSpec (block, toSpec <$> blockchains)
+toSpec (BlockchainNode block blockchains) = BlockchainSpec block $ toSpec <$> blockchains
+
+fromSpec :: BlockchainSpec -> Either AddBlockException Blockchain
+fromSpec (BlockchainSpec block blockchainSpecs) = addSpecs blockchainSpecs (singleton block)
+  where
+    addSpecs specs chain = Foldable.foldrM reduce chain specs
+    reduce (BlockchainSpec blk specs) chain = addBlock blk chain >>= addSpecs specs
 
 (~~) :: Block -> [BlockchainSpec] -> BlockchainSpec
-(~~) block specs = BlockchainSpec (block, specs)
+(~~) = BlockchainSpec

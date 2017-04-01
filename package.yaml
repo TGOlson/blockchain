@@ -30,6 +30,7 @@ dependencies:
   - text
   - memory
   - cryptonite
+  - either
 
 library:
   source-dirs: src
