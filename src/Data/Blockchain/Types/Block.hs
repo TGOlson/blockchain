@@ -14,7 +14,7 @@ data Block = Block
     }
   deriving (Eq, Show)
 
--- TODO: add block header hash for more efficient has comparision
+-- TODO: add block header hash for more efficient hash comparison
 instance Aeson.ToJSON Block where
     toJSON Block{..} = Aeson.object
         [ "header"       .= blockHeader

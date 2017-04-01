@@ -3,6 +3,7 @@ module Data.BlockchainSpec (spec) where
 import TestUtil
 
 import qualified Data.Either.Combinators as Either
+import qualified Data.Foldable           as Foldable
 
 import Data.Blockchain
 import Data.Blockchain.Crypto.Hash
@@ -12,6 +13,14 @@ forceSpec :: Either a Blockchain -> BlockchainSpec
 forceSpec = \case Left _   -> error "cannot create spec from left value"
                   Right bc -> toSpec bc
 
+-- TODO: good errors when something fails
+assertTransactions :: BlockchainSpec -> [Blockchain -> Either AddBlockException Blockchain] -> BlockchainSpec -> Bool
+assertTransactions initialSpec transactions targetSpec = Either.fromRight False $ do
+    chain  <- fromSpec initialSpec
+    chain' <- Foldable.foldrM ($) chain transactions
+    return $ toSpec chain' == targetSpec
+
+
 linkBlockToPrev :: Block -> Block -> Block
 linkBlockToPrev prevBlock (Block bh transactions) = Block newBlockHeader transactions
   where newBlockHeader = bh { prevBlockHeaderHash = hash (blockHeader prevBlock) }
@@ -20,12 +29,23 @@ linkBlockToPrev prevBlock (Block bh transactions) = Block newBlockHeader transac
 data LinkedBlocks = LinkedBlocks Block Block
   deriving (Eq, Show)
 
+data LinkedBlocks3 = LinkedBlocks3 Block Block Block
+  deriving (Eq, Show)
+
 instance Arbitrary LinkedBlocks where
     arbitrary = do
         block1 <- arbitrary
-        block2 <- arbitrary
+        block2 <- linkBlockToPrev block1 <$> arbitrary
 
-        return $ LinkedBlocks block1 (linkBlockToPrev block1 block2)
+        return $ LinkedBlocks block1 block2
+
+instance Arbitrary LinkedBlocks3 where
+    arbitrary = do
+        block1 <- arbitrary
+        block2 <- linkBlockToPrev block1 <$> arbitrary
+        block3 <- linkBlockToPrev block2 <$> arbitrary
+
+        return $ LinkedBlocks3 block1 block2 block3
 
 spec :: Spec
 spec =
@@ -48,13 +68,20 @@ spec =
                         [ block2 ~~ [] ]
 
         prop "should add a block that forks the chain" $ once $
-            \(LinkedBlocks block1 block2) unlinkedBlock ->
-                let block3 = linkBlockToPrev block1 unlinkedBlock in
-                forceSpec (addBlock block2 (singleton block1) >>= addBlock block3) ==
-                    block1 ~~
-                        [ block3 ~~ []
-                        , block2 ~~ []
-                        ]
+            \(LinkedBlocks block1 block2) unlinkedBlock3 ->
+                let block3 = linkBlockToPrev block1 unlinkedBlock3 in
+
+                assertTransactions
+                    (
+                        block1 ~~ [ block2 ~~ [] ]
+                    )
+                    [ addBlock block3 ]
+                    (
+                        block1 ~~
+                            [ block3 ~~ []
+                            , block2 ~~ []
+                            ]
+                    )
 
         prop "should add a block that forks the middle of a chain" $ once $
             \(LinkedBlocks block1 block2) unlinkedBlock3 unlinkedBlock4 unlinkedBlock5 -> Either.fromRight False $ do

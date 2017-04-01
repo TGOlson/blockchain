@@ -7,6 +7,7 @@ module Data.Blockchain
 
     -- Testing utilities
     , BlockchainSpec(..)
+    , BlockchainSpecException(..)
     , toSpec
     , fromSpec
     , (~~)
@@ -69,7 +70,7 @@ addBlock newBlock (BlockchainNode block blockchains) =
         (exceptions, oldBlockChains) = unzip leftResults
         -- Note: this ignores invariant where multiple `BlockAlreadyExists` errors are found
         -- However, we do expect our reducing function to monitor for that invariant during original insert.
-        blockAlreadyExists = any (== BlockAlreadyExists) exceptions
+        blockAlreadyExists = BlockAlreadyExists `elem` exceptions
 
 flatten :: Blockchain -> [[Block]]
 flatten = \case
@@ -84,10 +85,10 @@ longestChain = List.maximumBy (Ord.comparing length) . flatten
 -- Testing utils
 -- Generally only useful for testing purposes
 
--- TODO: fromSpec, that validates structure!!!
-
 data BlockchainSpec = BlockchainSpec Block [BlockchainSpec]
   deriving (Eq, Show)
+
+newtype BlockchainSpecException = BlockchainSpecException AddBlockException
 
 toSpec :: Blockchain -> BlockchainSpec
 toSpec (BlockchainNode block blockchains) = BlockchainSpec block $ toSpec <$> blockchains
