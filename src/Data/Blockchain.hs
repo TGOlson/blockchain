@@ -1,9 +1,10 @@
 module Data.Blockchain
     ( Blockchain
+    , AddBlockException(..)
     , singleton
     , addBlock
     , longestChain
-    , AddBlockException(..)
+    , toString
 
     -- Testing utilities
     , BlockchainSpec(..)
@@ -81,9 +82,15 @@ flatten = \case
 longestChain :: Blockchain -> [Block]
 longestChain = List.maximumBy (Ord.comparing length) . flatten
 
-
--- Testing utils
--- Generally only useful for testing purposes
+toString :: Blockchain -> String
+toString = List.intercalate "\n" . toStringLevels 0
+  where
+    toStringLevels :: Int -> Blockchain -> [String]
+    toStringLevels level (BlockchainNode block blockchains) =
+        hashString : concatMap (toStringLevels (level + 2)) blockchains
+      where
+        spaces = replicate level ' '
+        hashString = spaces ++ show (hash $ blockHeader block)
 
 data BlockchainSpec = BlockchainSpec Block [BlockchainSpec]
   deriving (Eq, Show)
