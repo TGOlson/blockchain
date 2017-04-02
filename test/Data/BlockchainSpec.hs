@@ -24,10 +24,13 @@ assertTransactionsResult transactions initialSpec result = Either.fromRight Fals
     chain  <- fromSpec initialSpec
     return $ Foldable.foldrM ($) chain transactions == result
 
+-- Note: this makes the block invalid
+-- May need to be changed once blockchain gets more advanced
 linkBlockToPrev :: Block -> Block -> Block
-linkBlockToPrev prevBlock (Block bh transactions) = Block newBlockHeader transactions
-  where newBlockHeader = bh { prevBlockHeaderHash = hash (blockHeader prevBlock) }
-
+linkBlockToPrev prevBlock block = makeBlock prevBlockHeaderHash t diff nonce (transactions block)
+  where
+    (BlockHeader _ _ _ t diff nonce) = blockHeader block
+    prevBlockHeaderHash = hash (blockHeader prevBlock)
 
 data LinkedBlocks = LinkedBlocks Block Block
   deriving (Eq, Show)

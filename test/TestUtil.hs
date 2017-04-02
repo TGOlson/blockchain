@@ -31,13 +31,18 @@ unsafefromByteString = Maybe.fromMaybe (error "Invalid hash string") . fromByteS
 -- Blockchain types
 
 instance Arbitrary Block where
-    arbitrary = Block <$> arbitrary <*> (return []) -- TODO: arbitrary Transaction
+    arbitrary = makeBlock
+      <$> (hash <$> arbitrary)
+      <*> arbitrary
+      <*> arbitrary
+      <*> arbitrary
+      <*> return [] -- TODO: arbitrary Transaction
 
 instance Arbitrary BlockHeader where
     arbitrary = BlockHeader
         <$> arbitrary
         <*> arbitrary
-        <*> (return $ hashTreeRoot []) -- TODO: arbitrary Transaction
+        <*> return (hashTreeRoot []) -- TODO: arbitrary Transaction
         <*> arbitrary
         <*> arbitrary
         <*> arbitrary
