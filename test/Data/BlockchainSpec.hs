@@ -92,8 +92,8 @@ spec = do
                         ])
 
         prop "should add a block that forks the middle of a chain" $ once $
-            \(LinkedBlocks3 block1 block2 block3) unlinkedBlock4 -> do
-                let block4 = linkBlockToPrev block1 unlinkedBlock4
+            \(LinkedBlocks3 block1 block2 block3) unlinkedBlock4 ->
+                let block4 = linkBlockToPrev block1 unlinkedBlock4 in
 
                 assertTransactions [ addBlock block4 ]
                     (block1 ~~
@@ -103,6 +103,17 @@ spec = do
                         [ block4 ~~ []
                         , block2 ~~ [ block3 ~~ [] ]
                         ])
+
+    describe "mainChain" $
+        prop "should return the longest chain" $ once $
+            \(LinkedBlocks3 block1 block2 block3) unlinkedBlock4 ->
+                let block4 = linkBlockToPrev block1 unlinkedBlock4 in
+                fmap mainChain (fromSpec $
+                    block1 ~~
+                        [ block4 ~~ []
+                        , block2 ~~ [ block3 ~~ [] ]
+                    ])
+                    == Right (SingleChain [block1, block2, block3])
 
     describe "toString" $
         prop "should pretty print the blockchain" $ once $

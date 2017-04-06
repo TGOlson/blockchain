@@ -1,9 +1,10 @@
 module Data.Blockchain
     ( Blockchain
+    , SingleChain(..)
     , AddBlockException(..)
     , singleton
     , addBlock
-    , longestChain
+    , mainChain
     , toString
 
     -- Testing utilities
@@ -24,7 +25,12 @@ import qualified Data.Ord                as Ord
 import Data.Blockchain.Crypto.Hash
 import Data.Blockchain.Types
 
+-- TODO: might need to have a type that represents a sub-node
+-- So that we can encode the invariant that a genesis block must exist
 data Blockchain = BlockchainNode Block [Blockchain]
+  deriving (Eq, Show)
+
+newtype SingleChain = SingleChain { unSingleChain :: [Block] }
   deriving (Eq, Show)
 
 data AddBlockException
@@ -35,6 +41,17 @@ data AddBlockException
 singleton :: Block -> Blockchain
 singleton block = BlockchainNode block []
 
+-- rules
+-- https://en.bitcoin.it/wiki/Protocol_rules#.22block.22_messages
+-- block needs to be unique (not already in chain)
+-- block needs to reference a valid parent
+-- transaction txins need to reference valid txouts from other transactions in same chain
+-- transaction txout need to be less the sum of input txouts
+-- transaction txin need to have valid signature by input txouts
+
+-- addBlockInternal :: Block -> Blockchain -> Either AddBlockException (Blockchain, SingleChain)
+
+-- TODO: probably needs `prevChain :: [Block]` in order to validate transactions
 addBlock :: Block -> Blockchain -> Either AddBlockException Blockchain
 addBlock newBlock (BlockchainNode block blockchains) =
     -- TODO: block headers should contain a hash of themselves,
@@ -73,14 +90,36 @@ addBlock newBlock (BlockchainNode block blockchains) =
         -- However, we do expect our reducing function to monitor for that invariant during original insert.
         blockAlreadyExists = BlockAlreadyExists `elem` exceptions
 
-flatten :: Blockchain -> [[Block]]
+flatten :: Blockchain -> [SingleChain]
 flatten = \case
-    BlockchainNode block [] -> [[block]]
-    BlockchainNode block blockchains  -> (\bc -> block : bc) <$> concatMap flatten blockchains
+    BlockchainNode block []  -> pure $ SingleChain (pure block)
+    BlockchainNode block bcs -> (\(SingleChain bc) -> SingleChain (block : bc)) <$> concatMap flatten bcs
+
+-- TODO: need to compare difficulty if two chains have the same length
+mainChain :: Blockchain -> SingleChain
+mainChain = List.maximumBy (Ord.comparing (length . unSingleChain)) . flatten
+
+unspentTransactionOutputs :: SingleChain -> Map PubKey Int
+unspentTransactionOutputs (SingleChain blocks) = undefined
+
+-- txout has value and pubkey
+-- txin has prev tx hash and txout index
+-- algo: set map pubkey value per txout
+-- if a txout is referenced in a txin, delete pubkey from map
+-- recurse adding new txout
+-- or maybe more directly
+-- get all txout, and txin as seperate lists
+-- build global map of (txhash, txoutIdx) -> TxOut
+-- delete all outputs that are referenced in txin
+-- Is this better or worse? Do we lose ordering invariants?
+-- Or, does this function even care about that?
 
 
-longestChain :: Blockchain -> [Block]
-longestChain = List.maximumBy (Ord.comparing length) . flatten
+-- findChain :: Block -> Blockchain -> Maybe SingleChain
+-- findChain targetBlock (BlockchainNode block blockchains) =
+--     if targetBlock == block
+--         then Just $ SingleChain [block]
+--         else mconcat $ fmap (findChain targetBlock) blockchains
 
 toString :: Blockchain -> String
 toString = List.intercalate "\n" . toStringLevels 0
@@ -91,6 +130,11 @@ toString = List.intercalate "\n" . toStringLevels 0
       where
         spaces = replicate level ' '
         hashString = spaces ++ show (hash $ blockHeader block)
+
+-- TestUtils
+--
+-- Provides a useful api for constructing arbitrary blockchains during testing
+-- without exposing the core Blockchain data type
 
 data BlockchainSpec = BlockchainSpec Block [BlockchainSpec]
   deriving (Eq, Show)

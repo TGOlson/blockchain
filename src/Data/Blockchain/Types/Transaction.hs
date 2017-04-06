@@ -24,9 +24,9 @@ instance Aeson.ToJSON Transaction where
         ]
 
 data TransactionIn = TransactionIn
-    { previousTransactionHash     :: Hash Transaction
+    { previousTransactionHash     :: Hash Transaction -- Hash of full Transaction
     , previousTransactionOutIndex :: Int
-    , signature                   :: Signature
+    , signature                   :: Signature -- Signature from prev transaction, using pubkey from prev transaction
     }
   deriving (Eq, Show)
 
@@ -42,7 +42,7 @@ instance Aeson.ToJSON TransactionIn where
 
 data TransactionOut = TransactionOut
     { value           :: Int
-    , signaturePubKey :: PublicKey
+    , signaturePubKey :: PublicKey -- aka. address of where funds go
     }
   deriving (Eq, Show)
 
