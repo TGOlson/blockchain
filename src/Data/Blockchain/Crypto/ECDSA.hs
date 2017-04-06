@@ -14,6 +14,7 @@ import qualified Crypto.PubKey.ECC.Generate as Crypto
 import qualified Crypto.PubKey.ECC.Types    as Crypto
 import qualified Data.Aeson                 as Aeson
 import qualified Data.ByteString            as BS
+import qualified Data.Hashable              as H
 import qualified Data.Text                  as Text
 
 data KeyPair = KeyPair
@@ -30,6 +31,9 @@ instance Aeson.ToJSON Signature where
 
 newtype PublicKey = PublicKey { unPublicKey :: Crypto.PublicKey }
   deriving (Eq, Show)
+
+instance H.Hashable PublicKey where
+    hashWithSalt _ = H.hash . show . unPublicKey
 
 instance Aeson.ToJSON PublicKey where
     toJSON = Aeson.String . Text.pack . show . unPublicKey

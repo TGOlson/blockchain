@@ -5,6 +5,7 @@ module Data.Blockchain
     , singleton
     , addBlock
     , mainChain
+    , unspentTransactionOutputs
     , toString
 
     -- Testing utilities
@@ -15,14 +16,16 @@ module Data.Blockchain
     , (~~)
     ) where
 
+import qualified Control.Arrow           as Arrow
 import qualified Data.Either             as Either (partitionEithers)
 import qualified Data.Either.Combinators as Either
 import qualified Data.Foldable           as Foldable
+import qualified Data.HashMap.Strict     as H
 import qualified Data.List               as List
 import qualified Data.Ord                as Ord
 
-
 import Data.Blockchain.Crypto.Hash
+import Data.Blockchain.Crypto.ECDSA
 import Data.Blockchain.Types
 
 -- TODO: might need to have a type that represents a sub-node
@@ -99,27 +102,30 @@ flatten = \case
 mainChain :: Blockchain -> SingleChain
 mainChain = List.maximumBy (Ord.comparing (length . unSingleChain)) . flatten
 
-unspentTransactionOutputs :: SingleChain -> Map PubKey Int
-unspentTransactionOutputs (SingleChain blocks) = undefined
+-- TODO: comment
+-- an intermediate step may be to create (HashMap TxOut (Maybe TxIn))
+-- this would also be useful for signature verification
 
--- txout has value and pubkey
--- txin has prev tx hash and txout index
--- algo: set map pubkey value per txout
--- if a txout is referenced in a txin, delete pubkey from map
--- recurse adding new txout
--- or maybe more directly
--- get all txout, and txin as seperate lists
--- build global map of (txhash, txoutIdx) -> TxOut
--- delete all outputs that are referenced in txin
--- Is this better or worse? Do we lose ordering invariants?
--- Or, does this function even care about that?
-
-
--- findChain :: Block -> Blockchain -> Maybe SingleChain
--- findChain targetBlock (BlockchainNode block blockchains) =
---     if targetBlock == block
---         then Just $ SingleChain [block]
---         else mconcat $ fmap (findChain targetBlock) blockchains
+-- TODO: tis wrong
+-- all txin are swept and then sent to txout
+-- with the rest being fees
+-- the signature of this function is correct, but the logic is not
+-- also, probably needs to return an error type, in the case of a negative value
+-- (that is, cumulative txout is more than txin value)
+unspentTransactionOutputs :: SingleChain -> H.HashMap PublicKey Int
+unspentTransactionOutputs (SingleChain blocks) =
+    toUnspectTxs $ foldr reduceTxs initialTxOutMap txIns
+  where
+    reduceTxs (TransactionIn txHash txOutIdx _sig) = H.update (Just . H.delete txOutIdx) txHash
+    toUnspectTxs :: H.HashMap (Hash Transaction) (H.HashMap Int TransactionOut) -> H.HashMap PublicKey Int
+    toUnspectTxs = H.fromList . fmap (signaturePubKey Arrow.&&& value) . concatMap H.elems . H.elems
+    txs = blocks >>= transactions
+    txIns = txs >>= transactionIn
+    -- txOuts   = transactionOut <$> txs
+    initialTxOutMap :: H.HashMap (Hash Transaction) (H.HashMap Int TransactionOut)
+    initialTxOutMap = H.fromList $ fmap (hash Arrow.&&& (innerTxOutMap . transactionOut)) txs
+      where
+        innerTxOutMap = H.fromList . zip [0..]
 
 toString :: Blockchain -> String
 toString = List.intercalate "\n" . toStringLevels 0

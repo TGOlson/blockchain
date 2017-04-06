@@ -1,9 +1,11 @@
 module Data.Blockchain.Types.Transaction
-    ( Transaction
+    ( Transaction(..)
+    , TransactionIn(..)
+    , TransactionOut(..)
     ) where
 
-import qualified Data.Aeson  as Aeson
-import           Data.Aeson  ((.=))
+import qualified Data.Aeson   as Aeson
+import           Data.Aeson   ((.=))
 
 import Data.Blockchain.Crypto.ECDSA
 import Data.Blockchain.Crypto.Hash

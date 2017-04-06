@@ -13,12 +13,16 @@ import qualified Crypto.Hash             as Crypto
 import qualified Data.Aeson              as Aeson
 import qualified Data.ByteString         as BS
 import qualified Data.ByteString.Lazy    as Lazy
+import qualified Data.Hashable           as H
 import qualified Data.Text               as Text
 import qualified Data.ByteArray.Encoding as Byte
 
 
 data Hash a = Hash { rawHash :: Crypto.Digest Crypto.SHA256 }
   deriving (Eq, Ord)
+
+instance H.Hashable (Hash a) where
+    hashWithSalt _ = H.hash . show
 
 type ByteStringHash = Hash BS.ByteString
 

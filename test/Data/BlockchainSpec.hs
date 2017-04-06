@@ -2,11 +2,15 @@ module Data.BlockchainSpec (spec) where
 
 import TestUtil
 
+import qualified Data.Aeson              as Aeson
+import qualified Data.ByteString.Lazy    as Lazy
 import qualified Data.Either.Combinators as Either
 import qualified Data.Foldable           as Foldable
+import qualified Data.HashMap.Strict     as H
 import qualified Data.List               as List
 
 import Data.Blockchain
+import Data.Blockchain.Crypto.ECDSA
 import Data.Blockchain.Crypto.Hash
 import Data.Blockchain.Types
 
@@ -114,6 +118,32 @@ spec = do
                         , block2 ~~ [ block3 ~~ [] ]
                     ])
                     == Right (SingleChain [block1, block2, block3])
+
+    describe "unspentTransactionOutputs" $
+        prop "should find all unspent transaction outputs" $ once $
+            \block -> ioProperty $ do
+                -- uhhh.... this is all crazy
+                -- all txout need to be used in the txin
+                (KeyPair pubKey1 privKey1) <- generate
+                (KeyPair pubKey2 _privKey2) <- generate
+
+
+                let tx1 = Transaction
+                              [ -- TODO: coinbase transaction --
+                              ]
+                              [ TransactionOut 10 pubKey1
+                              , TransactionOut 20 pubKey2 ]
+
+                -- TODO: obviously crazy, need util to create txIn
+                signature <- sign privKey1 (Lazy.toStrict $ Aeson.encode tx1)
+
+                let tx2 = Transaction
+                              [ TransactionIn (hash tx1) 1 signature ]
+                              []
+                    block' = block { transactions = [tx1, tx2]}
+                    chain  = SingleChain [block']
+
+                return $ unspentTransactionOutputs chain == H.fromList [(pubKey1, 10)]
 
     describe "toString" $
         prop "should pretty print the blockchain" $ once $
