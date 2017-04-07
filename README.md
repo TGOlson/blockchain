@@ -1,4 +1,8 @@
-Generic blockchain implementation in Haskell. Close in design to the Bitcoin blockchain, but does not fully comply to the BTC spec.
+# blockchain
+
+Generic blockchain implementation in Haskell. Very, very heavily inspired by Bitcoin blockchain, but does not fully comply to the Bitcoin blockchain spec.
+
+# references
 
 * http://www.stephendiehl.com/posts/smart_contracts.html
 * http://kadena.io/docs/Kadena-PactWhitepaper.pdf
@@ -9,28 +13,38 @@ Generic blockchain implementation in Haskell. Close in design to the Bitcoin blo
 * https://en.bitcoin.it/wiki/Hashcash
 * https://en.bitcoin.it/wiki/Genesis_block
 
-Design Specs:
+# design specs
 
 Goals:
-* enforce invariants in types (non-empty transactions, genesis blocks, coinbase transactions)
-* makes construction of arbitrary blockchains easy, but allows users to know any `Blockchain` instance is verified
-* Blocks & Transactions are never presumed to be valid unless part of a `Blockchain`
-* adding newblocks to a `Blockchain` can assume validity of existing `Blockchain`
-* inspecting unspentTransactionOutputs of a `Blockchain` can assume validity of all transactions
-  * therefore `Blockchain -> HaspMap PubKey Int` is always a valid function and is allowed to error when faced with unexpected invariants.
+* enforce invariants in types (non-empty transactions, genesis block, coinbase transactions, etc.)
+* make construction of arbitrary blockchains easy, but provide assurance any `Blockchain` instance is verified
+* `Block`s & `Transaction`s are never presumed to be valid unless part of a `Blockchain`
+* adding new blocks to a `Blockchain` can assume validity of existing `Blockchain`
+* inspecting unspent transaction outputs of a `Blockchain` can assume validity of all transactions
+  * therefore `Blockchain -> HaspMap PubKey Int` is always a valid function and is allowed to error when faced with unexpected conditions
+* creating a new blockchain with arbitrary configurations should be simple
+* blockchain should be readily serializable
 
 ```haskell
+-- preserves invariant that a blockchain must have a genesis block
+-- encodes config in blockchain
+-- no constructors or accessors are exported
+data Blockchain = Blockchain BlockchainConfig BlockchainNode
+data BlockchainNode = BlockchainNode Block [BlockchainNode]
+
 -- Allows fromjson or ad-hoc blockchain creation,
 -- while preserving invariants that all `Blockchain` instances are valid
-data UnverifiedBlockchain = UnverifiedBlockchain Block [Blockchain]
+data UnverifiedBlockchain = UnverifiedBlockchain BlockchainConfig UnverifiedBlockchainNode
+data UnverifiedBlockchainNode = UnverifiedBlockchainNode Block [UnverifiedBlockchainNode]
 instance FromJSON UnverifiedBlockchain where ...
 
--- preserves invariant that a blockchain must have a genesis block
--- allowing the genesis block to have special properties that would make normal blocks invalid
--- aka. no prev. block hash
--- no constructors or accessors are exported
-data Blockchain = Blockchain GenesisBlock [BlockchainNode]
-data BlockchainNode = BlockchainNode Block [BlockchainNode]
+-- gives users assurance that all `Blockchain` instances are valid
+-- that is - correctly solved & ordered blocks, transactions, etc.
+-- Note: difficulty is determined by block header
+-- block header difficulty must be validated upon block insertion
+-- block header difficulty is recalculated every N blocks to desired target solve time
+-- using a known formula, so that new blocks always know the target difficulty
+verify :: UnverifiedBlockchain -> Either BlockchainVerificationException Blockchain
 
 -- mines a genesis block, and encodes configuration for blockchain
 -- including:
@@ -41,31 +55,15 @@ data BlockchainNode = BlockchainNode Block [BlockchainNode]
 --  mining reward transitions
 createBlockchain :: BlockchainConfig -> Blockchain
 
--- construction
-mineGenesisBlock :: Difficulty -> GenesisBlock
-blockchainFromGenesisBlock :: GenesisBlock -> Blockchain
-
--- gives users assurance that all `Blockchain` instances are valid
--- that is - correctly solved & ordered blocks, transactions, etc.
--- Note: difficulty is determined by block header
--- block header difficulty must be validated upon block insertion
--- block header difficulty is recalculated every N blocks to desired target solve time
--- using a known formula, so that new blocks always know the target difficulty
-verify :: UnverifiedBlockchain -> Either BlockchainVerificationException Blockchain
-
 -- requires all blocks to have a coinbase transaction
+-- this means transaction list can be empty
+-- Note: genesis block is essentially a block with no transactions and
+-- a made up prevBlockHeaderHash
 data Block = Block BlockHeader CoinbaseTransaction [Transaction]
 
 -- insertion
-addBlock :: Blockchain -> Either AddBlockException Blockchain
+addBlock :: Block -> Blockchain -> Either AddBlockException Blockchain
 
--- Allows GenesisBlock to not have a list of transactions
--- and to have a special header, where prevBlockHeaderHash is not included
-data GenesisBlock = GenesisBlock GenesisBlockHeader CoinbaseTransaction
-
--- Does this work? A transaction needs to have a hash specifying that it is a coinbase transaction
--- with this current model, there is no way for a TransactionIn.PreviousTransactionHash to specify a coinbase transaction
--- could
 data CoinbaseTransaction = CoinbaseTransaction (NonEmpty TransactionOut)
 data Transaction = Transaction (NonEmpty TransactionIn) (NonEmpty TransactionOut)
 
@@ -84,9 +82,20 @@ data TransactionOut = TransactionOut
 -- for theoretical "partial-nodes"
 validateTransaction :: Blockchain -> Transaction -> Either TransactionException ()
 
+-- transaction creation
+createTransaction
+    :: [(PrivateKey, PubKey)] -> [(PubKey, Int)] -> Int -> Blockchain
+    -> Either CreateTransactionException Transaction
+createTransaction srcAddresses targetAddresses fee blockchain = ...
+
+createSimpleTransaction
+    :: PrivateKey -> PubKey
+    :: PublicKey -> Int -> Int -> Blockchain
+    -> Either CreateTransactionException Transaction
+createSimpleTransaction srcAddress targetAddress fee blockchain = ...
 ```
 
-TODO:
+# todo
 
 Now
 * get current state of blockchain addresses `Blockchain -> Map String Int`
