@@ -16,7 +16,7 @@ instance Aeson.ToJSON (HashTreeRoot a) where
 
 
 -- Note: hash tree constructed with extra leaves at end of tree.
--- This is NOT compatable with the Bitcoin implementation.
+-- This is NOT compatible with the Bitcoin implementation.
 --      ┌───┴──┐       ┌────┴───┐         ┌─────┴─────┐
 --   ┌──┴──┐   │    ┌──┴──┐     │      ┌──┴──┐     ┌──┴──┐
 -- ┌─┴─┐ ┌─┴─┐ │  ┌─┴─┐ ┌─┴─┐ ┌─┴─┐  ┌─┴─┐ ┌─┴─┐ ┌─┴─┐   │
