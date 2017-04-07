@@ -44,6 +44,15 @@ data AddBlockException
 singleton :: Block -> Blockchain
 singleton block = BlockchainNode block []
 
+
+-- Check if the previous block referenced by the block exists and is valid.
+-- Check that the timestamp of the block is greater than that of the previous block[2] and less than 2 hours into the future
+-- Check that the proof of work on the block is valid.
+-- Let S[0] be the state at the end of the previous block.
+-- Suppose TX is the block's transaction list with n transactions. For all i in 0...n-1, set S[i+1] = APPLY(S[i],TX[i]) If any application returns an error, exit and return false.
+-- Return true, and register S[n] as the state at the end of this block.
+
+
 -- rules
 -- https://en.bitcoin.it/wiki/Protocol_rules#.22block.22_messages
 -- block needs to be unique (not already in chain)
@@ -53,6 +62,9 @@ singleton block = BlockchainNode block []
 -- transaction txin need to have valid signature by input txouts
 
 -- addBlockInternal :: Block -> Blockchain -> Either AddBlockException (Blockchain, SingleChain)
+
+-- verify :: UnverifiedBlockchain -> Either BlockchainException Blockchain
+--
 
 -- TODO: probably needs `prevChain :: [Block]` in order to validate transactions
 addBlock :: Block -> Blockchain -> Either AddBlockException Blockchain
@@ -65,6 +77,7 @@ addBlock newBlock (BlockchainNode block blockchains) =
             -- But first make sure it's not already in the leaves
             if any (\(BlockchainNode blk _) -> blk == newBlock) blockchains
                 then Left BlockAlreadyExists
+                -- TODO: need to verify transactions fit into blockchain
                 else Right (BlockchainNode block $ singleton newBlock : blockchains)
         else
             let eBlockchains = fmap (\bs -> Either.mapLeft (\e -> (e, bs)) (addBlock newBlock bs)) blockchains in
@@ -85,7 +98,7 @@ addBlock newBlock (BlockchainNode block blockchains) =
         -- Note: this will cause re-ordering, where newest chain will always appear first
         -- in list of subsequent chains.
         (False, [x]) -> Right (x : oldBlockChains)
-        (_, _)       -> error "Unexpected error - block can be interested into multiple chains"
+        (_, _)       -> error "Unexpected error - block can be inserted into multiple chains"
       where
         (leftResults, rightResults) = Either.partitionEithers results
         (exceptions, oldBlockChains) = unzip leftResults
@@ -106,26 +119,48 @@ mainChain = List.maximumBy (Ord.comparing (length . unSingleChain)) . flatten
 -- an intermediate step may be to create (HashMap TxOut (Maybe TxIn))
 -- this would also be useful for signature verification
 
+-- type TransactionMap = H.HashMap (Hash Transaction) (H.HashMap Int TransactionOut)
+--
+-- data TransactionListException
+--     = ReferencedTransactionOutDoesNotExist [TransactionIn]
+--     | InvalidSignature [TransactionIn]
+--     | InputValuesLessThanOutput [Transaction]
+--
+-- transactionMap :: [Transaction] -> Either [TransactionListException] TransactionMap
+-- transactionMap = undefined
+--
+
+-- data TransactionIn = TransactionIn
+--     { previousTransactionHash     :: Hash Transaction -- Hash of full Transaction
+--     , previousTransactionOutIndex :: Int
+--     , signature                   :: Signature -- Signature from prev transaction, using pubkey from prev transaction
+--     }
+--
+-- data TransactionOut = TransactionOut
+--     { value           :: Int
+--     , signaturePubKey :: PublicKey -- aka. address of where funds go
+--     }
+
 -- TODO: tis wrong
 -- all txin are swept and then sent to txout
 -- with the rest being fees
 -- the signature of this function is correct, but the logic is not
 -- also, probably needs to return an error type, in the case of a negative value
 -- (that is, cumulative txout is more than txin value)
-unspentTransactionOutputs :: SingleChain -> H.HashMap PublicKey Int
-unspentTransactionOutputs (SingleChain blocks) =
-    toUnspectTxs $ foldr reduceTxs initialTxOutMap txIns
-  where
-    reduceTxs (TransactionIn txHash txOutIdx _sig) = H.update (Just . H.delete txOutIdx) txHash
-    toUnspectTxs :: H.HashMap (Hash Transaction) (H.HashMap Int TransactionOut) -> H.HashMap PublicKey Int
-    toUnspectTxs = H.fromList . fmap (signaturePubKey Arrow.&&& value) . concatMap H.elems . H.elems
-    txs = blocks >>= transactions
-    txIns = txs >>= transactionIn
-    -- txOuts   = transactionOut <$> txs
-    initialTxOutMap :: H.HashMap (Hash Transaction) (H.HashMap Int TransactionOut)
-    initialTxOutMap = H.fromList $ fmap (hash Arrow.&&& (innerTxOutMap . transactionOut)) txs
-      where
-        innerTxOutMap = H.fromList . zip [0..]
+unspentTransactionOutputs :: TransactionMap -> H.HashMap PublicKey Int
+unspentTransactionOutputs = H.fromList . fmap (signaturePubKey Arrow.&&& value) . concatMap H.elems . H.elems
+  --   toUnspectTxs $ foldr reduceTxs initialTxOutMap txIns
+  -- where
+  --   reduceTxs (TransactionIn txHash txOutIdx _sig) = H.update (Just . H.delete txOutIdx) txHash
+  --   toUnspectTxs :: H.HashMap (Hash Transaction) (H.HashMap Int TransactionOut) -> H.HashMap PublicKey Int
+  --   toUnspectTxs =
+  --   txs = blocks >>= transactions
+  --   txIns = txs >>= transactionIn
+  --   -- txOuts   = transactionOut <$> txs
+  --   initialTxOutMap :: H.HashMap (Hash Transaction) (H.HashMap Int TransactionOut)
+  --   initialTxOutMap = H.fromList $ fmap (hash Arrow.&&& (innerTxOutMap . transactionOut)) txs
+  --     where
+  --       innerTxOutMap = H.fromList . zip [0..]
 
 toString :: Blockchain -> String
 toString = List.intercalate "\n" . toStringLevels 0
