@@ -1,28 +1,21 @@
 module Data.Blockchain.Types.Block
-    ( Block
-    , blockHeader
-    , transactions
-    , makeBlock
-    , validateBlock
-    , isValidBlockDifficulty
-    , incHeaderNonce
+    ( Block(..)
+    , BlockHeader(..)
     ) where
 
-import qualified Control.Monad      as M
-import qualified Data.Aeson         as Aeson
-import           Data.Aeson         ((.=))
-import qualified Data.Time.Clock    as Time
+import qualified Data.Aeson      as Aeson
+import           Data.Aeson      ((.=))
+import qualified Data.Time.Clock as Time
 
-import Data.Blockchain.Crypto.Hash
-import Data.Blockchain.Crypto.HashTree
-import Data.Blockchain.Types.BlockHeader
-import Data.Blockchain.Types.Difficulty
-import Data.Blockchain.Types.Transaction
-
+import qualified Data.Blockchain.Crypto            as Crypto
+import           Data.Blockchain.Crypto.HashTree
+import           Data.Blockchain.Types.Difficulty
+import           Data.Blockchain.Types.Transaction
 
 data Block = Block
-    { blockHeader  :: BlockHeader
-    , transactions :: [Transaction]
+    { blockHeader         :: BlockHeader
+    , coinbaseTransaction :: CoinbaseTransaction
+    , transactions        :: [Transaction]
     }
   deriving (Eq, Show)
 
@@ -30,33 +23,31 @@ data Block = Block
 instance Aeson.ToJSON Block where
     toJSON Block{..} = Aeson.object
         [ "header"       .= blockHeader
+        , "coinbase"     .= coinbaseTransaction
         , "transactions" .= transactions
         ]
 
-data BlockValidityException
-    = HeaderDoesNotUseExpectedDifficulty
-    | DoesNotMeetDifficulty
-    | IncorrectHashTreeRoot
+data BlockHeader = BlockHeader
+    { version                 :: Int
+    , prevBlockHeaderHash     :: Crypto.Hash BlockHeader
+    , coinbaseTransactionHash :: Crypto.Hash CoinbaseTransaction
+    , transactionHashTreeRoot :: HashTreeRoot [Transaction]
+    , time                    :: Time.UTCTime
+    , difficulty              :: Difficulty
+    , nonce                   :: Int
+    }
+  deriving (Eq, Show)
 
-makeBlock :: Hash BlockHeader -> Time.UTCTime -> Difficulty -> Int -> [Transaction] -> Block
-makeBlock prevBlockHeaderHash time difficulty nonce transactions = Block header transactions
-  where
-    version = 0
-    transactionHashTreeRoot = hashTreeRoot transactions
-    header = BlockHeader{..}
+instance Crypto.Hashable BlockHeader where
+    hash = Crypto.hashJSON
 
-validateBlock :: Difficulty -> Block -> Maybe BlockValidityException
-validateBlock diff block@(Block header transactions) = either Just (const Nothing) $ do
-    M.unless usesRequiredDifficulty              $ Left HeaderDoesNotUseExpectedDifficulty
-    M.unless (isValidBlockDifficulty diff block) $ Left DoesNotMeetDifficulty
-    M.unless hasCorrectTransactionHashTreeRoot   $ Left IncorrectHashTreeRoot
-  where
-    usesRequiredDifficulty = diff == difficulty header
-    hasCorrectTransactionHashTreeRoot = hashTreeRoot transactions == transactionHashTreeRoot header
-
-isValidBlockDifficulty :: Difficulty -> Block -> Bool
-isValidBlockDifficulty (Difficulty difficultyHash) (Block header _) =
-    rawHash (hash header) < rawHash difficultyHash
-
-incHeaderNonce :: Block -> Block
-incHeaderNonce (Block header transactions) = Block (incNonce header) transactions
+instance Aeson.ToJSON BlockHeader where
+    toJSON BlockHeader{..} = Aeson.object
+        [ "version"                 .= version
+        , "prevBlockHeaderHash"     .= prevBlockHeaderHash
+        , "coinbaseTransactionHash" .= coinbaseTransactionHash
+        , "transactionHashTreeRoot" .= transactionHashTreeRoot
+        , "time"                    .= time
+        , "difficulty"              .= difficulty
+        , "nonce"                   .= nonce
+        ]
