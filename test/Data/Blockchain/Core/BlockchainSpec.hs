@@ -1,4 +1,4 @@
-module Data.BlockchainSpec (spec) where
+module Data.Blockchain.Core.BlockchainSpec (spec) where
 
 import TestUtil
 

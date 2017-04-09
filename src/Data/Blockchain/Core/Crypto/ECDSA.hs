@@ -1,4 +1,4 @@
-module Data.Blockchain.Crypto.ECDSA
+module Data.Blockchain.Core.Crypto.ECDSA
     ( KeyPair(..)
     , Signature
     , PublicKey(..)

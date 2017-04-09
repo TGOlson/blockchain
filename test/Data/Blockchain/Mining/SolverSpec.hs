@@ -1,4 +1,4 @@
-module Data.Blockchain.SolverSpec (spec) where
+module Data.Blockchain.Mining.SolverSpec (spec) where
 
 import TestUtil
 

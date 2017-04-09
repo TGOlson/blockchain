@@ -1,4 +1,4 @@
-module Data.Blockchain.Crypto.Hash
+module Data.Blockchain.Core.Crypto.Hash
     ( Hash
     , rawHash
     , ByteStringHash
@@ -6,6 +6,7 @@ module Data.Blockchain.Crypto.Hash
     , hashJSON
     , Hashable(..)
     , fromByteString
+    , unsafeFromByteString
     , toByteStringHash
     ) where
 
@@ -14,6 +15,7 @@ import qualified Data.Aeson              as Aeson
 import qualified Data.ByteString         as BS
 import qualified Data.ByteString.Lazy    as Lazy
 import qualified Data.Hashable           as H
+import qualified Data.Maybe              as Maybe
 import qualified Data.Text               as Text
 import qualified Data.ByteArray.Encoding as Byte
 
@@ -42,6 +44,9 @@ fromByteString :: BS.ByteString -> Maybe (Hash a)
 fromByteString bs = case Byte.convertFromBase Byte.Base16 bs of
     Left _    -> Nothing
     Right bs' -> Hash <$> Crypto.digestFromByteString (bs' :: BS.ByteString)
+
+unsafeFromByteString :: BS.ByteString -> Hash a
+unsafeFromByteString = Maybe.fromMaybe (error "Invalid hash string") . fromByteString
 
 class Hashable a where
     hash :: a -> Hash a

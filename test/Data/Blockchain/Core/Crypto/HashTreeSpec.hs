@@ -1,12 +1,11 @@
-module Data.Blockchain.Crypto.HashTreeSpec (spec) where
+module Data.Blockchain.Core.Crypto.HashTreeSpec (spec) where
 
 import TestUtil
 
 import qualified Data.ByteString       as BS
 import qualified Data.ByteString.Char8 as Char8
 
-import Data.Blockchain.Crypto.Hash
-import Data.Blockchain.Crypto.HashTree
+import Data.Blockchain.Core.Crypto
 
 testData :: [BS.ByteString]
 testData = replicate (numBytes `div` blockSize) block ++ [partialBlock]

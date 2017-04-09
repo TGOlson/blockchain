@@ -37,16 +37,16 @@ dependencies:
 library:
   source-dirs: src
   exposed-modules:
-    - Data.Blockchain
-    - Data.Blockchain.Crypto
-    - Data.Blockchain.Crypto.ECDSA
-    - Data.Blockchain.Crypto.Hash
-    - Data.Blockchain.Crypto.HashTree
-    - Data.Blockchain.Solver
-    - Data.Blockchain.Types
-    - Data.Blockchain.Types.Block
-    - Data.Blockchain.Types.Difficulty
-    - Data.Blockchain.Types.Transaction
+    - Data.Blockchain.Core.Blockchain
+    - Data.Blockchain.Core.Crypto
+    - Data.Blockchain.Core.Crypto.ECDSA
+    - Data.Blockchain.Core.Crypto.Hash
+    - Data.Blockchain.Core.Crypto.HashTree
+    - Data.Blockchain.Core.Types
+    - Data.Blockchain.Core.Types.Block
+    - Data.Blockchain.Core.Types.Difficulty
+    - Data.Blockchain.Core.Types.Transaction
+    - Data.Blockchain.Mining.Block
 
 tests:
   spec:

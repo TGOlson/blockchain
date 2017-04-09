@@ -1,4 +1,4 @@
-module Data.Blockchain.Types.Transaction
+module Data.Blockchain.Core.Types.Transaction
     ( Transaction(..)
     , CoinbaseTransaction(..)
     , TransactionIn(..)
@@ -10,11 +10,12 @@ import qualified Data.Aeson         as Aeson
 import           Data.Aeson         ((.=))
 import qualified Data.List.NonEmpty as NonEmpty
 
-import qualified Data.Blockchain.Crypto as Crypto
+import qualified Data.Blockchain.Core.Crypto as Crypto
 
 data Transaction = Transaction
     { transactionIn  :: NonEmpty.NonEmpty TransactionIn
     , transactionOut :: NonEmpty.NonEmpty TransactionOut
+    -- TODO: arbitrary bytes?
     }
   deriving (Eq, Show)
 

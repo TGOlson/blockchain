@@ -15,9 +15,9 @@ import qualified Data.Maybe                 as Maybe
 import qualified Data.Time.Clock            as Time
 import qualified Data.Time.Calendar         as Time
 
-import Data.Blockchain.Crypto.Hash
+import Data.Blockchain.Core.Crypto
 -- import Data.Blockchain.Crypto.HashTree
-import Data.Blockchain.Types
+import Data.Blockchain.Core.Types
 
 -- Used in some tests to filter generated difficulties that would be too hard to solve.
 maxDifficulty :: Difficulty

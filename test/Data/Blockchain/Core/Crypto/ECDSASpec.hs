@@ -1,8 +1,8 @@
-module Data.Blockchain.Crypto.ECDSASpec (spec) where
+module Data.Blockchain.Core.Crypto.ECDSASpec (spec) where
 
 import TestUtil
 
-import Data.Blockchain.Crypto.ECDSA
+import Data.Blockchain.Core.Crypto.ECDSA
 
 spec :: Spec
 spec =

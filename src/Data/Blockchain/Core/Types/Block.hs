@@ -1,4 +1,4 @@
-module Data.Blockchain.Types.Block
+module Data.Blockchain.Core.Types.Block
     ( Block(..)
     , BlockHeader(..)
     ) where
@@ -7,10 +7,9 @@ import qualified Data.Aeson      as Aeson
 import           Data.Aeson      ((.=))
 import qualified Data.Time.Clock as Time
 
-import qualified Data.Blockchain.Crypto            as Crypto
-import           Data.Blockchain.Crypto.HashTree
-import           Data.Blockchain.Types.Difficulty
-import           Data.Blockchain.Types.Transaction
+import qualified Data.Blockchain.Core.Crypto            as Crypto
+import           Data.Blockchain.Core.Types.Difficulty
+import           Data.Blockchain.Core.Types.Transaction
 
 data Block = Block
     { blockHeader         :: BlockHeader
@@ -31,7 +30,7 @@ data BlockHeader = BlockHeader
     { version                 :: Int
     , prevBlockHeaderHash     :: Crypto.Hash BlockHeader
     , coinbaseTransactionHash :: Crypto.Hash CoinbaseTransaction
-    , transactionHashTreeRoot :: HashTreeRoot [Transaction]
+    , transactionHashTreeRoot :: Crypto.HashTreeRoot [Transaction]
     , time                    :: Time.UTCTime
     , difficulty              :: Difficulty
     , nonce                   :: Int

@@ -1,5 +1,6 @@
-module Data.Blockchain
+module Data.Blockchain.Core.Blockchain
     ( Blockchain
+    , blockchainConfig
     , BlockchainConfig(..)
     , UnverifiedBlockchain(..)
     , UnverifiedBlockchainNode(..)
@@ -8,6 +9,8 @@ module Data.Blockchain
     , createBlockchain
     , verify
     , addBlock
+    , currentReward
+    , longestChain
     , toString
     ) where
 
@@ -17,14 +20,22 @@ import qualified Data.Either.Combinators as Either
 import qualified Data.Foldable           as Foldable
 import qualified Data.HashMap.Strict     as H
 import qualified Data.List               as List
--- import qualified Data.Ord                as Ord
+import qualified Data.List.NonEmpty      as NonEmpty
+import qualified Data.Ord                as Ord
 
-import Data.Blockchain.Crypto.Hash
+import Data.Blockchain.Core.Crypto.Hash
 -- import Data.Blockchain.Crypto.ECDSA
-import Data.Blockchain.Types
+import Data.Blockchain.Core.Types
 
-data Blockchain     = Blockchain BlockchainConfig BlockchainNode
+data Blockchain = Blockchain
+    { _config :: BlockchainConfig
+    , _node   :: BlockchainNode
+    }
+
 data BlockchainNode = BlockchainNode Block [BlockchainNode]
+
+blockchainConfig :: Blockchain -> BlockchainConfig
+blockchainConfig (Blockchain config _) = config
 
 -- instance ToJSON Blockchain where
 
@@ -39,7 +50,11 @@ data BlockchainConfig = BlockchainConfig
     , miningRewardTransitionMap     :: H.HashMap Int Int
     }
 
-data UnverifiedBlockchain     = UnverifiedBlockchain BlockchainConfig UnverifiedBlockchainNode
+data UnverifiedBlockchain = UnverifiedBlockchain
+    { _uConfig :: BlockchainConfig
+    , _uNode   :: UnverifiedBlockchainNode
+    }
+
 data UnverifiedBlockchainNode = UnverifiedBlockchainNode Block [UnverifiedBlockchainNode]
 
 -- TODO: serialization
@@ -76,6 +91,34 @@ verify (UnverifiedBlockchain config (UnverifiedBlockchainNode genesisBlock nodes
 -- with the addition of verifying the transactions fit into the target chain
 addBlock :: Block -> Blockchain -> Either AddBlockException Blockchain
 addBlock = undefined
+
+-- Config parsing --
+currentReward :: Blockchain -> Int
+currentReward chain@(Blockchain config _) =
+    case currentBounds of
+        []     -> initialMiningReward config
+        bounds -> fst (minimum bounds)
+  where
+    currentBounds = filter (\(height, _) -> numBlocks <= height) rewardBounds
+    numBlocks     = chainLength chain
+    rewardBounds  = H.toList $ miningRewardTransitionMap config
+
+-- Chain inspection --
+
+chainLength :: Blockchain -> Int
+chainLength = length . longestChain
+
+-- TODO: need to compare difficulty if two chains have the same length
+longestChain :: Blockchain -> NonEmpty.NonEmpty Block
+longestChain = List.maximumBy (Ord.comparing length) . flatten
+
+flatten :: Blockchain -> NonEmpty.NonEmpty (NonEmpty.NonEmpty Block)
+flatten (Blockchain _ node) = flattenInternal node
+  where
+    flattenInternal :: BlockchainNode -> NonEmpty.NonEmpty (NonEmpty.NonEmpty Block)
+    flattenInternal = \case
+        BlockchainNode block []  -> pure $ pure block
+        BlockchainNode block bcs -> NonEmpty.cons block <$> (NonEmpty.fromList bcs >>= flattenInternal)
 
 toString :: Blockchain -> String
 toString (Blockchain _ node) = List.intercalate "\n" $ toStringLevels 0 node
@@ -149,11 +192,3 @@ _addBlockOld bk (Blockchain config node) = Blockchain config <$> addBlockInterna
             -- However, we do expect our reducing function to monitor for that invariant during original insert.
             blockAlreadyExists = BlockAlreadyExists `elem` exceptions
 --
--- flatten :: Blockchain -> [SingleChain]
--- flatten = \case
---     BlockchainNode block []  -> pure $ SingleChain (pure block)
---     BlockchainNode block bcs -> (\(SingleChain bc) -> SingleChain (block : bc)) <$> concatMap flatten bcs
---
--- TODO: need to compare difficulty if two chains have the same length
--- mainChain :: Blockchain -> SingleChain
--- mainChain = List.maximumBy (Ord.comparing (length . unSingleChain)) . flatten

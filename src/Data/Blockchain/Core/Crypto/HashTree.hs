@@ -1,4 +1,4 @@
-module Data.Blockchain.Crypto.HashTree
+module Data.Blockchain.Core.Crypto.HashTree
     ( HashTreeRoot
     , unHashTreeRoot
     , hashTreeRoot
@@ -6,7 +6,7 @@ module Data.Blockchain.Crypto.HashTree
 
 import qualified Data.Aeson as Aeson
 
-import Data.Blockchain.Crypto.Hash
+import Data.Blockchain.Core.Crypto.Hash
 
 data HashTreeRoot a = HashTreeRoot { unHashTreeRoot :: ByteStringHash }
   deriving (Eq, Ord, Show)

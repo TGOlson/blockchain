@@ -2,15 +2,15 @@ module Main where
 
 import qualified Test.Hspec as Hspec
 
-import qualified Data.BlockchainSpec
-import qualified Data.Blockchain.SolverSpec
-import qualified Data.Blockchain.Crypto.ECDSASpec
-import qualified Data.Blockchain.Crypto.HashTreeSpec
+import qualified Data.Blockchain.Core.BlockchainSpec
+import qualified Data.Blockchain.Core.Crypto.ECDSASpec
+import qualified Data.Blockchain.Core.Crypto.HashTreeSpec
+import qualified Data.Blockchain.Mining.SolverSpec
 
 main :: IO ()
 main = mapM_ Hspec.hspec
-    [ Data.BlockchainSpec.spec
-    , Data.Blockchain.SolverSpec.spec
-    , Data.Blockchain.Crypto.ECDSASpec.spec
-    , Data.Blockchain.Crypto.HashTreeSpec.spec
+    [ Data.Blockchain.Core.BlockchainSpec.spec
+    , Data.Blockchain.Core.Crypto.ECDSASpec.spec
+    , Data.Blockchain.Core.Crypto.HashTreeSpec.spec
+    , Data.Blockchain.Mining.SolverSpec.spec
     ]
