@@ -48,7 +48,6 @@ data BlockchainConfig = BlockchainConfig
     , initialMiningReward           :: Int
     -- Defines block heights where reward changes
     -- An empty map means the current reward is always the initial reward
-    , difficultyTransitionMap     :: H.HashMap Int Int
     , miningRewardTransitionMap     :: H.HashMap Int Int
     }
 
@@ -80,7 +79,7 @@ verify (UnverifiedBlockchain config (UnverifiedBlockchainNode genesisBlock nodes
     verifyGenesisBlock genesisBlock
     Either.mapLeft AddBlockVerificationException $ Foldable.foldrM addBlock blockchainHead blocks
   where
-    -- TODO: can probably made generic for any block to config verifications
+    -- TODO: can probably be made generic for any block to config verifications
     verifyGenesisBlock (Block _header _coinbase txs) = do
         M.unless (difficulty (blockHeader genesisBlock) == initialDifficulty config) $ Left (GenesisBlockException "incorrect difficulty")
         M.unless (null txs) $ Left (GenesisBlockException "expected no transactions")
@@ -105,31 +104,23 @@ currentReward chain@(Blockchain config _) =
     numBlocks     = chainLength chain
     rewardBounds  = H.toList $ miningRewardTransitionMap config
 
+-- TODO: find current difficulty from chain length
 currentDifficulty :: Blockchain -> Difficulty
-currentDifficulty chain@(Blockchain config _) =
-    if length blocks < difficultyRecalculationHeight config
-        then initialDifficulty config
-        else undefined
-    -- case l of
-    --     []     -> initialMiningReward config
-    --     bounds -> fst (minimum bounds)
-  where
-    blocks = longestChain chain
-    -- currentBounds = filter (\(height, _) -> numBlocks <= height) rewardBounds
-    -- rewardBounds  = H.toList $ miningRewardTransitionMap config
-
-    -- { initialDifficulty             :: Difficulty
-    -- , targetMillisPerBlock          :: Int
-    -- , difficultyRecalculationHeight :: Int
+currentDifficulty (Blockchain config _) = initialDifficulty config
 
 -- Chain inspection --
 
 chainLength :: Blockchain -> Int
 chainLength = length . longestChain
 
--- TODO: need to compare difficulty if two chains have the same length
 longestChain :: Blockchain -> NonEmpty.NonEmpty Block
-longestChain = List.maximumBy (Ord.comparing length) . flatten
+longestChain = List.maximumBy lengthOrDifficulty . flatten
+  where
+    lengthOrDifficulty chain1 chain2 =
+        case Ord.comparing length chain1 chain2 of
+            EQ -> Ord.comparing chainDifficulty chain1 chain2
+            x  -> x
+    chainDifficulty = foldr (\block y -> unDifficulty (difficulty (blockHeader block)) + y) 0
 
 flatten :: Blockchain -> NonEmpty.NonEmpty (NonEmpty.NonEmpty Block)
 flatten (Blockchain _ node) = flattenInternal node
@@ -210,4 +201,3 @@ _addBlockOld bk (Blockchain config node) = Blockchain config <$> addBlockInterna
             -- Note: this ignores invariant where multiple `BlockAlreadyExists` errors are found
             -- However, we do expect our reducing function to monitor for that invariant during original insert.
             blockAlreadyExists = BlockAlreadyExists `elem` exceptions
---

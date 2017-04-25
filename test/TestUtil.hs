@@ -2,7 +2,6 @@
 
 module TestUtil
     ( module X
-    , maxDifficulty
     , unsafefromByteString
     ) where
 
@@ -20,16 +19,11 @@ import Data.Blockchain.Core.Crypto
 import Data.Blockchain.Core.Types
 
 -- Used in some tests to filter generated difficulties that would be too hard to solve.
-maxDifficulty :: Difficulty
-maxDifficulty = Difficulty $ unsafefromByteString $ BS.append "0000" $ BS.replicate 60 'f'
+-- maxDifficulty :: Difficulty
+-- maxDifficulty = Difficulty $ unsafefromByteString $ BS.append "0000" $ BS.replicate 60 'f'
 
 unsafefromByteString :: BS.ByteString -> Hash a
 unsafefromByteString = Maybe.fromMaybe (error "Invalid hash string") . fromByteString
-
-11111111111111111111111111111111111111111111111111111111
-
-7588434568167516867083724502544362041164048445062754364325852767958586950953205760
-1797329777810042652977801005801308711575809628169371498740240683281
 
 -- Instances -------------------------------------------------------------------------------------------------
 
