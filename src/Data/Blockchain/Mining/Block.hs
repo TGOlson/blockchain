@@ -67,10 +67,10 @@ mineHeader prevBlockHeaderHash coinbaseTransactionHash transactionHashTreeRoot d
             else mineHeaderInternal (incNonce header)
 
 isValidDifficulty :: Blockchain.BlockHeader -> Bool
-isValidDifficulty header = rawHeaderHash < rawDifficultyHash
+isValidDifficulty header = headerHashInteger < difficulty
   where
-    rawHeaderHash     = Crypto.rawHash (Crypto.hash header)
-    rawDifficultyHash = Crypto.rawHash (Blockchain.unDifficulty (Blockchain.difficulty header))
+    headerHashInteger = Crypto.hashToInteger (Crypto.hash header)
+    difficulty        = Blockchain.unDifficulty (Blockchain.difficulty header)
 
 incNonce :: Blockchain.BlockHeader -> Blockchain.BlockHeader
 incNonce header = header { Blockchain.nonce = Blockchain.nonce header + 1 }

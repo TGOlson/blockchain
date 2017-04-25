@@ -10,6 +10,7 @@ module Data.Blockchain.Core.Blockchain
     , verify
     , addBlock
     , currentReward
+    , currentDifficulty
     , longestChain
     , toString
     ) where
@@ -47,6 +48,7 @@ data BlockchainConfig = BlockchainConfig
     , initialMiningReward           :: Int
     -- Defines block heights where reward changes
     -- An empty map means the current reward is always the initial reward
+    , difficultyTransitionMap     :: H.HashMap Int Int
     , miningRewardTransitionMap     :: H.HashMap Int Int
     }
 
@@ -92,7 +94,7 @@ verify (UnverifiedBlockchain config (UnverifiedBlockchainNode genesisBlock nodes
 addBlock :: Block -> Blockchain -> Either AddBlockException Blockchain
 addBlock = undefined
 
--- Config parsing --
+-- Config inspection --
 currentReward :: Blockchain -> Int
 currentReward chain@(Blockchain config _) =
     case currentBounds of
@@ -102,6 +104,23 @@ currentReward chain@(Blockchain config _) =
     currentBounds = filter (\(height, _) -> numBlocks <= height) rewardBounds
     numBlocks     = chainLength chain
     rewardBounds  = H.toList $ miningRewardTransitionMap config
+
+currentDifficulty :: Blockchain -> Difficulty
+currentDifficulty chain@(Blockchain config _) =
+    if length blocks < difficultyRecalculationHeight config
+        then initialDifficulty config
+        else undefined
+    -- case l of
+    --     []     -> initialMiningReward config
+    --     bounds -> fst (minimum bounds)
+  where
+    blocks = longestChain chain
+    -- currentBounds = filter (\(height, _) -> numBlocks <= height) rewardBounds
+    -- rewardBounds  = H.toList $ miningRewardTransitionMap config
+
+    -- { initialDifficulty             :: Difficulty
+    -- , targetMillisPerBlock          :: Int
+    -- , difficultyRecalculationHeight :: Int
 
 -- Chain inspection --
 

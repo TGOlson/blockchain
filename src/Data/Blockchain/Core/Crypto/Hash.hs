@@ -8,6 +8,7 @@ module Data.Blockchain.Core.Crypto.Hash
     , fromByteString
     , unsafeFromByteString
     , toByteStringHash
+    , hashToInteger
     ) where
 
 import qualified Crypto.Hash             as Crypto
@@ -18,6 +19,7 @@ import qualified Data.Hashable           as H
 import qualified Data.Maybe              as Maybe
 import qualified Data.Text               as Text
 import qualified Data.ByteArray.Encoding as Byte
+import qualified Numeric                 as Numeric
 
 
 data Hash a = Hash { rawHash :: Crypto.Digest Crypto.SHA256 }
@@ -36,6 +38,11 @@ instance Show (Hash a) where
 
 toByteStringHash :: Hash a -> ByteStringHash
 toByteStringHash = Hash . rawHash
+
+-- Note: ignore all possible invariants that `Numeric.readHex` would normally need to check
+-- we are only converting stringified hashes, which should always be valid hex strings
+hashToInteger :: Hash a -> Integer
+hashToInteger = fst . head . Numeric.readHex . show . rawHash
 
 hashJSON :: Aeson.ToJSON a => a -> Hash a
 hashJSON = Hash . Crypto.hash . Lazy.toStrict . Aeson.encode

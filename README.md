@@ -170,3 +170,30 @@ Now
 
 Later
 * Consider more efficient data format than json
+
+
+```
+newtype Difficulty = Difficulty Int
+need to be able to turn `Hash a -> Int`
+compare difficulty to int
+https://en.bitcoin.it/wiki/Difficulty
+
+difficulty_1_target is easiest difficulty (aka, 1 as hash -> 00000....1)
+
+difficulty -> just an inverse representation where larger is higher
+difficulty = difficulty_1_target / current_target
+
+current_target is actually the target hash value as a number
+
+most difficult target would be difficulty_1_target/difficulty_1_target -> 1
+easiest = difficulty_1_target/1
+
+lower difficulty is... harder
+
+for this, difficulty_1_target = 2^256 (easiest)
+(2 :: Integer) ^ (256 :: Int)
+> 115792089237316195423570985008687907853269984665640564039457584007913129639936
+
+https://bitcoin.stackexchange.com/questions/10393/mining-computations-by-the-numbers
+
+```
