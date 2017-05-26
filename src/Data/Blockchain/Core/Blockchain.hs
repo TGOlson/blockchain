@@ -7,7 +7,7 @@ module Data.Blockchain.Core.Blockchain
     , BlockchainVerificationException(..)
     , AddBlockException(..)
     , createBlockchain
-    , verify
+    , verifyBlockchain
     , addBlock
     , currentReward
     , currentDifficulty
@@ -33,7 +33,10 @@ data Blockchain = Blockchain
     , _node   :: BlockchainNode
     }
 
-data BlockchainNode = BlockchainNode Block [BlockchainNode]
+data BlockchainNode = BlockchainNode
+    { _block :: Block
+    , _nodes :: [BlockchainNode]
+    }
 
 blockchainConfig :: Blockchain -> BlockchainConfig
 blockchainConfig (Blockchain config _) = config
@@ -68,30 +71,119 @@ data BlockchainVerificationException
 data AddBlockException
     = BlockAlreadyExists
     | NoPreviousBlockFound
+    | BlockCreatedBeforeParent
+    | InvalidDifficultyReference
+    | InvalidDifficulty
   deriving (Eq, Show)
 
 -- Note: requires mining a genesis block
 createBlockchain :: BlockchainConfig -> Blockchain
 createBlockchain = undefined
 
-verify :: UnverifiedBlockchain -> Either BlockchainVerificationException Blockchain
-verify (UnverifiedBlockchain config (UnverifiedBlockchainNode genesisBlock nodes)) = do
+verifyBlockchain :: UnverifiedBlockchain -> Either BlockchainVerificationException Blockchain
+verifyBlockchain (UnverifiedBlockchain config (UnverifiedBlockchainNode genesisBlock nodes)) = do
     verifyGenesisBlock genesisBlock
     Either.mapLeft AddBlockVerificationException $ Foldable.foldrM addBlock blockchainHead blocks
   where
     -- TODO: can probably be made generic for any block to config verifications
     verifyGenesisBlock (Block _header _coinbase txs) = do
-        M.unless (difficulty (blockHeader genesisBlock) == initialDifficulty config) $ Left (GenesisBlockException "incorrect difficulty")
-        M.unless (null txs) $ Left (GenesisBlockException "expected no transactions")
+        verify (difficulty (blockHeader genesisBlock) == initialDifficulty config) (GenesisBlockException "incorrect difficulty")
+        verify (null txs) (GenesisBlockException "expected no transactions")
 
     blockchainHead = Blockchain config (BlockchainNode genesisBlock [])
     blocks = concatMap getBlocks nodes
     getBlocks (UnverifiedBlockchainNode block ns) = block : concatMap getBlocks ns
 
+verify :: Bool -> a -> Either a ()
+verify cond = M.unless cond . Left
+
 -- Note: sohuld generally be able to re-use most of the old `addBlock` function below
 -- with the addition of verifying the transactions fit into the target chain
+--
+-- Check if the previous block referenced by the block exists and is valid.
+-- Check that the timestamp of the block is greater than that of the previous block[2] and less than 2 hours into the future
+-- Check that the proof of work on the block is valid.
+-- Let S[0] be the state at the end of the previous block.
+-- Suppose TX is the block's transaction list with n transactions. For all i in 0...n-1, set S[i+1] = APPLY(S[i],TX[i]) If any application returns an error, exit and return false.
+-- Return true, and register S[n] as the state at the end of this block.
+
+-- rules
+-- https://en.bitcoin.it/wiki/Protocol_rules#.22block.22_messages
+-- block needs to be unique (not already in chain)
+-- block needs to reference a valid parent
+-- transaction txins need to reference valid txouts from other transactions in same chain
+-- transaction txout need to be less the sum of input txouts
+-- transaction txin need to have valid signature by input txouts
 addBlock :: Block -> Blockchain -> Either AddBlockException Blockchain
-addBlock = undefined
+addBlock block (Blockchain config node) = do
+    -- TODO: verify block conforms to config
+    Blockchain config <$> addBlockToNode block [] node
+
+addBlockToNode :: Block -> [Block] -> BlockchainNode -> Either AddBlockException BlockchainNode
+addBlockToNode newBlock prevBlocks (BlockchainNode block nodes) =
+    -- Found correct parent node
+    if isParentNode then do
+        let blocks         = _block <$> nodes
+            newNode        = BlockchainNode newBlock []
+            updatedNode    = BlockchainNode block (newNode : nodes)
+            config         = undefined -- TODO
+            height         = length prevBlocks + 1
+            newBlockHeader = blockHeader newBlock
+
+        -- ** Verification **
+        -- block is not already in node
+        verify (newBlock `notElem` blocks) BlockAlreadyExists
+
+        -- block was not created before parent
+        -- The protocol rejects blocks with a timestamp earlier than the median of the timestamps from the previous 11 blocks
+        -- TODO: verify (time newBlockHeader > time (blockHeader block)) BlockCreatedBeforeParent
+
+        -- block references expected difficulty
+        verify (difficulty newBlockHeader == targetDifficulty config height) InvalidDifficultyReference
+        -- block header hashes to expected difficulty
+        verify (isValidDifficulty newBlockHeader) InvalidDifficulty
+
+        -- TODO: block created less than X hours, or N blocks intervals, into future
+
+        -- TODO: verify transactions fit into prevBlocks
+
+        return updatedNode
+    else
+        let eBlockchains = fmap (\bs -> Either.mapLeft (\e -> (e, bs)) (addBlockToNode newBlock (prevBlocks ++ [block]) bs)) nodes in
+        BlockchainNode block <$> reduceAddBlockResults eBlockchains
+  where
+    -- TODO: block headers should contain a hash of themselves,
+    -- so that we don't have to hash every single time
+    isParentNode = hash (blockHeader block) == prevBlockHeaderHash (blockHeader newBlock)
+    -- Rules:
+    --   If all results are `Left NoPreviousBlockFound` the result is `Left NoPreviousBlockFound`.
+    --   If any result is `Left BlockAlreadyExists` the result is `Left BlockAlreadyExists`.
+    --   If one result is `Right Blockchain` and the rest are `Left NoPreviousBlockFound`
+    --      the result is that new block chain and all the previous chains.
+    --   If more than one result is `Right Blockchain` it is an unexpected result and the function will error.
+    reduceAddBlockResults :: [Either (AddBlockException, BlockchainNode) BlockchainNode] -> Either AddBlockException [BlockchainNode]
+    reduceAddBlockResults results = case (blockAlreadyExists, rightResults) of
+        (True, _)    -> Left BlockAlreadyExists
+        (False, [])  -> Left NoPreviousBlockFound
+
+        -- Add new chain to list of old chains
+        -- Note: this will cause re-ordering, where newest chain will always appear first
+        -- in list of subsequent chains.
+        (False, [x]) -> Right (x : oldBlockChains)
+        (_, _)       -> error "Unexpected error - block can be inserted into multiple chains"
+      where
+        (leftResults, rightResults) = Either.partitionEithers results
+        (exceptions, oldBlockChains) = unzip leftResults
+        -- Note: this ignores invariant where multiple `BlockAlreadyExists` errors are found
+        -- However, we do expect our reducing function to monitor for that invariant during original insert.
+        blockAlreadyExists = BlockAlreadyExists `elem` exceptions
+
+isValidDifficulty :: BlockHeader -> Bool
+isValidDifficulty header = diff >= headerHashInteger
+  where
+    diff              = unDifficulty (difficulty header)
+    headerHashInteger = hashToInteger (hash header)
+
 
 -- Config inspection --
 currentReward :: Blockchain -> Int
@@ -107,6 +199,9 @@ currentReward chain@(Blockchain config _) =
 -- TODO: find current difficulty from chain length
 currentDifficulty :: Blockchain -> Difficulty
 currentDifficulty (Blockchain config _) = initialDifficulty config
+
+targetDifficulty :: BlockchainConfig -> Int -> Difficulty
+targetDifficulty _config _height = Difficulty 1 -- TODO:
 
 -- Chain inspection --
 
@@ -139,65 +234,3 @@ toString (Blockchain _ node) = List.intercalate "\n" $ toStringLevels 0 node
       where
         spaces = replicate level '\t'
         hashString = spaces ++ show (hash $ blockHeader block)
-
-
--- OLD CODE -----------------------
--- TODO: delete
-
--- Check if the previous block referenced by the block exists and is valid.
--- Check that the timestamp of the block is greater than that of the previous block[2] and less than 2 hours into the future
--- Check that the proof of work on the block is valid.
--- Let S[0] be the state at the end of the previous block.
--- Suppose TX is the block's transaction list with n transactions. For all i in 0...n-1, set S[i+1] = APPLY(S[i],TX[i]) If any application returns an error, exit and return false.
--- Return true, and register S[n] as the state at the end of this block.
-
--- rules
--- https://en.bitcoin.it/wiki/Protocol_rules#.22block.22_messages
--- block needs to be unique (not already in chain)
--- block needs to reference a valid parent
--- transaction txins need to reference valid txouts from other transactions in same chain
--- transaction txout need to be less the sum of input txouts
--- transaction txin need to have valid signature by input txouts
---
--- TODO: probably needs `prevChain :: [Block]` in order to validate transactions
-_addBlockOld :: Block -> Blockchain -> Either AddBlockException Blockchain
-_addBlockOld bk (Blockchain config node) = Blockchain config <$> addBlockInternal bk node
-  where
-    addBlockInternal :: Block -> BlockchainNode -> Either AddBlockException BlockchainNode
-    addBlockInternal newBlock (BlockchainNode block blockchains) =
-    -- TODO: block headers should contain a hash of themselves,
-    -- so that we don't have to hash every single time
-    -- Found correct parent node
-        if hash (blockHeader block) == prevBlockHeaderHash (blockHeader newBlock)
-            then
-                -- But first make sure it's not already in the leaves
-                if any (\(BlockchainNode blk _) -> blk == newBlock) blockchains
-                    then Left BlockAlreadyExists
-                    -- TODO: need to verify transactions fit into blockchain
-                    else Right (BlockchainNode block $ BlockchainNode newBlock [] : blockchains)
-            else
-                let eBlockchains = fmap (\bs -> Either.mapLeft (\e -> (e, bs)) (addBlockInternal newBlock bs)) blockchains in
-                BlockchainNode block <$> reduceAddBlockResults eBlockchains
-      where
-        -- Rules:
-        --   If all results are `Left NoPreviousBlockFound` the result is `Left NoPreviousBlockFound`.
-        --   If any result is `Left BlockAlreadyExists` the result is `Left BlockAlreadyExists`.
-        --   If one result is `Right Blockchain` and the rest are `Left NoPreviousBlockFound`
-        --      the result is that new block chain and all the previous chains.
-        --   If more than one result is `Right Blockchain` it is an unexpected result and the function will error.
-        reduceAddBlockResults :: [Either (AddBlockException, BlockchainNode) BlockchainNode] -> Either AddBlockException [BlockchainNode]
-        reduceAddBlockResults results = case (blockAlreadyExists, rightResults) of
-            (True, [])   -> Left BlockAlreadyExists
-            (False, [])  -> Left NoPreviousBlockFound
-            (True, [_])  -> Left BlockAlreadyExists
-            -- Add new chain to list of old chains
-            -- Note: this will cause re-ordering, where newest chain will always appear first
-            -- in list of subsequent chains.
-            (False, [x]) -> Right (x : oldBlockChains)
-            (_, _)       -> error "Unexpected error - block can be inserted into multiple chains"
-          where
-            (leftResults, rightResults) = Either.partitionEithers results
-            (exceptions, oldBlockChains) = unzip leftResults
-            -- Note: this ignores invariant where multiple `BlockAlreadyExists` errors are found
-            -- However, we do expect our reducing function to monitor for that invariant during original insert.
-            blockAlreadyExists = BlockAlreadyExists `elem` exceptions
