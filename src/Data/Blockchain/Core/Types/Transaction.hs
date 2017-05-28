@@ -8,7 +8,10 @@ module Data.Blockchain.Core.Types.Transaction
 
 import qualified Data.Aeson         as Aeson
 import           Data.Aeson         ((.=))
+import qualified Data.Hashable      as H
 import qualified Data.List.NonEmpty as NonEmpty
+import qualified GHC.Generics       as Generic
+
 
 import qualified Data.Blockchain.Core.Crypto as Crypto
 
@@ -61,7 +64,9 @@ data TransactionOutRef = TransactionOutRef
     { transactionHash     :: Either (Crypto.Hash CoinbaseTransaction) (Crypto.Hash Transaction)
     , transactionOutIndex :: Int
     }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic.Generic)
+
+instance H.Hashable TransactionOutRef
 
 instance Aeson.ToJSON TransactionOutRef where
     toJSON TransactionOutRef{..} = Aeson.object

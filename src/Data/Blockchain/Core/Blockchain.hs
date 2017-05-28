@@ -16,7 +16,9 @@ module Data.Blockchain.Core.Blockchain
     ) where
 
 import qualified Control.Monad           as M
-import qualified Data.Either             as Either (partitionEithers)
+import qualified Data.Aeson              as Aeson
+import qualified Data.ByteString.Lazy    as Lazy
+import qualified Data.Either             as Either
 import qualified Data.Either.Combinators as Either
 import qualified Data.Foldable           as Foldable
 import qualified Data.HashMap.Strict     as H
@@ -25,8 +27,10 @@ import qualified Data.List.NonEmpty      as NonEmpty
 import qualified Data.Ord                as Ord
 import qualified Data.Time.Clock         as Time
 
-import Data.Blockchain.Core.Crypto.Hash
-import Data.Blockchain.Core.Types
+import qualified Data.Blockchain.Core.Crypto as Crypto
+import           Data.Blockchain.Core.Types
+
+-- Types ----------------------------------------------------------------------------------------------------
 
 data Blockchain = Blockchain
     { _config :: BlockchainConfig
@@ -76,7 +80,12 @@ data BlockException
     | InvalidDifficultyReference
     | InvalidDifficulty
     | InvalidCoinbaseTransactionValue
+    | InvalidTransactionValues
+    | TransactionOutRefNotFound
+    | InvalidTransactionSignature
   deriving (Eq, Show)
+
+-- Construction ---------------------------------------------------------------------------------------------
 
 -- Note: requires mining a genesis block
 createBlockchain :: BlockchainConfig -> Blockchain
@@ -95,9 +104,6 @@ verifyBlockchain (UnverifiedBlockchain config (UnverifiedBlockchainNode genesisB
     blockchainHead = Blockchain config (BlockchainNode genesisBlock [])
     blocks = concatMap getBlocks nodes
     getBlocks (UnverifiedBlockchainNode block ns) = block : concatMap getBlocks ns
-
-verify :: Bool -> a -> Either a ()
-verify cond = M.unless cond . Left
 
 -- ** Notes
 -- Check if the previous block referenced by the block exists and is valid.
@@ -140,14 +146,15 @@ addBlock blk chain@(Blockchain config node) = Blockchain config <$> addBlockToNo
 
         -- TODO: block headers should contain a hash of themselves,
         -- so that we don't have to hash every single time
-        isParentNode = hash (blockHeader block) == prevBlockHeaderHash (blockHeader newBlock)
+        isParentNode = Crypto.hash (blockHeader block) == prevBlockHeaderHash (blockHeader newBlock)
 
-        -- Rules:
-        --   If all results are `Left NoParentFound` the result is `Left NoParentFound`.
-        --   If any result is `Left BlockAlreadyExists` the result is `Left BlockAlreadyExists`.
-        --   If one result is `Right Blockchain` and the rest are `Left NoParentFound`
-        --      the result is that new block chain and all the previous chains.
-        --   If more than one result is `Right Blockchain` it is an unexpected result and the function will error.
+    -- Rules:
+    --   If all results are `Left NoParentFound` the result is `Left NoParentFound`.
+    --   If any result is `Left BlockAlreadyExists` the result is `Left BlockAlreadyExists`.
+    --   If one result is `Right Blockchain` and the rest are `Left NoParentFound`
+    --      the result is that new block chain and all the previous chains.
+    --   If more than one result is `Right Blockchain` it is an unexpected result and the function will error.
+    -- TODO: this no longer makes sense... revisit
     reduceAddBlockResults :: [Either (BlockException, BlockchainNode) BlockchainNode] -> Either BlockException [BlockchainNode]
     reduceAddBlockResults results = case (blockAlreadyExists, rightResults) of
         (True, _)    -> Left BlockAlreadyExists
@@ -165,8 +172,6 @@ addBlock blk chain@(Blockchain config node) = Blockchain config <$> addBlockToNo
         -- However, we do expect our reducing function to monitor for that invariant during original insert.
         blockAlreadyExists = BlockAlreadyExists `elem` exceptions
 
-
-
 -- block references expected difficulty
 -- block header hashes to expected difficulty
 verifyBlockDifficulty :: BlockHeader -> BlockchainConfig -> Int -> Either BlockException ()
@@ -175,7 +180,7 @@ verifyBlockDifficulty header config height = do
     verify (unDifficulty diff >= headerHashInteger) InvalidDifficulty
   where
     diff = targetDifficulty config height
-    headerHashInteger = hashToInteger (hash header)
+    headerHashInteger = Crypto.hashToInteger (Crypto.hash header)
 
 -- block was not created before parent
 -- TODO: The protocol rejects blocks with a timestamp earlier than the median of the timestamps from the previous 11 blocks
@@ -190,28 +195,36 @@ verifyBlockCreationTime now newBlockHeader parentBlockHeader = do
 -- TODO: transactions should be able to reference transactions within the same block
 -- this means we should try to apply a transaction, if it fails, try to apply next transaction
 -- recurse until stable
+-- TODO: until this is implemented it will be possible to "double spend" in the same block... : (
 verifyTransactions :: Block -> [Block] -> Int -> Either BlockException ()
 verifyTransactions (Block _header coinbaseTx txs) prevBlocks reward = do
     -- ensure coinbase transaction is of correct value
-    verify (sum (value <$> coinbaseTransactionOut coinbaseTx) == reward) InvalidCoinbaseTransactionValue
+    verify (txOutValue (coinbaseTransactionOut coinbaseTx) == reward) InvalidCoinbaseTransactionValue
 
-    Foldable.foldrM verifyTransaction () txs
-    -- for each transaction in `block`
-    --  make sure all txin reference valid txout
-    --    has enough value to spend
-    --    is valid signature
-    --
+    sequence_ (verifyTransaction <$> txs)
   where
-    verifyTransaction :: Transaction -> () -> Either BlockException ()
-    verifyTransaction (Transaction txIn txOut) _ = undefined
+    txOutValue :: NonEmpty.NonEmpty TransactionOut -> Int
+    txOutValue = sum . fmap value
+
     unspentTransactions :: H.HashMap TransactionOutRef TransactionOut
     unspentTransactions = unspentTransactionOutputs prevBlocks
 
+    verifyTransaction :: Transaction -> Either BlockException ()
+    verifyTransaction (Transaction txIn txOut) = do
+        let outputValue = txOutValue txOut
+
+        prevTxOut <- sequence $ flip fmap txIn $ \(TransactionIn ref sig) -> do
+            tx <- maybeToEither TransactionOutRefNotFound (H.lookup ref unspentTransactions)
+            -- TODO: should keep transaction signing & verification round-tripping in same place
+            verify (Crypto.verify (signaturePubKey tx) sig (Lazy.toStrict $ Aeson.encode tx)) InvalidTransactionSignature
+            return tx
+
+        verify (txOutValue prevTxOut >= outputValue) InvalidTransactionValues
 
 unspentTransactionOutputs :: [Block] -> H.HashMap TransactionOutRef TransactionOut
-unspentTransactionOutputs = undefined
+unspentTransactionOutputs = undefined -- TODO: !
 
--- Config inspection --
+-- Config Inspection ----------------------------------------------------------------------------------------
 currentReward :: Blockchain -> Int
 currentReward chain@(Blockchain config _) =
     case currentBounds of
@@ -229,7 +242,7 @@ currentDifficulty (Blockchain config _) = initialDifficulty config
 targetDifficulty :: BlockchainConfig -> Int -> Difficulty
 targetDifficulty _config _height = Difficulty 1 -- TODO:
 
--- Chain inspection --
+-- Chain inspection -----------------------------------------------------------------------------------------
 
 chainLength :: Blockchain -> Int
 chainLength = length . longestChain
@@ -251,6 +264,16 @@ flatten (Blockchain _ node) = flattenInternal node
         BlockchainNode block []  -> pure $ pure block
         BlockchainNode block bcs -> NonEmpty.cons block <$> (NonEmpty.fromList bcs >>= flattenInternal)
 
+-- Utils ----------------------------------------------------------------------------------------------------
+
+verify :: Bool -> a -> Either a ()
+verify cond = M.unless cond . Left
+
+maybeToEither :: a -> Maybe b -> Either a b
+maybeToEither e = maybe (Left e) Right
+
+-- Debugging ------------------------------------------------------------------------------------------------
+
 toString :: Blockchain -> String
 toString (Blockchain _ node) = List.intercalate "\n" $ toStringLevels 0 node
   where
@@ -259,4 +282,4 @@ toString (Blockchain _ node) = List.intercalate "\n" $ toStringLevels 0 node
         hashString : concatMap (toStringLevels (level + 1)) blockchains
       where
         spaces = replicate level '\t'
-        hashString = spaces ++ show (hash $ blockHeader block)
+        hashString = spaces ++ show (Crypto.hash $ blockHeader block)

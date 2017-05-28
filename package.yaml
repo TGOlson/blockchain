@@ -20,6 +20,7 @@ default-extensions:
   - ScopedTypeVariables
   - BangPatterns
   - LambdaCase
+  - DeriveGeneric
 
 dependencies:
   - base >= 4.7 && < 5
