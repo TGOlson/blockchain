@@ -159,10 +159,10 @@ createSimpleTransaction srcAddress targetAddress fee blockchain = ...
 # todo
 
 Now
+* consider `newtype SingleChain :: SingleChain [Block]` - let verification functions assume invariants that come from verified blockchain
 * get current state of blockchain addresses `Blockchain -> Map String Int`
 * clean up testing, many block chain tests don't need quickcheck, should operate on known (valid) chain
 * generic assertions against inserts - valid blocks should always insert, invalid never should, etc.
-* hide accessors for `Block` data type (only updates can be done via supplied fns)
 * find unspent outputs in chain
 * function that validates transactions
   * https://en.bitcoin.it/wiki/Protocol_rules#.22tx.22_messages

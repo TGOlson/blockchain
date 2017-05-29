@@ -14,7 +14,7 @@ mineBlock :: Crypto.PublicKey -> [Blockchain.Transaction] -> Blockchain.Blockcha
 mineBlock pubKey txs blockchain =
     mineBlockInternal pubKey reward difficulty prevBlockHeaderHash txs
   where
-    reward              = Blockchain.currentReward blockchain
+    reward              = Blockchain.targetReward config 0
     config              = Blockchain.blockchainConfig blockchain
     difficulty          = Blockchain.initialDifficulty config
     prevBlock           = NonEmpty.head (Blockchain.longestChain blockchain)

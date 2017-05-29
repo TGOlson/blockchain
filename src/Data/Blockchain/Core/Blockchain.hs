@@ -1,16 +1,12 @@
 module Data.Blockchain.Core.Blockchain
     ( Blockchain
     , blockchainConfig
-    , BlockchainConfig(..)
     , UnverifiedBlockchain(..)
     , UnverifiedBlockchainNode(..)
     , BlockchainVerificationException(..)
     , BlockException(..)
-    , createBlockchain
     , verifyBlockchain
     , addBlock
-    , currentReward
-    , currentDifficulty
     , longestChain
     , toString
     ) where
@@ -25,7 +21,6 @@ import qualified Data.HashMap.Strict     as H
 import qualified Data.List               as List
 import qualified Data.List.NonEmpty      as NonEmpty
 import qualified Data.Ord                as Ord
-import qualified Data.Time.Clock         as Time
 
 import qualified Data.Blockchain.Core.Crypto as Crypto
 import           Data.Blockchain.Core.Types
@@ -45,17 +40,6 @@ data BlockchainNode = BlockchainNode
 
 blockchainConfig :: Blockchain -> BlockchainConfig
 blockchainConfig (Blockchain config _) = config
-
-
-data BlockchainConfig = BlockchainConfig
-    { initialDifficulty             :: Difficulty
-    , targetMillisPerBlock          :: Int
-    , difficultyRecalculationHeight :: Int
-    , initialMiningReward           :: Int
-    -- Defines block heights where reward changes
-    -- An empty map means the current reward is always the initial reward
-    , miningRewardTransitionMap     :: H.HashMap Int Int
-    }
 
 data UnverifiedBlockchain = UnverifiedBlockchain
     { _uConfig :: BlockchainConfig
@@ -87,10 +71,6 @@ data BlockException
 
 -- Construction ---------------------------------------------------------------------------------------------
 
--- Note: requires mining a genesis block
-createBlockchain :: BlockchainConfig -> Blockchain
-createBlockchain = undefined
-
 verifyBlockchain :: UnverifiedBlockchain -> Either BlockchainVerificationException Blockchain
 verifyBlockchain (UnverifiedBlockchain config (UnverifiedBlockchainNode genesisBlock nodes)) = do
     verifyGenesisBlock genesisBlock
@@ -121,7 +101,7 @@ verifyBlockchain (UnverifiedBlockchain config (UnverifiedBlockchainNode genesisB
 -- transaction txout need to be less the sum of input txouts
 -- transaction txin need to have valid signature by input txouts
 addBlock :: Block -> Blockchain -> Either BlockException Blockchain
-addBlock blk chain@(Blockchain config node) = Blockchain config <$> addBlockToNode blk [] node
+addBlock blk (Blockchain config node) = Blockchain config <$> addBlockToNode blk [] node
   where
     addBlockToNode :: Block -> [Block] -> BlockchainNode -> Either BlockException BlockchainNode
     addBlockToNode newBlock prevBlocks (BlockchainNode block nodes) =
@@ -134,16 +114,14 @@ addBlock blk chain@(Blockchain config node) = Blockchain config <$> addBlockToNo
 
             verify (newBlock `notElem` blocks) BlockAlreadyExists
             verifyBlockDifficulty newBlockHeader config height
-            verifyBlockCreationTime now newBlockHeader (blockHeader block)
-            verifyTransactions newBlock prevBlocks (currentReward chain)
+            verifyBlockCreationTime newBlockHeader (blockHeader block)
+            verifyTransactions newBlock prevBlocks (targetReward config height)
 
             return updatedNode
         else
             let eBlockchains = fmap (\bs -> Either.mapLeft (\e -> (e, bs)) (addBlockToNode newBlock (prevBlocks ++ [block]) bs)) nodes in
             BlockchainNode block <$> reduceAddBlockResults eBlockchains
       where
-        now = undefined -- TODO: take in current timestamp
-
         -- TODO: block headers should contain a hash of themselves,
         -- so that we don't have to hash every single time
         isParentNode = Crypto.hash (blockHeader block) == prevBlockHeaderHash (blockHeader newBlock)
@@ -185,10 +163,10 @@ verifyBlockDifficulty header config height = do
 -- block was not created before parent
 -- TODO: The protocol rejects blocks with a timestamp earlier than the median of the timestamps from the previous 11 blocks
 -- TODO: block created less than X hours, or N blocks intervals, into future
-verifyBlockCreationTime :: Time.UTCTime -> BlockHeader -> BlockHeader -> Either BlockException ()
-verifyBlockCreationTime now newBlockHeader parentBlockHeader = do
+verifyBlockCreationTime :: BlockHeader -> BlockHeader -> Either BlockException ()
+verifyBlockCreationTime newBlockHeader parentBlockHeader =
     verify (newBlockTimestamp > time parentBlockHeader) TimestampTooOld
-    verify (newBlockTimestamp < now) TimestampTooFarIntoFuture
+    -- verify (newBlockTimestamp < now) TimestampTooFarIntoFuture
   where
     newBlockTimestamp = time newBlockHeader
 
@@ -224,28 +202,8 @@ verifyTransactions (Block _header coinbaseTx txs) prevBlocks reward = do
 unspentTransactionOutputs :: [Block] -> H.HashMap TransactionOutRef TransactionOut
 unspentTransactionOutputs = undefined -- TODO: !
 
--- Config Inspection ----------------------------------------------------------------------------------------
-currentReward :: Blockchain -> Int
-currentReward chain@(Blockchain config _) =
-    case currentBounds of
-        []     -> initialMiningReward config
-        bounds -> fst (minimum bounds)
-  where
-    currentBounds = filter (\(height, _) -> numBlocks <= height) rewardBounds
-    numBlocks     = chainLength chain
-    rewardBounds  = H.toList $ miningRewardTransitionMap config
-
--- TODO: find current difficulty from chain length
-currentDifficulty :: Blockchain -> Difficulty
-currentDifficulty (Blockchain config _) = initialDifficulty config
-
-targetDifficulty :: BlockchainConfig -> Int -> Difficulty
-targetDifficulty _config _height = Difficulty 1 -- TODO:
 
 -- Chain inspection -----------------------------------------------------------------------------------------
-
-chainLength :: Blockchain -> Int
-chainLength = length . longestChain
 
 longestChain :: Blockchain -> NonEmpty.NonEmpty Block
 longestChain = List.maximumBy lengthOrDifficulty . flatten

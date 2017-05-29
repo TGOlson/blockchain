@@ -9,10 +9,11 @@ import Test.Hspec            as X
 import Test.Hspec.QuickCheck as X
 import Test.QuickCheck       as X hiding (generate)
 
-import qualified Data.ByteString.Char8      as BS
-import qualified Data.Maybe                 as Maybe
-import qualified Data.Time.Clock            as Time
-import qualified Data.Time.Calendar         as Time
+import qualified Data.ByteString.Char8 as BS
+import qualified Data.HashMap.Strict   as H
+import qualified Data.Maybe            as Maybe
+import qualified Data.Time.Clock       as Time
+import qualified Data.Time.Calendar    as Time
 
 import Data.Blockchain.Core.Crypto
 -- import Data.Blockchain.Crypto.HashTree
@@ -28,6 +29,14 @@ unsafefromByteString = Maybe.fromMaybe (error "Invalid hash string") . fromByteS
 -- Instances -------------------------------------------------------------------------------------------------
 
 -- Blockchain types
+
+instance Arbitrary BlockchainConfig where
+    arbitrary = BlockchainConfig
+        <$> arbitrary
+        <*> arbitrary
+        <*> arbitrary
+        <*> arbitrary
+        <*> (H.fromList <$> arbitrary)
 
 -- instance Arbitrary Block where
 --     arbitrary = makeBlock
