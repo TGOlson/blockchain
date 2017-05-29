@@ -113,7 +113,7 @@ addBlock blk (Blockchain config node) = Blockchain config <$> addBlockToNode blk
                 newBlockHeader = blockHeader newBlock
 
             verify (newBlock `notElem` blocks) BlockAlreadyExists
-            verifyBlockDifficulty newBlockHeader config height
+            verifyBlockDifficulty newBlockHeader config prevBlocks
             verifyBlockCreationTime newBlockHeader (blockHeader block)
             verifyTransactions newBlock prevBlocks (targetReward config height)
 
@@ -152,12 +152,12 @@ addBlock blk (Blockchain config node) = Blockchain config <$> addBlockToNode blk
 
 -- block references expected difficulty
 -- block header hashes to expected difficulty
-verifyBlockDifficulty :: BlockHeader -> BlockchainConfig -> Int -> Either BlockException ()
-verifyBlockDifficulty header config height = do
+verifyBlockDifficulty :: BlockHeader -> BlockchainConfig -> [Block] -> Either BlockException ()
+verifyBlockDifficulty header config blocks = do
     verify (difficulty header == diff) InvalidDifficultyReference
     verify (unDifficulty diff >= headerHashInteger) InvalidDifficulty
   where
-    diff = targetDifficulty config height
+    diff = targetDifficulty config blocks
     headerHashInteger = Crypto.hashToInteger (Crypto.hash header)
 
 -- block was not created before parent

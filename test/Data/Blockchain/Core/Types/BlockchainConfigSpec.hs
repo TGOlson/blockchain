@@ -8,7 +8,7 @@ import Data.Blockchain.Core.Types
 
 config :: BlockchainConfig
 config = BlockchainConfig
-    { initialDifficulty             = Difficulty 1
+    { initialDifficulty             = Difficulty 1000
     , targetMillisPerBlock          = 10
     , difficultyRecalculationHeight = 10
     , initialMiningReward           = 100
@@ -31,3 +31,7 @@ spec =
             \conf height ->
                 let possibleRewards = initialMiningReward conf : H.elems (miningRewardTransitionMap conf)
                 in targetReward conf height `elem` possibleRewards
+
+        it "should produce the correct difficulty" $
+            and [ targetDifficulty config []  == Difficulty 1000
+                ]
