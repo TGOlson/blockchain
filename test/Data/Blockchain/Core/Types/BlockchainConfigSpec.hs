@@ -32,6 +32,12 @@ spec =
                 let possibleRewards = initialMiningReward conf : H.elems (miningRewardTransitionMap conf)
                 in targetReward conf height `elem` possibleRewards
 
-        it "should produce the correct difficulty" $
-            and [ targetDifficulty config []  == Difficulty 1000
-                ]
+        prop "should produce the correct difficulty when not recalculating" $
+            \block -> and [ targetDifficulty config [] == Difficulty 1000
+                          , targetDifficulty config [block] == difficulty (blockHeader block)
+                          , targetDifficulty config [block, block] == difficulty (blockHeader block)
+                          , targetDifficulty config (replicate 11 block) == difficulty (blockHeader block)
+                          ]
+
+        prop "should produce the correct difficulty when recalculating" $
+            \block1 block2 -> targetDifficulty config (block1 : replicate 9 block2) === Difficulty 1000

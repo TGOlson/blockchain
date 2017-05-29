@@ -8,17 +8,18 @@ module Data.Blockchain.Core.Crypto.Hash
     , fromByteString
     , unsafeFromByteString
     , toByteStringHash
-    , hashToInteger
+    , hashToWord64
     ) where
 
 import qualified Crypto.Hash             as Crypto
 import qualified Data.Aeson              as Aeson
+import qualified Data.ByteArray.Encoding as Byte
 import qualified Data.ByteString         as BS
 import qualified Data.ByteString.Lazy    as Lazy
 import qualified Data.Hashable           as H
 import qualified Data.Maybe              as Maybe
 import qualified Data.Text               as Text
-import qualified Data.ByteArray.Encoding as Byte
+import qualified Data.Word               as Word
 import qualified Numeric                 as Numeric
 
 
@@ -41,8 +42,8 @@ toByteStringHash = Hash . rawHash
 
 -- Note: ignore all possible invariants that `Numeric.readHex` would normally need to check
 -- we are only converting stringified hashes, which should always be valid hex strings
-hashToInteger :: Hash a -> Integer
-hashToInteger = fst . head . Numeric.readHex . show . rawHash
+hashToWord64 :: Hash a -> Word.Word64
+hashToWord64 = fst . head . Numeric.readHex . show . rawHash
 
 hashJSON :: Aeson.ToJSON a => a -> Hash a
 hashJSON = Hash . Crypto.hash . Lazy.toStrict . Aeson.encode

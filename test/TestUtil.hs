@@ -9,8 +9,11 @@ import Test.Hspec            as X
 import Test.Hspec.QuickCheck as X
 import Test.QuickCheck       as X hiding (generate)
 
+import qualified Crypto.PubKey.ECC.ECDSA    as Crypto
+import qualified Crypto.PubKey.ECC.Types    as Crypto
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.HashMap.Strict   as H
+import qualified Data.List.NonEmpty    as NonEmpty
 import qualified Data.Maybe            as Maybe
 import qualified Data.Time.Clock       as Time
 import qualified Data.Time.Calendar    as Time
@@ -38,25 +41,42 @@ instance Arbitrary BlockchainConfig where
         <*> arbitrary
         <*> (H.fromList <$> arbitrary)
 
--- instance Arbitrary Block where
---     arbitrary = makeBlock
---       <$> (hash <$> arbitrary)
---       <*> arbitrary
---       <*> arbitrary
---       <*> arbitrary
---       <*> return [] -- TODO: arbitrary Transaction
+instance Arbitrary Block where
+    arbitrary = Block
+        <$> arbitrary
+        <*> arbitrary
+        <*> arbitrary
 
--- instance Arbitrary BlockHeader where
---     arbitrary = BlockHeader
---         <$> arbitrary
---         <*> arbitrary
---         <*> return (hashTreeRoot []) -- TODO: arbitrary Transaction
---         <*> arbitrary
---         <*> arbitrary
---         <*> arbitrary
+instance Arbitrary BlockHeader where
+    arbitrary = BlockHeader
+        <$> arbitrary
+        <*> arbitrary
+        <*> arbitrary
+        <*> (hashTreeRoot <$> arbitrary)
+        <*> arbitrary
+        <*> arbitrary
+        <*> arbitrary
 
+instance Arbitrary CoinbaseTransaction where
+    arbitrary = CoinbaseTransaction <$> arbitrary
+
+instance Arbitrary Transaction where
+    arbitrary = Transaction <$> arbitrary <*> arbitrary
+
+instance Arbitrary TransactionIn where
+    arbitrary = TransactionIn <$> arbitrary <*> arbitrary
+
+instance Arbitrary TransactionOut where
+    arbitrary = TransactionOut <$> arbitrary <*> arbitrary
+
+instance Arbitrary TransactionOutRef where
+    arbitrary = TransactionOutRef <$> arbitrary <*> arbitrary
+
+-- TODO: difficulty should never be zero
+-- type constructor should enforce that invariant
 instance Arbitrary Difficulty where
     arbitrary = Difficulty <$> arbitrary
+    -- arbitrary = Difficulty <$> elements [1 .. maxBound]
 
 -- Crypto Types
 
@@ -65,7 +85,20 @@ instance Arbitrary (Hash a) where
       where
         hexChar = elements $ ['0' .. '9'] ++ ['a' .. 'f']
 
+-- Note: Signature and PublicKey are likely unusable.
+instance Arbitrary Signature where
+    arbitrary = Signature <$> (Crypto.Signature <$> arbitrary <*> arbitrary)
+
+instance Arbitrary PublicKey where
+    arbitrary = PublicKey <$> (Crypto.PublicKey <$> arbitraryCurve <*> arbitraryPoint)
+      where
+        arbitraryCurve = Crypto.getCurveByName <$> elements [minBound .. maxBound]
+        arbitraryPoint = Crypto.Point <$> arbitrary <*> arbitrary
+
 -- Other Types
+
+instance Arbitrary a => Arbitrary (NonEmpty.NonEmpty a) where
+    arbitrary = NonEmpty.fromList <$> (getNonEmpty <$> arbitrary)
 
 instance Arbitrary BS.ByteString where
     arbitrary = BS.pack <$> arbitrary
@@ -74,6 +107,6 @@ instance Arbitrary Time.UTCTime where
     arbitrary = Time.UTCTime <$> dayDen <*> dayTimeGen
       where
         -- The Modified Julian Day is a standard count of days, with zero being the day 1858-11-17.
-        dayDen    = Time.ModifiedJulianDay <$> elements [0 .. 60000]
+        dayDen     = Time.ModifiedJulianDay <$> elements [0 .. 60000]
         -- The time from midnight, 0 <= t < 86401s (because of leap-seconds)
         dayTimeGen = Time.secondsToDiffTime <$> elements [0 .. 86400]

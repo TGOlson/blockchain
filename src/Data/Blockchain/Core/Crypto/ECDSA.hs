@@ -1,6 +1,6 @@
 module Data.Blockchain.Core.Crypto.ECDSA
     ( KeyPair(..)
-    , Signature
+    , Signature(..)
     , PublicKey(..)
     , PrivateKey(..)
     , sign

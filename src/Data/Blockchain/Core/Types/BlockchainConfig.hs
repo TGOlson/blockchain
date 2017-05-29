@@ -37,7 +37,7 @@ targetDifficulty :: BlockchainConfig -> [Block] -> Difficulty
 targetDifficulty config =
     \case []     -> initialDifficulty config
           blocks ->
-              case length blocks `div` recalcHeight of
+              case length blocks `mod` recalcHeight of
                   0 ->
                       let recentBlocks   = take recalcHeight (reverse blocks)
                           firstBlock     = head recentBlocks -- TODO: unsafe

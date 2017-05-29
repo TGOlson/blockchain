@@ -5,12 +5,15 @@ module Data.Blockchain.Core.Types.Difficulty
     ) where
 
 import qualified Data.Aeson as Aeson
+import qualified Data.Word  as Word
 
-newtype Difficulty = Difficulty { unDifficulty :: Integer }
+-- TODO: difficulty should never be zero
+-- type constructor should enforce that invariant
+newtype Difficulty = Difficulty { unDifficulty :: Word.Word64 }
   deriving (Eq, Ord, Aeson.ToJSON, Show)
 
 minDifficulty :: Difficulty
 minDifficulty = Difficulty 1
 
 maxDifficulty :: Difficulty
-maxDifficulty = Difficulty $ (2 :: Integer) ^ (256 :: Integer) - 1
+maxDifficulty = Difficulty $ (2 :: Word.Word64) ^ (256 :: Word.Word64) - 1
