@@ -35,6 +35,15 @@ spec =
         prop "should use initial config when no blocks" $
             \conf -> targetDifficulty conf [] === initialDifficulty conf
 
+        prop "should correctly adjust difficulty" $
+            \block (Positive (n :: Int)) ->
+                let ratio              = toRational n / 600
+                    lastBlock          = adjustTime (Time.addUTCTime $ fromIntegral n) block
+                    blocks             = replicate 9 block ++ pure lastBlock
+                    lastDiff           = difficulty (blockHeader block)
+                    expectedDifficulty = Difficulty $ round (toRational (unDifficulty lastDiff) * ratio)
+                in targetDifficulty config blocks === expectedDifficulty
+
         prop "should produce the correct difficulty when not recalculating" $
             \(NonEmpty blocks) conf ->
                   -- Pretty complex example, can it be cleaned up?
@@ -43,11 +52,6 @@ spec =
                   length blocks < 20 &&
                   length blocks `mod` fromIntegral (difficultyRecalculationHeight conf) /= 0
                   ==> targetDifficulty conf blocks === difficulty (blockHeader $ last blocks)
-
-        prop "should not adjust difficulty if minnig rate is met exactly" $
-            \block ->
-                let blocks = replicate 9 block ++ [adjustTime (Time.addUTCTime 600) block]
-                in targetDifficulty config blocks === difficulty (blockHeader block)
 
         prop "should always find a valid difficulty" $
             \conf blocks -> targetDifficulty conf blocks >= Difficulty 0 -- TODO: want >= diff 1
