@@ -21,7 +21,7 @@ data BlockchainConfig = BlockchainConfig
     -- An empty map means the current reward is always the initial reward
     , miningRewardTransitionMap     :: H.HashMap Word.Word Word.Word
     }
-  deriving (Show)
+  deriving (Eq, Show)
 
 targetReward :: BlockchainConfig -> Word.Word -> Word.Word
 targetReward config height =

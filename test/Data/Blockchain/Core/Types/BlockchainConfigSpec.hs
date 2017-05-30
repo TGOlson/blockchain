@@ -16,8 +16,8 @@ config = BlockchainConfig
     }
 
 spec :: Spec
-spec =
-    describe "BlockchainConfig" $ do
+spec = describe "BlockchainConfig" $ do
+    describe "targetReward" $ do
         it "should produce the correct reward" $
             and [ targetReward config 0  == 100
                 , targetReward config 4  == 100
@@ -32,6 +32,7 @@ spec =
                 let possibleRewards = initialMiningReward conf : H.elems (miningRewardTransitionMap conf)
                 in targetReward conf height `elem` possibleRewards
 
+    describe "targetDifficulty" $ do
         prop "should use initial config when no blocks" $
             \conf -> targetDifficulty conf [] === initialDifficulty conf
 
@@ -44,12 +45,11 @@ spec =
                     expectedDifficulty = Difficulty $ round (toRational (unDifficulty lastDiff) * ratio)
                 in targetDifficulty config blocks === expectedDifficulty
 
-        prop "should produce the correct difficulty when not recalculating" $
+        propWithSize 20 "should produce the correct difficulty when not recalculating" $
             \(NonEmpty blocks) conf ->
                   -- Pretty complex example, can it be cleaned up?
                   difficultyRecalculationHeight conf /= 0 &&
                   targetSecondsPerBlock conf /= 0 &&
-                  length blocks < 20 &&
                   length blocks `mod` fromIntegral (difficultyRecalculationHeight conf) /= 0
                   ==> targetDifficulty conf blocks === difficulty (blockHeader $ last blocks)
 

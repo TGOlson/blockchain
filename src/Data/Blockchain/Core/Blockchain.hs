@@ -5,10 +5,15 @@ module Data.Blockchain.Core.Blockchain
     , UnverifiedBlockchainNode(..)
     , BlockchainVerificationException(..)
     , BlockException(..)
+    -- Construction
     , verifyBlockchain
     , addBlock
+    -- Chain inspection
     , longestChain
+    , flatten
+    -- Debugging
     , toString
+    , toUnverifiedBlockchain
     ) where
 
 import qualified Control.Monad           as M
@@ -32,12 +37,15 @@ data Blockchain = Blockchain
     { _config :: BlockchainConfig
     , _node   :: BlockchainNode
     }
+  deriving (Eq, Show)
+-- TODO: serialization
 -- instance ToJSON Blockchain where
 
 data BlockchainNode = BlockchainNode
     { _block :: Block
     , _nodes :: [BlockchainNode]
     }
+  deriving (Eq, Show)
 
 blockchainConfig :: Blockchain -> BlockchainConfig
 blockchainConfig (Blockchain config _) = config
@@ -46,16 +54,23 @@ data UnverifiedBlockchain = UnverifiedBlockchain
     { _uConfig :: BlockchainConfig
     , _uNode   :: UnverifiedBlockchainNode
     }
--- instance UnverifiedBlockchain Blockchain where
+  deriving (Eq, Show)
+-- TODO: serialization
+-- instance ToJSON Blockchain where
 
-data UnverifiedBlockchainNode = UnverifiedBlockchainNode Block [UnverifiedBlockchainNode]
+data UnverifiedBlockchainNode = UnverifiedBlockchainNode
+    { uBlock :: Block
+    , uNode  :: [UnverifiedBlockchainNode]
+    }
+  deriving (Eq, Show)
 
 -- TODO: serialization
 -- instance FromJSON UnverifiedBlockchain where
 
 data BlockchainVerificationException
-    = GenesisBlockException String -- TODO
+    = GenesisBlockHasTransactions
     | AddBlockVerificationException BlockException
+  deriving (Eq, Show)
 
 data BlockException
     = BlockAlreadyExists
@@ -74,14 +89,18 @@ data BlockException
 
 verifyBlockchain :: UnverifiedBlockchain -> Either BlockchainVerificationException Blockchain
 verifyBlockchain (UnverifiedBlockchain config (UnverifiedBlockchainNode genesisBlock nodes)) = do
-    verifyGenesisBlock genesisBlock
+    let (Block header _coinbase txs) = genesisBlock
+
+    Either.mapLeft AddBlockVerificationException $ verifyBlockDifficulty header config mempty
+    verify (null txs) GenesisBlockHasTransactions
+
+    -- TODO
+    --  verify genesisBlock coinbase matches initial reward
+    --  block header has correct coinbase hash
+    --  block header has correct tx hash tree root
+
     Either.mapLeft AddBlockVerificationException $ Foldable.foldrM addBlock blockchainHead blocks
   where
-    -- TODO: can probably be made generic for any block to config verifications
-    verifyGenesisBlock (Block _header _coinbase txs) = do
-        verify (difficulty (blockHeader genesisBlock) == initialDifficulty config) (GenesisBlockException "incorrect difficulty")
-        verify (null txs) (GenesisBlockException "expected no transactions")
-
     blockchainHead = Blockchain config (BlockchainNode genesisBlock [])
     blocks = concatMap getBlocks nodes
     getBlocks (UnverifiedBlockchainNode block ns) = block : concatMap getBlocks ns
@@ -242,3 +261,9 @@ toString (Blockchain _ node) = List.intercalate "\n" $ toStringLevels 0 node
       where
         spaces = replicate level '\t'
         hashString = spaces ++ show (Crypto.hash $ blockHeader block)
+
+toUnverifiedBlockchain :: Blockchain -> UnverifiedBlockchain
+toUnverifiedBlockchain (Blockchain config node) = UnverifiedBlockchain config (toUnverifiedBlockchainNode node)
+  where
+    toUnverifiedBlockchainNode :: BlockchainNode -> UnverifiedBlockchainNode
+    toUnverifiedBlockchainNode (BlockchainNode block nodes) = UnverifiedBlockchainNode block (toUnverifiedBlockchainNode <$> nodes)

@@ -2,6 +2,68 @@ module Data.Blockchain.Core.BlockchainSpec (spec) where
 
 import TestUtil
 
+-- import qualified Data.HashMap.Strict as H
+-- import qualified Data.Time.Clock     as Time
+-- import qualified Data.Either     as Either
+
+import Data.Blockchain.Core.Blockchain
+import Data.Blockchain.Core.Types
+
+-- config :: BlockchainConfig
+-- config = BlockchainConfig
+--     { initialDifficulty             = Difficulty 1000
+--     , targetSecondsPerBlock         = 60
+--     , difficultyRecalculationHeight = 10
+--     , initialMiningReward           = 100
+--     , miningRewardTransitionMap     = H.fromList [(5, 50), (20, 10)]
+--     }
+
+-- block :: Block
+newtype SingletonChain = SingletonChain UnverifiedBlockchain deriving (Eq, Show)
+
+-- TODO: arbitrary too complex, need to use known blocks
+instance Arbitrary SingletonChain where
+    arbitrary = do
+        conf        <- arbitrary
+        blockHeader <- arbitrary
+        coinbase    <- arbitrary
+
+        let header       = blockHeader { difficulty = initialDifficulty conf }
+            genesisBlock = Block header coinbase []
+            node         = UnverifiedBlockchainNode genesisBlock []
+            chain        = UnverifiedBlockchain conf node
+
+        return (SingletonChain chain)
+
+spec :: Spec
+spec = describe "Blockchain" $
+    describe "verifyBlockchain" $ do
+        prop "should make a singleton chain with valid genesis block" $
+            \(SingletonChain chain) ->
+                case verifyBlockchain chain of
+                    Right _ -> succeeded
+                    Left e  -> failed { reason = show e }
+
+        prop "should reject a singleton chain with invalid difficulty" $
+            \conf blockHeader coinbase -> difficulty blockHeader /= initialDifficulty conf ==>
+                let genesisBlock = Block blockHeader coinbase []
+                    node         = UnverifiedBlockchainNode genesisBlock []
+                    chain        = UnverifiedBlockchain conf node
+                in verifyBlockchain chain === Left (AddBlockVerificationException InvalidDifficulty)
+
+        prop "should reject a singleton chain with transactions in the genesis block" $
+            \conf blockHeader coinbase (NonEmpty transactions) ->
+                let header       = blockHeader { difficulty = initialDifficulty conf }
+                    genesisBlock = Block header coinbase transactions
+                    node         = UnverifiedBlockchainNode genesisBlock []
+                    chain        = UnverifiedBlockchain conf node
+                in verifyBlockchain chain === Left GenesisBlockHasTransactions
+
+    -- describe "addBlock" $ do
+    --     prop "should add a valid block to a singleton chain" $
+    --         \(SingletonChain chain) block ->
+
+
 -- import qualified Data.Aeson              as Aeson
 -- import qualified Data.ByteString.Lazy    as Lazy
 -- import qualified Data.Either.Combinators as Either
@@ -57,8 +119,6 @@ import TestUtil
 --
 --         return $ LinkedBlocks3 block1 block2 block3
 
-spec :: Spec
-spec = return ()
 -- spec = do
 --     describe "addBlock" $ do
 --         prop "should not add a block that does not reference the previous block" $ once $

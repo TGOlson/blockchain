@@ -2,12 +2,14 @@
 
 module TestUtil
     ( module X
+    , propWithSize
     , unsafefromByteString
     ) where
 
-import Test.Hspec            as X
-import Test.Hspec.QuickCheck as X
-import Test.QuickCheck       as X hiding (generate)
+import Test.Hspec               as X
+import Test.Hspec.QuickCheck    as X
+import Test.QuickCheck          as X hiding (Result, labels, reason, theException, generate)
+import Test.QuickCheck.Property as X
 
 import qualified Crypto.PubKey.ECC.ECDSA    as Crypto
 import qualified Crypto.PubKey.ECC.Types    as Crypto
@@ -22,9 +24,10 @@ import Data.Blockchain.Core.Crypto
 -- import Data.Blockchain.Crypto.HashTree
 import Data.Blockchain.Core.Types
 
--- Used in some tests to filter generated difficulties that would be too hard to solve.
--- maxDifficulty :: Difficulty
--- maxDifficulty = Difficulty $ unsafefromByteString $ BS.append "0000" $ BS.replicate 60 'f'
+-- Utils -----------------------------------------------------------------------------------------------------
+
+propWithSize :: Testable prop => Int -> String -> prop -> Spec
+propWithSize n tag = modifyMaxSize (const n) . prop tag
 
 unsafefromByteString :: BS.ByteString -> Hash a
 unsafefromByteString = Maybe.fromMaybe (error "Invalid hash string") . fromByteString
@@ -42,7 +45,7 @@ instance Arbitrary BlockchainConfig where
         <*> (H.fromList <$> arbitrary)
 
 instance Arbitrary Block where
-    arbitrary = variant (442245695 :: Integer) $ Block
+    arbitrary = Block
         <$> arbitrary
         <*> arbitrary
         <*> arbitrary
