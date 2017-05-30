@@ -3,13 +3,13 @@ module Data.Blockchain.Core.Types.BlockchainConfigSpec (spec) where
 import TestUtil
 
 import qualified Data.HashMap.Strict as H
-
+import qualified Data.Time.Clock     as Time
 import Data.Blockchain.Core.Types
 
 config :: BlockchainConfig
 config = BlockchainConfig
     { initialDifficulty             = Difficulty 1000
-    , targetMillisPerBlock          = 10
+    , targetSecondsPerBlock         = 60
     , difficultyRecalculationHeight = 10
     , initialMiningReward           = 100
     , miningRewardTransitionMap     = H.fromList [(5, 50), (20, 10)]
@@ -32,12 +32,29 @@ spec =
                 let possibleRewards = initialMiningReward conf : H.elems (miningRewardTransitionMap conf)
                 in targetReward conf height `elem` possibleRewards
 
-        prop "should produce the correct difficulty when not recalculating" $
-            \block -> and [ targetDifficulty config [] == Difficulty 1000
-                          , targetDifficulty config [block] == difficulty (blockHeader block)
-                          , targetDifficulty config [block, block] == difficulty (blockHeader block)
-                          , targetDifficulty config (replicate 11 block) == difficulty (blockHeader block)
-                          ]
+        prop "should use initial config when no blocks" $
+            \conf -> targetDifficulty conf [] === initialDifficulty conf
 
-        prop "should produce the correct difficulty when recalculating" $
-            \block1 block2 -> targetDifficulty config (block1 : replicate 9 block2) === Difficulty 1000
+        prop "should produce the correct difficulty when not recalculating" $
+            \(NonEmpty blocks) conf ->
+                  -- Pretty complex example, can it be cleaned up?
+                  difficultyRecalculationHeight conf /= 0 &&
+                  targetSecondsPerBlock conf /= 0 &&
+                  length blocks < 20 &&
+                  length blocks `mod` fromIntegral (difficultyRecalculationHeight conf) /= 0
+                  ==> targetDifficulty conf blocks === difficulty (blockHeader $ last blocks)
+
+        prop "should not adjust difficulty if minnig rate is met exactly" $
+            \block ->
+                let blocks = replicate 9 block ++ [adjustTime (Time.addUTCTime 600) block]
+                in targetDifficulty config blocks === difficulty (blockHeader block)
+
+        prop "should always find a valid difficulty" $
+            \conf blocks -> targetDifficulty conf blocks >= Difficulty 0 -- TODO: want >= diff 1
+
+
+adjustTime :: (Time.UTCTime -> Time.UTCTime) -> Block -> Block
+adjustTime f block = setTime (f $ time $ blockHeader block) block
+
+setTime :: Time.UTCTime -> Block -> Block
+setTime t (Block header tx txs) = Block (header {time = t}) tx txs

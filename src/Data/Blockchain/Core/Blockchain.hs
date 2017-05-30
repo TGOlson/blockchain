@@ -21,6 +21,7 @@ import qualified Data.HashMap.Strict     as H
 import qualified Data.List               as List
 import qualified Data.List.NonEmpty      as NonEmpty
 import qualified Data.Ord                as Ord
+import qualified Data.Word               as Word
 
 import qualified Data.Blockchain.Core.Crypto as Crypto
 import           Data.Blockchain.Core.Types
@@ -115,7 +116,7 @@ addBlock blk (Blockchain config node) = Blockchain config <$> addBlockToNode blk
             verify (newBlock `notElem` blocks) BlockAlreadyExists
             verifyBlockDifficulty newBlockHeader config prevBlocks
             verifyBlockCreationTime newBlockHeader (blockHeader block)
-            verifyTransactions newBlock prevBlocks (targetReward config height)
+            verifyTransactions newBlock prevBlocks (targetReward config $ fromIntegral height)
 
             return updatedNode
         else
@@ -174,14 +175,14 @@ verifyBlockCreationTime newBlockHeader parentBlockHeader =
 -- this means we should try to apply a transaction, if it fails, try to apply next transaction
 -- recurse until stable
 -- TODO: until this is implemented it will be possible to "double spend" in the same block... : (
-verifyTransactions :: Block -> [Block] -> Int -> Either BlockException ()
+verifyTransactions :: Block -> [Block] -> Word.Word -> Either BlockException ()
 verifyTransactions (Block _header coinbaseTx txs) prevBlocks reward = do
     -- ensure coinbase transaction is of correct value
     verify (txOutValue (coinbaseTransactionOut coinbaseTx) == reward) InvalidCoinbaseTransactionValue
 
     sequence_ (verifyTransaction <$> txs)
   where
-    txOutValue :: NonEmpty.NonEmpty TransactionOut -> Int
+    txOutValue :: NonEmpty.NonEmpty TransactionOut -> Word.Word
     txOutValue = sum . fmap value
 
     unspentTransactions :: H.HashMap TransactionOutRef TransactionOut

@@ -42,7 +42,7 @@ instance Arbitrary BlockchainConfig where
         <*> (H.fromList <$> arbitrary)
 
 instance Arbitrary Block where
-    arbitrary = Block
+    arbitrary = variant (442245695 :: Integer) $ Block
         <$> arbitrary
         <*> arbitrary
         <*> arbitrary
@@ -61,13 +61,13 @@ instance Arbitrary CoinbaseTransaction where
     arbitrary = CoinbaseTransaction <$> arbitrary
 
 instance Arbitrary Transaction where
-    arbitrary = Transaction <$> arbitrary <*> arbitrary
+    arbitrary = resize 5 $ Transaction <$> arbitrary <*> arbitrary
 
 instance Arbitrary TransactionIn where
-    arbitrary = TransactionIn <$> arbitrary <*> arbitrary
+    arbitrary = resize 5 $ TransactionIn <$> arbitrary <*> arbitrary
 
 instance Arbitrary TransactionOut where
-    arbitrary = TransactionOut <$> arbitrary <*> arbitrary
+    arbitrary = resize 5 $ TransactionOut <$> arbitrary <*> arbitrary
 
 instance Arbitrary TransactionOutRef where
     arbitrary = TransactionOutRef <$> arbitrary <*> arbitrary
@@ -98,7 +98,7 @@ instance Arbitrary PublicKey where
 -- Other Types
 
 instance Arbitrary a => Arbitrary (NonEmpty.NonEmpty a) where
-    arbitrary = NonEmpty.fromList <$> (getNonEmpty <$> arbitrary)
+    arbitrary = NonEmpty.fromList <$> listOf1 arbitrary
 
 instance Arbitrary BS.ByteString where
     arbitrary = BS.pack <$> arbitrary

@@ -5,6 +5,7 @@ module Data.Blockchain.Mining.Block
 
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Time.Clock    as Time
+import qualified Data.Word          as Word
 
 import qualified Data.Blockchain.Core.Blockchain as Blockchain
 import qualified Data.Blockchain.Core.Types      as Blockchain
@@ -30,7 +31,7 @@ mineGenesisBlock pubKey config =
 
 -- TODO: accept multiple public keys
 mineBlockInternal
-    :: Crypto.PublicKey -> Int -> Blockchain.Difficulty
+    :: Crypto.PublicKey -> Word.Word -> Blockchain.Difficulty
     -> Crypto.Hash Blockchain.BlockHeader -> [Blockchain.Transaction]
     -> IO Blockchain.Block
 mineBlockInternal pubKey reward difficulty prevBlockHeaderHash txs = do
