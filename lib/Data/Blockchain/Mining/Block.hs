@@ -76,15 +76,9 @@ mineHeader prevBlockHeaderHash coinbaseTransactionHash transactionHashTreeRoot d
     -- TODO: get current time in case of int overflow,
     -- or in case current mining operation is getting close to oldest block time
     mineHeaderInternal header =
-        if isValidDifficulty header
+        if Blockchain.blockHeaderHashDifficulty header >= difficulty
             then return header
             else mineHeaderInternal (incNonce header)
-
-isValidDifficulty :: Blockchain.BlockHeader -> Bool
-isValidDifficulty header = headerHashWordWord64 < difficulty
-  where
-    headerHashWordWord64 = Crypto.hashToWord64 (Crypto.hash header)
-    difficulty           = Blockchain.unDifficulty (Blockchain.difficulty header)
 
 incNonce :: Blockchain.BlockHeader -> Blockchain.BlockHeader
 incNonce header = header { Blockchain.nonce = Blockchain.nonce header + 1 }

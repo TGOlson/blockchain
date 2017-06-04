@@ -164,10 +164,9 @@ addBlock blk (Blockchain config node) = Blockchain config <$> addBlockToNode blk
 verifyBlockDifficulty :: BlockHeader -> BlockchainConfig -> [Block] -> Either BlockException ()
 verifyBlockDifficulty header config blocks = do
     verify (difficulty header == diff) InvalidDifficultyReference
-    verify (unDifficulty diff >= headerHashWordWord64) InvalidDifficulty
+    verify (blockHeaderHashDifficulty header >= diff) InvalidDifficulty
   where
     diff = targetDifficulty config blocks
-    headerHashWordWord64 = Crypto.hashToWord64 (Crypto.hash header)
 
 -- block was not created before parent
 -- TODO: The protocol rejects blocks with a timestamp earlier than the median of the timestamps from the previous 11 blocks

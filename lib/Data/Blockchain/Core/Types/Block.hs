@@ -1,6 +1,7 @@
 module Data.Blockchain.Core.Types.Block
     ( Block(..)
     , BlockHeader(..)
+    , blockHeaderHashDifficulty
     ) where
 
 import qualified Data.Aeson      as Aeson
@@ -38,3 +39,9 @@ instance Crypto.Hashable BlockHeader where
 
 instance Aeson.ToJSON BlockHeader
 instance Aeson.FromJSON BlockHeader
+
+blockHeaderHashDifficulty :: BlockHeader -> Difficulty
+blockHeaderHashDifficulty header = Difficulty $ unDifficulty maxDifficulty `div` headerHash64
+  where
+    headerHash64 = Crypto.hashToWord64 headerHash
+    headerHash   = Crypto.hash header

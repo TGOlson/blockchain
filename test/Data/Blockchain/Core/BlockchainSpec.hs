@@ -22,7 +22,7 @@ data TestBlockchain
 --    | ...
 
 testChainFilePath :: TestBlockchain -> FilePath
-testChainFilePath = \case SingletonChain          -> "data/blockchain.json"
+testChainFilePath = \case SingletonChain          -> "data/singleton_chain/blockchain.json"
                           SmallSingleChainNoTxs   -> error "test blockchain not generated"
                           SmallSingleChainWithTxs -> error "test blockchain not generated"
                           SmallMutliNodeChain     -> error "test blockchain not generated"

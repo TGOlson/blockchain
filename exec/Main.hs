@@ -10,29 +10,24 @@ import qualified Data.Blockchain.Core.Types      as Blockchain
 import qualified Data.Blockchain.Mining.Block    as Mining
 
 data Command
-    = CreateBlockchain
-    | MineBlock
+    = SingletonChain
   deriving (Read, Show)
 
 main :: IO ()
 main = Env.getArgs >>= \case
-    [x] -> case read x of CreateBlockchain -> createBlockchain
-                          MineBlock        -> mineBlock
-    xs  -> error ("Too many arguments: " ++ show xs)
+    [x] -> case read x of SingletonChain -> generateSingletonChain
+    xs  -> error ("Invalid arguments: " ++ show xs)
 
-createBlockchain :: IO ()
-createBlockchain = do
+generateSingletonChain :: IO ()
+generateSingletonChain = do
     blockchain <- Mining.createBlockchain config -- TODO: diff module
-    writeJSON "data/blockchain.json" blockchain
+    writeJSON "data/singleton_chain/blockchain.json" blockchain
   where
     config = Blockchain.BlockchainConfig
-        -- { initialDifficulty             = Blockchain.maxDifficulty
-        { initialDifficulty             = Blockchain.Difficulty 1000000000000000000
+        { initialDifficulty             = Blockchain.Difficulty 1000
         , targetSecondsPerBlock         = 60
         , difficultyRecalculationHeight = 100
         , initialMiningReward           = 100
-        -- Defines block heights where reward changes
-        -- An empty map means the current reward is always the initial reward
         , miningRewardTransitionMap     = mempty
         }
 
