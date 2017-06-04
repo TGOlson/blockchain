@@ -36,7 +36,7 @@ dependencies:
   - hashable
 
 library:
-  source-dirs: src
+  source-dirs: lib
   exposed-modules:
     - Data.Blockchain.Core.Blockchain
     - Data.Blockchain.Core.Crypto
@@ -48,6 +48,13 @@ library:
     - Data.Blockchain.Core.Types.Difficulty
     - Data.Blockchain.Core.Types.Transaction
     - Data.Blockchain.Mining.Block
+
+executables:
+  blockchain:
+    main: Main.hs
+    source-dirs: exec
+    dependencies:
+      - blockchain
 
 tests:
   spec:

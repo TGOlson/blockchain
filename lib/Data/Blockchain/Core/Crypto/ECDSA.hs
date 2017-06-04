@@ -29,6 +29,13 @@ newtype Signature = Signature { unSignature :: Crypto.Signature }
 instance Aeson.ToJSON Signature where
     toJSON = Aeson.String . Text.pack . show . unSignature
 
+instance Aeson.FromJSON Signature where
+    parseJSON = Aeson.withText "Signature" $ \txt -> do
+        let str = Text.unpack txt
+            sig = read str -- TODO: unsafe!
+
+        return (Signature sig)
+
 newtype PublicKey = PublicKey { unPublicKey :: Crypto.PublicKey }
   deriving (Eq, Show)
 
@@ -38,8 +45,18 @@ instance H.Hashable PublicKey where
 instance Aeson.ToJSON PublicKey where
     toJSON = Aeson.String . Text.pack . show . unPublicKey
 
+instance Aeson.FromJSON PublicKey where
+    parseJSON = Aeson.withText "PublicKey" $ \txt -> do
+        let str = Text.unpack txt
+            pubKey = read str -- TODO: unsafe!
+
+        return (PublicKey pubKey)
+
+
 newtype PrivateKey = PrivateKey { _unPrivateKey :: Crypto.PrivateKey }
-  deriving (Show)
+
+instance Show PrivateKey where
+    show = show . Crypto.private_d . _unPrivateKey
 
 hashType :: Crypto.SHA256
 hashType = Crypto.SHA256

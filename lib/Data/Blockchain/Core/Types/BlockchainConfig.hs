@@ -4,7 +4,8 @@ module Data.Blockchain.Core.Types.BlockchainConfig
     , targetDifficulty
     ) where
 
-
+import qualified Data.Aeson          as Aeson
+import           Data.Aeson          ((.=), (.:))
 import qualified Data.HashMap.Strict as H
 import qualified Data.Time.Clock     as Time
 import qualified Data.Word           as Word
@@ -22,6 +23,23 @@ data BlockchainConfig = BlockchainConfig
     , miningRewardTransitionMap     :: H.HashMap Word.Word Word.Word
     }
   deriving (Eq, Show)
+
+instance Aeson.ToJSON BlockchainConfig where
+    toJSON BlockchainConfig{..} = Aeson.object
+        [ "initialDifficulty"             .= initialDifficulty
+        , "targetSecondsPerBlock"         .= targetSecondsPerBlock
+        , "difficultyRecalculationHeight" .= difficultyRecalculationHeight
+        , "initialMiningReward"           .= initialMiningReward
+        , "miningRewardTransitionMap"     .= H.toList miningRewardTransitionMap
+        ]
+
+instance Aeson.FromJSON BlockchainConfig where
+    parseJSON = Aeson.withObject "BlockchainConfig" $ \v -> BlockchainConfig
+        <$> v .: "initialDifficulty"
+        <*> v .: "targetSecondsPerBlock"
+        <*> v .: "difficultyRecalculationHeight"
+        <*> v .: "initialMiningReward"
+        <*> ( H.fromList <$> v .: "miningRewardTransitionMap" )
 
 targetReward :: BlockchainConfig -> Word.Word -> Word.Word
 targetReward config height =

@@ -18,6 +18,7 @@ module Data.Blockchain.Core.Blockchain
 
 import qualified Control.Monad           as M
 import qualified Data.Aeson              as Aeson
+import qualified Data.Aeson.Types        as Aeson
 import qualified Data.ByteString.Lazy    as Lazy
 import qualified Data.Either             as Either
 import qualified Data.Either.Combinators as Either
@@ -27,6 +28,7 @@ import qualified Data.List               as List
 import qualified Data.List.NonEmpty      as NonEmpty
 import qualified Data.Ord                as Ord
 import qualified Data.Word               as Word
+import qualified GHC.Generics            as Generic
 
 import qualified Data.Blockchain.Core.Crypto as Crypto
 import           Data.Blockchain.Core.Types
@@ -37,35 +39,22 @@ data Blockchain = Blockchain
     { _config :: BlockchainConfig
     , _node   :: BlockchainNode
     }
-  deriving (Eq, Show)
--- TODO: serialization
--- instance ToJSON Blockchain where
+  deriving (Generic.Generic, Eq, Show)
+
+instance Aeson.ToJSON Blockchain where
+    toEncoding = Aeson.genericToEncoding privateConsutructorOptions
 
 data BlockchainNode = BlockchainNode
     { _block :: Block
     , _nodes :: [BlockchainNode]
     }
-  deriving (Eq, Show)
+  deriving (Generic.Generic, Eq, Show)
+
+instance Aeson.ToJSON BlockchainNode where
+    toEncoding = Aeson.genericToEncoding privateConsutructorOptions
 
 blockchainConfig :: Blockchain -> BlockchainConfig
 blockchainConfig (Blockchain config _) = config
-
-data UnverifiedBlockchain = UnverifiedBlockchain
-    { _uConfig :: BlockchainConfig
-    , _uNode   :: UnverifiedBlockchainNode
-    }
-  deriving (Eq, Show)
--- TODO: serialization
--- instance ToJSON Blockchain where
-
-data UnverifiedBlockchainNode = UnverifiedBlockchainNode
-    { uBlock :: Block
-    , uNode  :: [UnverifiedBlockchainNode]
-    }
-  deriving (Eq, Show)
-
--- TODO: serialization
--- instance FromJSON UnverifiedBlockchain where
 
 data BlockchainVerificationException
     = GenesisBlockHasTransactions
@@ -249,6 +238,12 @@ verify cond = M.unless cond . Left
 
 maybeToEither :: a -> Maybe b -> Either a b
 maybeToEither e = maybe (Left e) Right
+
+privateConsutructorOptions :: Aeson.Options
+privateConsutructorOptions = Aeson.defaultOptions { Aeson.fieldLabelModifier = stripUnderscorePrefix }
+  where
+    stripUnderscorePrefix = \case ('_' : xs) -> xs
+                                  xs         -> xs
 
 -- Debugging ------------------------------------------------------------------------------------------------
 

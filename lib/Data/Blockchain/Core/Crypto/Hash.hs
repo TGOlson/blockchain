@@ -19,8 +19,9 @@ import qualified Data.ByteString.Lazy    as Lazy
 import qualified Data.Hashable           as H
 import qualified Data.Maybe              as Maybe
 import qualified Data.Text               as Text
+import qualified Data.Text.Encoding      as Text
 import qualified Data.Word               as Word
-import qualified Numeric                 as Numeric
+import qualified Numeric
 
 
 data Hash a = Hash { rawHash :: Crypto.Digest Crypto.SHA256 }
@@ -64,3 +65,10 @@ instance Hashable BS.ByteString where
 
 instance Aeson.ToJSON (Hash a) where
     toJSON = Aeson.String . Text.pack . show . rawHash
+
+instance Aeson.FromJSON (Hash a) where
+    parseJSON = Aeson.withText "Hash" $ \txt -> do
+        let bs = Text.encodeUtf8 txt
+            h = unsafeFromByteString bs -- TODO: unsafe!
+
+        return h

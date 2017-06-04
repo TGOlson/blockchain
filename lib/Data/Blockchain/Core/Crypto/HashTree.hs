@@ -14,6 +14,9 @@ data HashTreeRoot a = HashTreeRoot { unHashTreeRoot :: ByteStringHash }
 instance Aeson.ToJSON (HashTreeRoot a) where
     toJSON = Aeson.toJSON . unHashTreeRoot
 
+instance Aeson.FromJSON (HashTreeRoot a) where
+    parseJSON = fmap HashTreeRoot . Aeson.parseJSON
+
 
 -- Note: hash tree constructed with extra leaves at end of tree.
 -- This is NOT compatible with the Bitcoin implementation.

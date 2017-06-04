@@ -1,6 +1,7 @@
 module Data.Blockchain.Mining.Block
     ( mineBlock
     , mineGenesisBlock
+    , createBlockchain
     ) where
 
 import qualified Data.List.NonEmpty as NonEmpty
@@ -21,8 +22,20 @@ mineBlock pubKey txs blockchain =
     prevBlock           = NonEmpty.head (Blockchain.longestChain blockchain)
     prevBlockHeaderHash = Crypto.hash (Blockchain.blockHeader prevBlock)
 
-mineGenesisBlock :: Crypto.PublicKey -> Blockchain.BlockchainConfig -> IO Blockchain.Block
-mineGenesisBlock pubKey config =
+createBlockchain :: Blockchain.BlockchainConfig -> IO Blockchain.Blockchain
+createBlockchain config = either (error . show) id <$> do
+    genesisBlock <- mineGenesisBlock config
+
+    let node  = Blockchain.UnverifiedBlockchainNode genesisBlock []
+        chain = Blockchain.UnverifiedBlockchain config node
+
+    return (Blockchain.verifyBlockchain chain)
+
+mineGenesisBlock :: Blockchain.BlockchainConfig -> IO Blockchain.Block
+mineGenesisBlock config = do
+    -- Note: ignore private key, coinbase reward in genesis block cannot be spent
+    (Crypto.KeyPair pubKey _privKey) <- Crypto.generate
+
     mineBlockInternal pubKey reward difficulty prevBlockHeaderHash []
   where
     reward              = Blockchain.initialMiningReward config

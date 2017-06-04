@@ -10,7 +10,7 @@ import qualified Data.Word  as Word
 -- TODO: difficulty should never be zero
 -- type constructor should enforce that invariant
 newtype Difficulty = Difficulty { unDifficulty :: Word.Word64 }
-  deriving (Eq, Ord, Aeson.ToJSON, Show)
+  deriving (Eq, Ord, Aeson.ToJSON, Aeson.FromJSON, Show)
 
 minDifficulty :: Difficulty
 minDifficulty = Difficulty 1

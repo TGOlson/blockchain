@@ -4,8 +4,8 @@ module Data.Blockchain.Core.Types.Block
     ) where
 
 import qualified Data.Aeson      as Aeson
-import           Data.Aeson      ((.=))
 import qualified Data.Time.Clock as Time
+import qualified GHC.Generics    as Generic
 
 import qualified Data.Blockchain.Core.Crypto            as Crypto
 import           Data.Blockchain.Core.Types.Difficulty
@@ -16,15 +16,11 @@ data Block = Block
     , coinbaseTransaction :: CoinbaseTransaction
     , transactions        :: [Transaction]
     }
-  deriving (Eq, Show)
+  deriving (Generic.Generic, Eq, Show)
 
 -- TODO: add block header hash for more efficient hash comparison
-instance Aeson.ToJSON Block where
-    toJSON Block{..} = Aeson.object
-        [ "header"       .= blockHeader
-        , "coinbase"     .= coinbaseTransaction
-        , "transactions" .= transactions
-        ]
+instance Aeson.ToJSON Block
+instance Aeson.FromJSON Block
 
 data BlockHeader = BlockHeader
     { version                 :: Int
@@ -35,18 +31,10 @@ data BlockHeader = BlockHeader
     , difficulty              :: Difficulty
     , nonce                   :: Int
     }
-  deriving (Eq, Show)
+  deriving (Generic.Generic, Eq, Show)
 
 instance Crypto.Hashable BlockHeader where
     hash = Crypto.hashJSON
 
-instance Aeson.ToJSON BlockHeader where
-    toJSON BlockHeader{..} = Aeson.object
-        [ "version"                 .= version
-        , "prevBlockHeaderHash"     .= prevBlockHeaderHash
-        , "coinbaseTransactionHash" .= coinbaseTransactionHash
-        , "transactionHashTreeRoot" .= transactionHashTreeRoot
-        , "time"                    .= time
-        , "difficulty"              .= difficulty
-        , "nonce"                   .= nonce
-        ]
+instance Aeson.ToJSON BlockHeader
+instance Aeson.FromJSON BlockHeader
