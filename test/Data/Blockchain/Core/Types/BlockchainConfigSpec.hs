@@ -4,10 +4,11 @@ import TestUtil
 
 import qualified Data.HashMap.Strict as H
 import qualified Data.Time.Clock     as Time
-import Data.Blockchain.Core.Types
 
-config :: BlockchainConfig
-config = BlockchainConfig
+import           Data.Blockchain.Core.Types
+
+testConfig :: BlockchainConfig
+testConfig = BlockchainConfig
     { initialDifficulty             = Difficulty 1000
     , targetSecondsPerBlock         = 60
     , difficultyRecalculationHeight = 10
@@ -19,12 +20,12 @@ spec :: Spec
 spec = describe "BlockchainConfig" $ do
     describe "targetReward" $ do
         it "should produce the correct reward" $
-            and [ targetReward config 0  == 100
-                , targetReward config 4  == 100
-                , targetReward config 5  == 50
-                , targetReward config 19 == 50
-                , targetReward config 20 == 10
-                , targetReward config 21 == 10
+            and [ targetReward testConfig 0  == 100
+                , targetReward testConfig 4  == 100
+                , targetReward testConfig 5  == 50
+                , targetReward testConfig 19 == 50
+                , targetReward testConfig 20 == 10
+                , targetReward testConfig 21 == 10
                 ]
 
         prop "should always find a valid reward" $
@@ -43,7 +44,7 @@ spec = describe "BlockchainConfig" $ do
                     blocks             = replicate 9 block ++ pure lastBlock
                     lastDiff           = difficulty (blockHeader block)
                     expectedDifficulty = Difficulty $ round (toRational (unDifficulty lastDiff) * ratio)
-                in targetDifficulty config blocks === expectedDifficulty
+                in targetDifficulty testConfig blocks === expectedDifficulty
 
         propWithSize 20 "should produce the correct difficulty when not recalculating" $
             \(NonEmpty blocks) conf ->
