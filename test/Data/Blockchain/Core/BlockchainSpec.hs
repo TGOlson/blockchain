@@ -51,13 +51,15 @@ spec = describe "Blockchain" $ do
 
             return $ verifyBlockchain chain === Left (AddBlockVerificationException InvalidDifficultyReference)
 
-        -- TODO: need a pre-mined block w/ invalid difficulty
-        -- it "should reject a chain with invalid genesis block difficulty" $ once $ ioProperty $ do
-        --     (UnverifiedBlockchain config node) <- loadUnverifiedTestBlockchain SingletonChain
-        --     let config' = config { initialDifficulty = minDifficulty }
-        --         chain   = UnverifiedBlockchain config' node
-        --
-        --     return $ verifyBlockchain chain === Left (AddBlockVerificationException InvalidDifficultyReference)
+        -- Note: this is a known modification that will change block hash to make it invalid
+        -- if test data is re-generated, it may cause this test to fail
+        it "should reject a chain with invalid genesis block difficulty" $ once $ ioProperty $ do
+            (UnverifiedBlockchain config (UnverifiedBlockchainNode block nodes)) <- loadUnverifiedTestBlockchain SingletonChain
+            let blockHeader' = (blockHeader block) { nonce = 1 }
+                block'       = block { blockHeader = blockHeader' }
+                chain        = UnverifiedBlockchain config (UnverifiedBlockchainNode block' nodes)
+
+            return $ verifyBlockchain chain === Left (AddBlockVerificationException InvalidDifficulty)
 
         it "should reject a chain with transactions in genesis block" $ once $
             \tx -> ioProperty $ do

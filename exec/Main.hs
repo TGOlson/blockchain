@@ -21,7 +21,14 @@ main = Env.getArgs >>= \case
 generateSingletonChain :: IO ()
 generateSingletonChain = do
     blockchain <- Mining.createBlockchain config -- TODO: diff module
+
+    (Crypto.KeyPair pubKey privKey) <- Crypto.generate
+
+    block <- Mining.mineBlock pubKey mempty blockchain
+
     writeJSON "data/singleton_chain/blockchain.json" blockchain
+    writeJSON "data/singleton_chain/valid_next_block.json" block
+    writeJSON "data/singleton_chain/valid_next_block_coinbase_private_key.json" (show privKey)
   where
     config = Blockchain.BlockchainConfig
         { initialDifficulty             = Blockchain.Difficulty 1000
@@ -31,17 +38,16 @@ generateSingletonChain = do
         , miningRewardTransitionMap     = mempty
         }
 
-mineBlock :: IO ()
-mineBlock = do
-    blockchain <- readBlockchain "data/blockchain.json"
-    (Crypto.KeyPair pubKey privKey) <- Crypto.generate
-
-    block <- Mining.mineBlock pubKey mempty blockchain
-    let blockchain' = either (error . show) id $ Blockchain.addBlock block blockchain
-
-    writeJSON "data/coinbase2privateKey.json" (show privKey)
-    writeJSON "data/block2.json" block
-    writeJSON "data/blockchain.json" blockchain'
+-- mineBlock :: IO ()
+-- mineBlock = do
+--     blockchain <- readBlockchain "data/singleton_chain/blockchain.json"
+--     (Crypto.KeyPair pubKey privKey) <- Crypto.generate
+--
+--     block <- Mining.mineBlock pubKey mempty blockchain
+--     let !_blockchain' = either (error . show) id $ Blockchain.addBlock block blockchain
+--
+--     writeJSON "data/singleton_chain/valid_next_block.json" block
+--     writeJSON "data/singleton_chain/valid_next_block_coinbase_private_key.json" (show privKey)
 
 readBlockchain :: FilePath -> IO Blockchain.Blockchain
 readBlockchain filePath = do
