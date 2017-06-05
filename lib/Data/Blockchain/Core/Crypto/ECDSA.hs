@@ -37,20 +37,16 @@ instance Aeson.FromJSON Signature where
         return (Signature sig)
 
 newtype PublicKey = PublicKey { unPublicKey :: Crypto.PublicPoint }
-  deriving (Eq, Show)
+  deriving (Eq)
 
 instance H.Hashable PublicKey where
     hashWithSalt _ = H.hash . show . unPublicKey
 
+instance Show PublicKey where
+    show = publicKeyToHex
+
 instance Aeson.ToJSON PublicKey where
-    toJSON (PublicKey Crypto.PointO)      = error "Unexpected pattern match - PointO" -- TODO: move invariant to type level
-    toJSON (PublicKey (Crypto.Point x y)) = Aeson.String (Text.pack hexStr)
-      where
-        xRawHex = Numeric.showHex x ""
-        yRawHex = Numeric.showHex y ""
-        xHex    = replicate (64 - length xRawHex) '0' ++ xRawHex
-        yHex    = replicate (64 - length yRawHex) '0' ++ yRawHex
-        hexStr  = xHex ++ yHex
+    toJSON = Aeson.String . Text.pack . publicKeyToHex
 
 instance Aeson.FromJSON PublicKey where
     parseJSON = Aeson.withText "PublicKey" $ \txt -> do
@@ -63,6 +59,14 @@ instance Aeson.FromJSON PublicKey where
 
         return (PublicKey point)
 
+publicKeyToHex :: PublicKey -> String
+publicKeyToHex (PublicKey Crypto.PointO)      = error "Unexpected pattern match - PointO" -- TODO: move invariant to type level?
+publicKeyToHex (PublicKey (Crypto.Point x y)) = xHex ++ yHex
+  where
+      xRawHex = Numeric.showHex x ""
+      yRawHex = Numeric.showHex y ""
+      xHex    = replicate (64 - length xRawHex) '0' ++ xRawHex
+      yHex    = replicate (64 - length yRawHex) '0' ++ yRawHex
 
 newtype PrivateKey = PrivateKey { unPrivateKey :: Crypto.PrivateNumber }
   deriving (Eq, Show)
@@ -76,8 +80,6 @@ instance Aeson.FromJSON PrivateKey where
             num = fst $ head (Numeric.readHex str) -- TODO: unsafe!
 
         return (PrivateKey num)
-
-
 
 hashType :: Crypto.SHA256
 hashType = Crypto.SHA256

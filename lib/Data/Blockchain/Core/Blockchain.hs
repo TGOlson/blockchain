@@ -9,6 +9,7 @@ module Data.Blockchain.Core.Blockchain
     , verifyBlockchain
     , addBlock
     -- Chain inspection
+    , unspentTransactionOutputs
     , longestChain
     , flatten
     -- Debugging
@@ -87,12 +88,12 @@ verifyBlockchain :: UnverifiedBlockchain -> Either BlockchainVerificationExcepti
 verifyBlockchain (UnverifiedBlockchain config (UnverifiedBlockchainNode genesisBlock nodes)) = do
     let (Block header _coinbase txs) = genesisBlock
         reward                       = initialMiningReward config
-        blockchainHead               = Blockchain config (BlockchainNode genesisBlock [])
+        blockchainHead               = Blockchain config (BlockchainNode genesisBlock mempty)
         blocks                       = concatMap getBlocks nodes
 
     verify (null txs) GenesisBlockHasTransactions
     Either.mapLeft AddBlockVerificationException $ verifyBlockDifficulty header config mempty
-    Either.mapLeft AddBlockVerificationException $ verifyTransactions genesisBlock [] reward
+    Either.mapLeft AddBlockVerificationException $ verifyTransactions genesisBlock mempty reward
     Either.mapLeft AddBlockVerificationException $ verifyBlockHeaderReferences genesisBlock
     Either.mapLeft AddBlockVerificationException $ Foldable.foldrM addBlock blockchainHead blocks
   where
@@ -114,13 +115,13 @@ verifyBlockchain (UnverifiedBlockchain config (UnverifiedBlockchainNode genesisB
 -- transaction txout need to be less the sum of input txouts
 -- transaction txin need to have valid signature by input txouts
 addBlock :: Block -> Blockchain -> Either BlockException Blockchain
-addBlock blk (Blockchain config node) = Blockchain config <$> addBlockToNode blk [] node
+addBlock blk (Blockchain config node) = Blockchain config <$> addBlockToNode blk mempty node
   where
     addBlockToNode :: Block -> [Block] -> BlockchainNode -> Either BlockException BlockchainNode
     addBlockToNode newBlock prevBlocks (BlockchainNode block nodes) =
         if isParentNode then do
             let blocks         = _block <$> nodes
-                newNode        = BlockchainNode newBlock []
+                newNode        = BlockchainNode newBlock mempty
                 updatedNode    = BlockchainNode block (newNode : nodes)
                 height         = length prevBlocks + 1
                 newBlockHeader = blockHeader newBlock
@@ -203,7 +204,7 @@ verifyTransactions (Block _header coinbaseTx txs) prevBlocks reward = do
     txOutValue = sum . fmap value
 
     unspentTransactions :: H.HashMap TransactionOutRef TransactionOut
-    unspentTransactions = unspentTransactionOutputs prevBlocks
+    unspentTransactions = unspentTransactionOutputsInternal prevBlocks
 
     verifyTransaction :: Transaction -> Either BlockException ()
     verifyTransaction (Transaction txIn txOut) = do
@@ -217,9 +218,34 @@ verifyTransactions (Block _header coinbaseTx txs) prevBlocks reward = do
 
         verify (txOutValue prevTxOut >= outputValue) InvalidTransactionValues
 
-unspentTransactionOutputs :: [Block] -> H.HashMap TransactionOutRef TransactionOut
-unspentTransactionOutputs = undefined -- TODO: !
+unspentTransactionOutputs :: Blockchain -> H.HashMap Crypto.PublicKey Word.Word
+unspentTransactionOutputs blockchain = H.fromListWith (+) (toPair <$> unspentTxOuts)
+  where
+    toPair (TransactionOut value pubKey) = (pubKey, value)
+    unspentTxOuts = H.elems $ unspentTransactionOutputsInternal (NonEmpty.toList $ longestChain blockchain)
 
+-- Note: this is required to be an internal method
+-- As we assume the list of blocks is a verified sub-chain.
+unspentTransactionOutputsInternal :: [Block] -> H.HashMap TransactionOutRef TransactionOut
+unspentTransactionOutputsInternal = \case -- TODO: coinbase as well...
+    []          -> mempty
+    (block:_blocks) ->
+        -- TODO: ordering... ??
+        let coinbase             = coinbaseTransaction block
+            coinbaseHash         = Crypto.hash coinbase
+            coinbaseTxOuts       = coinbaseTransactionOut coinbase
+            coinbaseTxOutList    = zip (NonEmpty.toList coinbaseTxOuts) [0..]
+            coinbaseTxOutRefPair = (\(coinbaseTxOut, i) -> (TransactionOutRef (Left coinbaseHash) i, coinbaseTxOut)) <$> coinbaseTxOutList
+            -- txHash       = Crypto.hash tx
+            -- txOuts       = transactionOut tx
+            -- txOutList    = zip (NonEmpty.toList txOuts) [0..]
+            -- txOutRefPair = (\(txOut, i) -> (TransactionOutRef (Right txHash) i, txOut)) <$> txOutList
+        in H.fromList coinbaseTxOutRefPair
+
+-- unspentTransactionOutputsInternal (x:xs) = foldr undefined mempty
+--   where
+--     initialList =
+-- (a -> b -> b) -> b -> t a -> b
 
 -- Chain inspection -----------------------------------------------------------------------------------------
 

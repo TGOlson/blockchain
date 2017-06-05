@@ -2,8 +2,9 @@ module Data.Blockchain.Core.BlockchainSpec (spec) where
 
 import TestUtil
 
-import qualified Data.ByteString.Lazy as Lazy
 import qualified Data.Aeson           as Aeson
+import qualified Data.ByteString.Lazy as Lazy
+import qualified Data.HashMap.Strict  as H
 
 import Data.Blockchain.Core.Blockchain
 import Data.Blockchain.Core.Types
@@ -137,3 +138,12 @@ spec = describe "Blockchain" $ do
         --         return $ addBlock block' blockchain === Left InvalidTransactionHashTreeRoot
 
         -- TODO: transaction testing.........
+
+    describe "unspentTransactionOutputs" $
+        it "should calculate unspent transaction outputs" $ once $ ioProperty $ do
+            (blockchain, block) <- loadVerifiedTestBlockchainWithValidBlock SingletonChain
+            let blockchain' = throwLeft (addBlock block blockchain)
+                unspent     = unspentTransactionOutputs blockchain'
+
+            return $ Aeson.encode (H.toList unspent) === mempty
+                -- [("797ea451ea4ae1c59b7fa9c1d6a9ffee1f661135bd621bdb00a060ab606131b2e095c5de517a79e8a7b5d1d0b1d12672f507355a5d2da9d0d41bd7f44baea29f", "100")]

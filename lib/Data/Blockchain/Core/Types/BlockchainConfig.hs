@@ -30,6 +30,8 @@ instance Aeson.ToJSON BlockchainConfig where
         , "targetSecondsPerBlock"         .= targetSecondsPerBlock
         , "difficultyRecalculationHeight" .= difficultyRecalculationHeight
         , "initialMiningReward"           .= initialMiningReward
+        -- TODO: serialize to json object
+        -- Need to put into form: HashMap Text Aeson.Value
         , "miningRewardTransitionMap"     .= H.toList miningRewardTransitionMap
         ]
 
