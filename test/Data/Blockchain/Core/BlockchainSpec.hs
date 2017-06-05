@@ -30,8 +30,13 @@ testChainFilePath = \case SingletonChain          -> "data/singleton_chain/block
 loadUnverifiedTestBlockchain :: TestBlockchain -> IO UnverifiedBlockchain
 loadUnverifiedTestBlockchain testChain = throwLeft . Aeson.eitherDecode <$> Lazy.readFile (testChainFilePath testChain)
 
--- loadVerifiedTestBlockchain :: TestBlockchain -> IO Blockchain
--- loadVerifiedTestBlockchain testChain = throwLeft . verifyBlockchain <$> loadUnverifiedTestBlockchain testChain
+loadVerifiedTestBlockchainWithValidBlock :: TestBlockchain -> IO (Blockchain, Block)
+loadVerifiedTestBlockchainWithValidBlock testChain = do
+    blockchain <- throwLeft . verifyBlockchain <$> loadUnverifiedTestBlockchain testChain
+    -- TODO: hardcoded path breaks "test chain" pattern... fix it
+    block <- throwLeft . Aeson.eitherDecode <$> Lazy.readFile "data/singleton_chain/valid_next_block.json"
+
+    return (blockchain, block)
 
 spec :: Spec
 spec = describe "Blockchain" $ do
@@ -91,3 +96,44 @@ spec = describe "Blockchain" $ do
 
         -- TODO: test is possible, hard to do with empty transaction rule & expected header hash
         -- it "should reject a chain with invalid transaction hash in genesis block header" $ once $
+
+    describe "addBlock" $ do
+        it "should add a valid block" $ once $ ioProperty $ do
+            (blockchain, block) <- loadVerifiedTestBlockchainWithValidBlock SingletonChain
+            return $ (length . longestChain <$> addBlock block blockchain) === Right 2
+
+        -- Note: this is a known modification that will change block hash to make it invalid
+        -- if test data is re-generated, it may cause this test to fail
+        it "should reject a chain with invalid genesis block difficulty" $ once $ ioProperty $ do
+            (blockchain, block) <- loadVerifiedTestBlockchainWithValidBlock SingletonChain
+            let blockHeader' = (blockHeader block) { nonce = 1 }
+                block'       = block { blockHeader = blockHeader' }
+
+            return $ addBlock block' blockchain === Left InvalidDifficulty
+
+        it "should reject a chain with invalid coinbase reward in block" $ once $
+            \txOut -> ioProperty $ do
+                (blockchain, block) <- loadVerifiedTestBlockchainWithValidBlock SingletonChain
+                let txOut'   = txOut { value = 999 }
+                    coinbase = CoinbaseTransaction (pure txOut')
+                    block'   = block { coinbaseTransaction = coinbase }
+
+                return $ addBlock block' blockchain === Left InvalidCoinbaseTransactionValue
+
+        it "should reject a chain with invalid coinbase hash in block header" $ once $
+            \txOut -> ioProperty $ do
+                (blockchain, block) <- loadVerifiedTestBlockchainWithValidBlock SingletonChain
+                let txOut'   = txOut { value = 100 }
+                    coinbase = CoinbaseTransaction (pure txOut')
+                    block'   = block { coinbaseTransaction = coinbase }
+
+                return $ addBlock block' blockchain === Left InvalidCoinbaseTransactionHash
+
+        -- it "should reject a chain with invalid transaction hash in block header" $ once $
+        --     \tx -> ioProperty $ do
+        --         (blockchain, block) <- loadVerifiedTestBlockchainWithValidBlock SingletonChain
+        --         let block' = block { transactions = pure tx }
+        --
+        --         return $ addBlock block' blockchain === Left InvalidTransactionHashTreeRoot
+
+        -- TODO: transaction testing.........

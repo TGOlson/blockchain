@@ -86,17 +86,16 @@ data BlockException
 verifyBlockchain :: UnverifiedBlockchain -> Either BlockchainVerificationException Blockchain
 verifyBlockchain (UnverifiedBlockchain config (UnverifiedBlockchainNode genesisBlock nodes)) = do
     let (Block header _coinbase txs) = genesisBlock
+        reward                       = initialMiningReward config
+        blockchainHead               = Blockchain config (BlockchainNode genesisBlock [])
+        blocks                       = concatMap getBlocks nodes
 
-    Either.mapLeft AddBlockVerificationException $ verifyBlockDifficulty header config mempty
     verify (null txs) GenesisBlockHasTransactions
-
+    Either.mapLeft AddBlockVerificationException $ verifyBlockDifficulty header config mempty
     Either.mapLeft AddBlockVerificationException $ verifyTransactions genesisBlock [] reward
     Either.mapLeft AddBlockVerificationException $ verifyBlockHeaderReferences genesisBlock
     Either.mapLeft AddBlockVerificationException $ Foldable.foldrM addBlock blockchainHead blocks
   where
-    reward = initialMiningReward config
-    blockchainHead = Blockchain config (BlockchainNode genesisBlock [])
-    blocks = concatMap getBlocks nodes
     getBlocks (UnverifiedBlockchainNode block ns) = block : concatMap getBlocks ns
 
 -- ** Notes
@@ -127,10 +126,10 @@ addBlock blk (Blockchain config node) = Blockchain config <$> addBlockToNode blk
                 newBlockHeader = blockHeader newBlock
 
             verify (newBlock `notElem` blocks) BlockAlreadyExists
-            verifyBlockDifficulty newBlockHeader config prevBlocks
             verifyBlockCreationTime newBlockHeader (blockHeader block)
-            verifyBlockHeaderReferences newBlock
+            verifyBlockDifficulty newBlockHeader config prevBlocks
             verifyTransactions newBlock prevBlocks (targetReward config $ fromIntegral height)
+            verifyBlockHeaderReferences newBlock
 
             return updatedNode
         else
