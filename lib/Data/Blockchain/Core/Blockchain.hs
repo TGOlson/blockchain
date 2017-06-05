@@ -12,9 +12,6 @@ module Data.Blockchain.Core.Blockchain
     , unspentTransactionOutputs
     , longestChain
     , flatten
-    -- Debugging
-    , toString
-    , toUnverifiedBlockchain
     ) where
 
 import qualified Control.Monad           as M
@@ -226,26 +223,37 @@ unspentTransactionOutputs blockchain = H.fromListWith (+) (toPair <$> unspentTxO
 
 -- Note: this is required to be an internal method
 -- As we assume the list of blocks is a verified sub-chain.
+-- TODO: similar issue to "verify transactions", does not recursively apply txouts within a transaction
 unspentTransactionOutputsInternal :: [Block] -> H.HashMap TransactionOutRef TransactionOut
-unspentTransactionOutputsInternal = \case -- TODO: coinbase as well...
-    []          -> mempty
-    (block:_blocks) ->
-        -- TODO: ordering... ??
-        let coinbase             = coinbaseTransaction block
-            coinbaseHash         = Crypto.hash coinbase
-            coinbaseTxOuts       = coinbaseTransactionOut coinbase
-            coinbaseTxOutList    = zip (NonEmpty.toList coinbaseTxOuts) [0..]
-            coinbaseTxOutRefPair = (\(coinbaseTxOut, i) -> (TransactionOutRef (Left coinbaseHash) i, coinbaseTxOut)) <$> coinbaseTxOutList
-            -- txHash       = Crypto.hash tx
-            -- txOuts       = transactionOut tx
-            -- txOutList    = zip (NonEmpty.toList txOuts) [0..]
-            -- txOutRefPair = (\(txOut, i) -> (TransactionOutRef (Right txHash) i, txOut)) <$> txOutList
-        in H.fromList coinbaseTxOutRefPair
+unspentTransactionOutputsInternal blocks =
+    foldr (\(Block _ coinbase txs) -> addTransactions txs . addCoinbaseTransaction coinbase) mempty blocks
+  where
+    addCoinbaseTransaction :: CoinbaseTransaction -> H.HashMap TransactionOutRef TransactionOut -> H.HashMap TransactionOutRef TransactionOut
+    addCoinbaseTransaction coinbase = H.unionWith onDuplicateTxOutRef coinbaseTxOutRefMap
+      where
+        coinbaseTxOutRefMap = makeTxOutRefMap (Left $ Crypto.hash coinbase) (coinbaseTransactionOut coinbase)
 
--- unspentTransactionOutputsInternal (x:xs) = foldr undefined mempty
---   where
---     initialList =
--- (a -> b -> b) -> b -> t a -> b
+    addTransactions :: [Transaction] -> H.HashMap TransactionOutRef TransactionOut -> H.HashMap TransactionOutRef TransactionOut
+    addTransactions txs hmap = foldr addTransaction hmap txs
+
+    addTransaction :: Transaction -> H.HashMap TransactionOutRef TransactionOut -> H.HashMap TransactionOutRef TransactionOut
+    addTransaction tx@(Transaction txIns txOuts) = H.unionWith onDuplicateTxOutRef txOutRefMap . enforceDeleteAll txOutRefsFromTxIns
+      where
+        txOutRefsFromTxIns = NonEmpty.toList (transactionOutRef <$> txIns)
+        txOutRefMap        = makeTxOutRefMap (Right $ Crypto.hash tx) txOuts
+        -- Map utils, enforcing expected invariants
+        enforceDelete k          = H.alter (maybe (onNotFoundTxOutRef k) (const Nothing)) k
+        enforceDeleteAll ks hmap = foldr enforceDelete hmap ks
+
+    makeTxOutRefMap :: Either (Crypto.Hash CoinbaseTransaction) (Crypto.Hash Transaction) -> NonEmpty.NonEmpty TransactionOut -> H.HashMap TransactionOutRef TransactionOut
+    makeTxOutRefMap eHash txOuts = H.fromList txOutRefPair
+      where
+        txOutIndexed = zip (NonEmpty.toList txOuts) [0..]
+        txOutRefPair = (\(txOut, i) -> (TransactionOutRef eHash i, txOut)) <$> txOutIndexed
+
+    onDuplicateTxOutRef txOutRef = error ("Unexpected error when computing transaction map - duplicate transaction: " ++ show txOutRef)
+    onNotFoundTxOutRef  txOutRef = error ("Unexpected error when computing transaction map - transaction not found: " ++ show txOutRef)
+
 
 -- Chain inspection -----------------------------------------------------------------------------------------
 
@@ -279,21 +287,3 @@ privateConsutructorOptions = Aeson.defaultOptions { Aeson.fieldLabelModifier = s
   where
     stripUnderscorePrefix = \case ('_' : xs) -> xs
                                   xs         -> xs
-
--- Debugging ------------------------------------------------------------------------------------------------
-
-toString :: Blockchain -> String
-toString (Blockchain _ node) = List.intercalate "\n" $ toStringLevels 0 node
-  where
-    toStringLevels :: Int -> BlockchainNode -> [String]
-    toStringLevels level (BlockchainNode block blockchains) =
-        hashString : concatMap (toStringLevels (level + 1)) blockchains
-      where
-        spaces = replicate level '\t'
-        hashString = spaces ++ show (Crypto.hash $ blockHeader block)
-
-toUnverifiedBlockchain :: Blockchain -> UnverifiedBlockchain
-toUnverifiedBlockchain (Blockchain config node) = UnverifiedBlockchain config (toUnverifiedBlockchainNode node)
-  where
-    toUnverifiedBlockchainNode :: BlockchainNode -> UnverifiedBlockchainNode
-    toUnverifiedBlockchainNode (BlockchainNode block nodes) = UnverifiedBlockchainNode block (toUnverifiedBlockchainNode <$> nodes)

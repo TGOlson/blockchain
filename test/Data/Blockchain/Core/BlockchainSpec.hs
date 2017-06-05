@@ -5,8 +5,10 @@ import TestUtil
 import qualified Data.Aeson           as Aeson
 import qualified Data.ByteString.Lazy as Lazy
 import qualified Data.HashMap.Strict  as H
+import qualified Data.List.NonEmpty   as NonEmpty
 
 import Data.Blockchain.Core.Blockchain
+import Data.Blockchain.Core.Crypto
 import Data.Blockchain.Core.Types
 
 
@@ -101,7 +103,17 @@ spec = describe "Blockchain" $ do
     describe "addBlock" $ do
         it "should add a valid block" $ once $ ioProperty $ do
             (blockchain, block) <- loadVerifiedTestBlockchainWithValidBlock SingletonChain
-            return $ (length . longestChain <$> addBlock block blockchain) === Right 2
+            let mainChain = throwLeft (longestChain <$> addBlock block blockchain)
+
+            return $ length mainChain == 2 && NonEmpty.last mainChain == block
+
+        it "should reject a duplicate block" $ once $ ioProperty $ do
+            (blockchain, block) <- loadVerifiedTestBlockchainWithValidBlock SingletonChain
+            let blockchain' = throwLeft (addBlock block blockchain)
+
+            return $ addBlock block blockchain' === Left BlockAlreadyExists
+
+        -- TODO: block without parent
 
         -- Note: this is a known modification that will change block hash to make it invalid
         -- if test data is re-generated, it may cause this test to fail
@@ -145,5 +157,13 @@ spec = describe "Blockchain" $ do
             let blockchain' = throwLeft (addBlock block blockchain)
                 unspent     = unspentTransactionOutputs blockchain'
 
-            return $ Aeson.encode (H.toList unspent) === mempty
-                -- [("797ea451ea4ae1c59b7fa9c1d6a9ffee1f661135bd621bdb00a060ab606131b2e095c5de517a79e8a7b5d1d0b1d12672f507355a5d2da9d0d41bd7f44baea29f", "100")]
+            return $ showKeys unspent === H.fromList
+                [ ("797ea451ea4ae1c59b7fa9c1d6a9ffee1f661135bd621bdb00a060ab606131b2e095c5de517a79e8a7b5d1d0b1d12672f507355a5d2da9d0d41bd7f44baea29f", 100)
+                , ("a39e5768f9958a24ec2c3296165b2c3e0f381c210c0e8f73a3776b490c063e44a0d0a0b1ffb83e4e2b56e6f5beafd7a2503331ac8a9a3257fb2d048a7eab3d10", 100)
+                ]
+
+        -- TODO: test w/ more transactions (and non-coinbase txs)
+
+
+showKeys :: H.HashMap PublicKey v -> H.HashMap String v
+showKeys = H.fromList . fmap (\(k, v) -> (show k, v)) . H.toList
