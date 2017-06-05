@@ -93,10 +93,14 @@ instance Arbitrary Signature where
     arbitrary = Signature <$> (Crypto.Signature <$> arbitrary <*> arbitrary)
 
 instance Arbitrary PublicKey where
-    arbitrary = PublicKey <$> (Crypto.PublicKey <$> arbitraryCurve <*> arbitraryPoint)
+    arbitrary = PublicKey <$> arbitraryPoint
       where
-        arbitraryCurve = Crypto.getCurveByName <$> elements [minBound .. maxBound]
-        arbitraryPoint = Crypto.Point <$> arbitrary <*> arbitrary
+        arbitraryPoint = Crypto.Point
+            <$> (getPositive <$> arbitrary)
+            <*> (getPositive <$> arbitrary)
+
+instance Arbitrary PrivateKey where
+    arbitrary = PrivateKey <$> (getPositive <$> arbitrary)
 
 -- Other Types
 

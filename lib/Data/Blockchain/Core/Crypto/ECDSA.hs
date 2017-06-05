@@ -16,12 +16,12 @@ import qualified Data.Aeson                 as Aeson
 import qualified Data.ByteString            as BS
 import qualified Data.Hashable              as H
 import qualified Data.Text                  as Text
+import qualified Numeric
 
 data KeyPair = KeyPair
     { publicKey  :: PublicKey
     , privateKey :: PrivateKey
     }
-  deriving (Show)
 
 newtype Signature = Signature { unSignature :: Crypto.Signature }
   deriving (Eq, Show)
@@ -36,40 +36,70 @@ instance Aeson.FromJSON Signature where
 
         return (Signature sig)
 
-newtype PublicKey = PublicKey { unPublicKey :: Crypto.PublicKey }
+newtype PublicKey = PublicKey { unPublicKey :: Crypto.PublicPoint }
   deriving (Eq, Show)
 
 instance H.Hashable PublicKey where
     hashWithSalt _ = H.hash . show . unPublicKey
 
 instance Aeson.ToJSON PublicKey where
-    toJSON = Aeson.String . Text.pack . show . unPublicKey
+    toJSON (PublicKey Crypto.PointO)      = error "Unexpected pattern match - PointO" -- TODO: move invariant to type level
+    toJSON (PublicKey (Crypto.Point x y)) = Aeson.String (Text.pack hexStr)
+      where
+        xRawHex = Numeric.showHex x ""
+        yRawHex = Numeric.showHex y ""
+        xHex    = replicate (64 - length xRawHex) '0' ++ xRawHex
+        yHex    = replicate (64 - length yRawHex) '0' ++ yRawHex
+        hexStr  = xHex ++ yHex
 
 instance Aeson.FromJSON PublicKey where
     parseJSON = Aeson.withText "PublicKey" $ \txt -> do
         let str = Text.unpack txt
-            pubKey = read str -- TODO: unsafe!
+            xStr = take 64 str
+            yStr = drop 64 str
+            x = fst $ head (Numeric.readHex xStr) -- TODO: unsafe!
+            y = fst $ head (Numeric.readHex yStr) -- TODO: unsafe!
+            point = Crypto.Point x y
 
-        return (PublicKey pubKey)
+        return (PublicKey point)
 
 
-newtype PrivateKey = PrivateKey { _unPrivateKey :: Crypto.PrivateKey }
+newtype PrivateKey = PrivateKey { unPrivateKey :: Crypto.PrivateNumber }
+  deriving (Eq, Show)
 
-instance Show PrivateKey where
-    show = show . Crypto.private_d . _unPrivateKey
+instance Aeson.ToJSON PrivateKey where
+    toJSON (PrivateKey number) = Aeson.String $ Text.pack (Numeric.showHex number mempty)
+
+instance Aeson.FromJSON PrivateKey where
+    parseJSON = Aeson.withText "PrivateKey" $ \txt -> do
+        let str = Text.unpack txt
+            num = fst $ head (Numeric.readHex str) -- TODO: unsafe!
+
+        return (PrivateKey num)
+
+
 
 hashType :: Crypto.SHA256
 hashType = Crypto.SHA256
 
 sign :: PrivateKey -> BS.ByteString -> IO Signature
-sign (PrivateKey privKey) = fmap Signature . Crypto.sign privKey hashType
+sign (PrivateKey number) = fmap Signature . Crypto.sign privKey hashType
+  where
+    privKey = Crypto.PrivateKey curve number
 
 verify :: PublicKey -> Signature -> BS.ByteString -> Bool
-verify (PublicKey pubKey) (Signature sig) = Crypto.verify hashType pubKey sig
+verify (PublicKey point) (Signature sig) = Crypto.verify hashType pubKey sig
+  where
+    pubKey = Crypto.PublicKey curve point
 
 generate :: IO KeyPair
 generate = do
     (pub, priv) <- Crypto.generate curve
-    return $ KeyPair (PublicKey pub) (PrivateKey priv)
-  where
-    curve = Crypto.getCurveByName Crypto.SEC_p256k1
+
+    let publicPoint   = Crypto.public_q pub
+        privateNumber = Crypto.private_d priv
+
+    return $ KeyPair (PublicKey publicPoint) (PrivateKey privateNumber)
+
+curve :: Crypto.Curve
+curve = Crypto.getCurveByName Crypto.SEC_p256k1

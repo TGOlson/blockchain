@@ -28,7 +28,7 @@ generateSingletonChain = do
 
     writeJSON "data/singleton_chain/blockchain.json" blockchain
     writeJSON "data/singleton_chain/valid_next_block.json" block
-    writeJSON "data/singleton_chain/valid_next_block_coinbase_private_key.json" (show privKey)
+    writeJSON "data/singleton_chain/valid_next_block_coinbase_private_key.json" privKey
   where
     config = Blockchain.BlockchainConfig
         { initialDifficulty             = Blockchain.Difficulty 1000
