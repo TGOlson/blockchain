@@ -58,16 +58,23 @@ blockchainConfig (Blockchain config _) = config
 
 data BlockchainVerificationException
     = GenesisBlockHasTransactions
+    | GenesisBlockException BlockException
     | AddBlockVerificationException BlockException
   deriving (Eq, Show)
 
 data BlockException
     = BlockAlreadyExists
     | NoParentFound
+    -- timestamps
     | TimestampTooOld
     | TimestampTooFarIntoFuture
+    -- difficulty
     | InvalidDifficultyReference
     | InvalidDifficulty
+    -- header refs
+    | InvalidCoinbaseTransactionHash
+    | InvalidTransactionHashTreeRoot
+    -- transactions
     | InvalidCoinbaseTransactionValue
     | InvalidTransactionValues
     | TransactionOutRefNotFound
@@ -83,13 +90,11 @@ verifyBlockchain (UnverifiedBlockchain config (UnverifiedBlockchainNode genesisB
     Either.mapLeft AddBlockVerificationException $ verifyBlockDifficulty header config mempty
     verify (null txs) GenesisBlockHasTransactions
 
-    -- TODO
-    --  verify genesisBlock coinbase matches initial reward
-    --  block header has correct coinbase hash
-    --  block header has correct tx hash tree root
-
+    Either.mapLeft AddBlockVerificationException $ verifyTransactions genesisBlock [] reward
+    Either.mapLeft AddBlockVerificationException $ verifyBlockHeaderReferences genesisBlock
     Either.mapLeft AddBlockVerificationException $ Foldable.foldrM addBlock blockchainHead blocks
   where
+    reward = initialMiningReward config
     blockchainHead = Blockchain config (BlockchainNode genesisBlock [])
     blocks = concatMap getBlocks nodes
     getBlocks (UnverifiedBlockchainNode block ns) = block : concatMap getBlocks ns
@@ -124,6 +129,7 @@ addBlock blk (Blockchain config node) = Blockchain config <$> addBlockToNode blk
             verify (newBlock `notElem` blocks) BlockAlreadyExists
             verifyBlockDifficulty newBlockHeader config prevBlocks
             verifyBlockCreationTime newBlockHeader (blockHeader block)
+            verifyBlockHeaderReferences newBlock
             verifyTransactions newBlock prevBlocks (targetReward config $ fromIntegral height)
 
             return updatedNode
@@ -177,6 +183,11 @@ verifyBlockCreationTime newBlockHeader parentBlockHeader =
     -- verify (newBlockTimestamp < now) TimestampTooFarIntoFuture
   where
     newBlockTimestamp = time newBlockHeader
+
+verifyBlockHeaderReferences :: Block -> Either BlockException ()
+verifyBlockHeaderReferences (Block header coinbase txs) = do
+    verify (Crypto.hash coinbase == coinbaseTransactionHash header) InvalidCoinbaseTransactionHash
+    verify (Crypto.hashTreeRoot txs == transactionHashTreeRoot header) InvalidTransactionHashTreeRoot
 
 -- TODO: transactions should be able to reference transactions within the same block
 -- this means we should try to apply a transaction, if it fails, try to apply next transaction

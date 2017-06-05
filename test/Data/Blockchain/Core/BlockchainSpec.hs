@@ -69,10 +69,25 @@ spec = describe "Blockchain" $ do
 
                 return $ verifyBlockchain chain === Left GenesisBlockHasTransactions
 
-        -- it "should reject a chain with invalid coinbase hash in genesis block" $ once $
-        --     \tx -> ioProperty $ do
-        --         (UnverifiedBlockchain config (UnverifiedBlockchainNode block nodes)) <- loadUnverifiedTestBlockchain SingletonChain
-        --         let block' = block { transactions = pure tx }
-        --             chain   = UnverifiedBlockchain config (UnverifiedBlockchainNode block' nodes)
-        --
-        --         return $ verifyBlockchain chain === Left GenesisBlockHasTransactions
+        it "should reject a chain with invalid coinbase reward in genesis block" $ once $
+            \txOut -> ioProperty $ do
+                (UnverifiedBlockchain config (UnverifiedBlockchainNode block nodes)) <- loadUnverifiedTestBlockchain SingletonChain
+                let txOut'   = txOut { value = 999 }
+                    coinbase = CoinbaseTransaction (pure txOut')
+                    block'   = block { coinbaseTransaction = coinbase }
+                    chain    = UnverifiedBlockchain config (UnverifiedBlockchainNode block' nodes)
+
+                return $ verifyBlockchain chain === Left (AddBlockVerificationException InvalidCoinbaseTransactionValue)
+
+        it "should reject a chain with invalid coinbase hash in genesis block header" $ once $
+            \txOut -> ioProperty $ do
+                (UnverifiedBlockchain config (UnverifiedBlockchainNode block nodes)) <- loadUnverifiedTestBlockchain SingletonChain
+                let txOut'   = txOut { value = 100 }
+                    coinbase = CoinbaseTransaction (pure txOut')
+                    block'   = block { coinbaseTransaction = coinbase }
+                    chain    = UnverifiedBlockchain config (UnverifiedBlockchainNode block' nodes)
+
+                return $ verifyBlockchain chain === Left (AddBlockVerificationException InvalidCoinbaseTransactionHash)
+
+        -- TODO: test is possible, hard to do with empty transaction rule & expected header hash
+        -- it "should reject a chain with invalid transaction hash in genesis block header" $ once $
