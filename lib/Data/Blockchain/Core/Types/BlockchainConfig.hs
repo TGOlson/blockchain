@@ -59,6 +59,9 @@ targetReward config height =
 -- TODO: account for the blockchain having two chains of the same length
 -- if two chains are the same length, lowest difficulty determines the target
 -- could also implement that logic upstream
+-- TODO: array of blocks hold no assurances of expected invariants
+-- for example block1 could be created more recently than blockN
+-- should create a `SingleChain` wrapper
 targetDifficulty :: BlockchainConfig -> [Block] -> Difficulty
 targetDifficulty config []                                            = initialDifficulty config
 targetDifficulty config _ | difficultyRecalculationHeight config == 0 = initialDifficulty config
@@ -69,7 +72,8 @@ targetDifficulty config blocks =
             let recentBlocks   = take (fromIntegral recalcHeight) (reverse blocks)
                 lastBlock      = head recentBlocks
                 firstBlock     = last recentBlocks
-                diffTime       = Time.diffUTCTime (blockTime lastBlock) (blockTime firstBlock)
+                -- TODO: get rid of `abs`, move invariant into types
+                diffTime       = abs $ Time.diffUTCTime (blockTime lastBlock) (blockTime firstBlock)
                 avgSolveTime   = realToFrac diffTime / fromIntegral recalcHeight
                 ratio          = avgSolveTime / fromIntegral (targetSecondsPerBlock config)
                 lastDifficulty = difficulty (blockHeader lastBlock)

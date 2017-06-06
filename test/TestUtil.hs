@@ -3,6 +3,7 @@
 module TestUtil
     ( module X
     , propWithSize
+    , propNumTests
     , unsafefromByteString
     ) where
 
@@ -28,6 +29,9 @@ import Data.Blockchain.Core.Types
 
 propWithSize :: Testable prop => Int -> String -> prop -> Spec
 propWithSize n tag = modifyMaxSize (const n) . prop tag
+
+propNumTests :: Testable prop => Int -> String -> prop -> Spec
+propNumTests n tag = modifyMaxSuccess (const n) . prop tag
 
 unsafefromByteString :: BS.ByteString -> Hash a
 unsafefromByteString = Maybe.fromMaybe (error "Invalid hash string") . fromByteString

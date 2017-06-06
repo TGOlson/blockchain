@@ -151,15 +151,15 @@ spec = describe "Blockchain" $ do
 
         -- TODO: transaction testing.........
 
-    describe "unspentTransactionOutputs" $
+    describe "addressValues" $
         it "should calculate unspent transaction outputs" $ once $ ioProperty $ do
             (blockchain, block) <- loadVerifiedTestBlockchainWithValidBlock SingletonChain
             let blockchain' = throwLeft (addBlock block blockchain)
-                unspent     = unspentTransactionOutputs blockchain'
+                unspent     = addressValues blockchain'
 
             return $ showKeys unspent === H.fromList
-                [ ("6efea3efdc45f20ef3fc1816a965aa2c5a50c5431387fc48f0a4cf3535617ee0ac4bc59a0a77da39b4c19534cf080483888efe7a93604fceb5050712e500e6a9", 100)
-                , ("aea900bc02b569fa740039c7a0fd020a31709e32e1d2ed93c1f29d4032af43600c01b333848b4f020c6c4fdd75e0afdef5a84b9617489f9203b451d59515e39f", 100)
+                [ ("134cfe647e58110e3b25da1c157188e603c4ae6b8abe4cd845141e033aabb3c2a5616551a9c8ef61bad2314f549ad1228cbc2a0fef2408713db0a9ac87dc16be", 100)
+                , ("1084938e97b154a2bad3bdb49d3774fd94237a4048aa18fcbcaccc4a570b51ec1dfa84aacf9a2aad040dfef11fc2600f596830b5b635043502d5835ad16d621a", 100)
                 ]
 
         -- TODO: test w/ more transactions (and non-coinbase txs)

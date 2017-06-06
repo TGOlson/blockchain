@@ -4,9 +4,16 @@ module Data.Blockchain.Core.Builder.Transaction
     , createSimpleTransaction
     ) where
 
-import qualified Data.Aeson              as Aeson
-import qualified Data.HashMap.Strict as H
-import qualified Data.Word           as Word
+import Control.Monad             (when, unless)
+import Control.Monad.Trans.Class (lift)
+
+import qualified Control.Error.Util   as Error
+import qualified Control.Monad.Except as Except
+import qualified Data.Aeson           as Aeson
+import qualified Data.ByteString.Lazy as Lazy
+import qualified Data.HashMap.Strict  as H
+import qualified Data.List.NonEmpty   as NonEmpty
+import qualified Data.Word            as Word
 
 import qualified Data.Blockchain.Core.Crypto     as Crypto
 import qualified Data.Blockchain.Core.Blockchain as Blockchain
@@ -16,6 +23,7 @@ data CreateTransactionException
     = SourceAddressEmpty
     | SourceAddressInsufficientFunds
     | InvalidPrivateKey
+  deriving (Eq, Show)
 
 createTransaction
     :: [Crypto.KeyPair] -> [(Crypto.PublicKey, Int)] -> Int -> Blockchain.Blockchain
@@ -26,57 +34,28 @@ createSimpleTransaction
     :: Crypto.KeyPair -> Crypto.PublicKey
     -> Word.Word -> Word.Word -> Blockchain.Blockchain
     -> IO (Either CreateTransactionException Blockchain.Transaction)
-createSimpleTransaction (Crypto.KeyPair srcPubKey srcPrivKey) targetPubKey value fee blockchain = runEitherT $ do
+createSimpleTransaction (Crypto.KeyPair srcPubKey srcPrivKey) targetPubKey value fee blockchain = Except.runExceptT $ do
     let unspentTransactionOutputs = Blockchain.unspentTransactionOutputs blockchain
 
-    txOutPairs <- lift $ case H.lookup srcPubKey unspentTransactionOutputs of
-        Nothing -> Left SourceAddressEmpty
-        Just v  -> return (Blockchain.TransactionOut v srcPubKey)
+    txOutPairs <- Error.failWith SourceAddressEmpty $ H.lookup srcPubKey unspentTransactionOutputs
 
-    let txOutRefs  = fst <$> txOutPairs
-        txOuts     = snd <$> txOutPairs
-        totalValue = sum $ value txOuts
+    let txOuts     = snd <$> txOutPairs
+        totalValue = sum $ Blockchain.value <$> txOuts
 
-    _ <- lift $ if totalValue < (value + fee)
-        then Left SourceAddressInsufficientFunds
-        else return ()
+    when (totalValue < (value + fee)) $ Except.throwError SourceAddressInsufficientFunds
 
-    -- let txBs = Aeson.encode txout
-    let txIns  = (\(txOutRef, txOut -> TransactionIn txOutRef undefined) <$> txOutPairs
-        refund = totalValue - (value + fee)
-        txOut  = TransactionOut totalValue targetPubKey
-        txOutRefund = TransactionOut refund srcPubKey -- Only if there is a refund
-        transaction = Transaction txIns [txOut, txOutRefund]
+    txIns <- sequence $ flip fmap txOutPairs $ \(txOutRef, txOut) -> do
+        -- TODO: should keep transaction signing & verification round-tripping in same place
+        let txBs = Lazy.toStrict (Aeson.encode txOut)
+        sig <- lift $ Crypto.sign srcPrivKey txBs
+        unless (Crypto.verify srcPubKey sig txBs) $ Except.throwError InvalidPrivateKey
 
-    -- TODO: should keep transaction signing & verification round-tripping in same place
-    -- sig <- Crypto.sign srcPrivKey txBs
+        return (Blockchain.TransactionIn txOutRef sig)
 
-    -- Verify private key matches pubkey...
-    -- _ <- lift $ if Crypto.verify srcPubKey sig txBs
-    --     then return ()
-    --     else Left InvalidPrivateKey
+    let refund          = totalValue - (value + fee)
+        txOut           = Blockchain.TransactionOut totalValue targetPubKey
+        maybeRefunTxOut = if refund > 0 then Just (Blockchain.TransactionOut refund srcPubKey)
+                                        else Nothing
+        txOuts'          = maybe (pure txOut) (: pure txOut) maybeRefunTxOut
 
-        -- txIn   = TransactionIn txOutRef sig
-
-
-    -- data TransactionIn = TransactionIn
-    --     { transactionOutRef :: TransactionOutRef
-    --     , signature         :: Crypto.Signature -- Signature from prev transaction, using pubkey from prev transaction
-    --     }
-    --
-    -- -- Pointer to a specific TransactionOut
-    -- data TransactionOutRef = TransactionOutRef
-    --     { transactionHash     :: Either (Crypto.Hash CoinbaseTransaction) (Crypto.Hash Transaction)
-    --     , transactionOutIndex :: Word.Word
-    --     }
-    --
-    -- data TransactionOut = TransactionOut
-    --     { value           :: Word.Word
-    --     , signaturePubKey :: Crypto.PublicKey -- aka. address of where funds go
-    --     }
-    --
-    -- return $ return Transaction
-    --     { transactionIn  :: NonEmpty.NonEmpty TransactionIn
-    --     , transactionOut :: NonEmpty.NonEmpty TransactionOut
-    --     -- TODO: arbitrary bytes?
-    --     }
+    return $ Blockchain.Transaction (NonEmpty.fromList txIns) (NonEmpty.fromList txOuts')

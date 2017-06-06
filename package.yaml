@@ -14,26 +14,29 @@ extra-source-files:
 ghc-options: -Wall -Werror
 
 default-extensions:
+  - BangPatterns
+  - DeriveGeneric
+  - GeneralizedNewtypeDeriving
+  - LambdaCase
   - OverloadedStrings
   - RecordWildCards
-  - GeneralizedNewtypeDeriving
   - ScopedTypeVariables
-  - BangPatterns
-  - LambdaCase
-  - DeriveGeneric
 
 dependencies:
   - base >= 4.7 && < 5
-  - bytestring
-  - byteable
-  - time
   - aeson
-  - text
-  - memory
+  - byteable
+  - bytestring
   - cryptonite
   - either
-  - unordered-containers
+  - errors
   - hashable
+  - memory
+  - mtl
+  - text
+  - time
+  - transformers
+  - unordered-containers
 
 library:
   source-dirs: lib
@@ -64,5 +67,5 @@ tests:
       - test
     dependencies:
       - blockchain
-      - QuickCheck
       - hspec
+      - QuickCheck
