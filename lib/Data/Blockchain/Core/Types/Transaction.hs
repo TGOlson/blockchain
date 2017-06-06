@@ -64,6 +64,9 @@ instance Aeson.ToJSON TransactionOutRef
 instance Aeson.FromJSON TransactionOutRef
 
 data TransactionOut = TransactionOut
+    -- > maxBound :: Word
+    -- 18,446,744,073,709,551,615
+    -- TODO: too low?
     { value           :: Word.Word
     , signaturePubKey :: Crypto.PublicKey -- aka. address of where funds go
     }

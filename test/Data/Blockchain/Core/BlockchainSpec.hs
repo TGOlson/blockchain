@@ -158,8 +158,8 @@ spec = describe "Blockchain" $ do
                 unspent     = unspentTransactionOutputs blockchain'
 
             return $ showKeys unspent === H.fromList
-                [ ("797ea451ea4ae1c59b7fa9c1d6a9ffee1f661135bd621bdb00a060ab606131b2e095c5de517a79e8a7b5d1d0b1d12672f507355a5d2da9d0d41bd7f44baea29f", 100)
-                , ("a39e5768f9958a24ec2c3296165b2c3e0f381c210c0e8f73a3776b490c063e44a0d0a0b1ffb83e4e2b56e6f5beafd7a2503331ac8a9a3257fb2d048a7eab3d10", 100)
+                [ ("6efea3efdc45f20ef3fc1816a965aa2c5a50c5431387fc48f0a4cf3535617ee0ac4bc59a0a77da39b4c19534cf080483888efe7a93604fceb5050712e500e6a9", 100)
+                , ("aea900bc02b569fa740039c7a0fd020a31709e32e1d2ed93c1f29d4032af43600c01b333848b4f020c6c4fdd75e0afdef5a84b9617489f9203b451d59515e39f", 100)
                 ]
 
         -- TODO: test w/ more transactions (and non-coinbase txs)

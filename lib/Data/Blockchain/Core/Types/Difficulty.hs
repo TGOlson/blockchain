@@ -4,14 +4,22 @@ module Data.Blockchain.Core.Types.Difficulty
     , maxDifficulty
     ) where
 
-import qualified Data.Aeson as Aeson
-import qualified Data.Word  as Word
+import qualified Data.Aeson      as Aeson
+import qualified Numeric
+import qualified Numeric.Natural as Natural
 
-newtype Difficulty = Difficulty { unDifficulty :: Word.Word64 }
+newtype Difficulty = Difficulty { unDifficulty :: Natural.Natural }
   deriving (Eq, Num, Ord, Show, Aeson.ToJSON, Aeson.FromJSON)
 
 minDifficulty :: Difficulty
 minDifficulty = Difficulty 1
 
+-- TODO: should this be in blockchain config?
 maxDifficulty :: Difficulty
-maxDifficulty = Difficulty maxBound -- (2^256 - 1)
+maxDifficulty = Difficulty $ hexToNatural "00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+-- maxDifficulty = Difficulty $ hexToNatural "00000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+
+-- unsafe
+-- TODO: make safe version in util module
+hexToNatural :: String -> Natural.Natural
+hexToNatural = fst . head . Numeric.readHex

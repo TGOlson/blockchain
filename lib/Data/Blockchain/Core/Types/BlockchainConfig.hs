@@ -24,6 +24,10 @@ data BlockchainConfig = BlockchainConfig
     }
   deriving (Eq, Show)
 
+-- defaultConfig :: BlockchainConfig
+-- defaultConfig = BlockchainConfig
+
+
 instance Aeson.ToJSON BlockchainConfig where
     toJSON BlockchainConfig{..} = Aeson.object
         [ "initialDifficulty"             .= initialDifficulty

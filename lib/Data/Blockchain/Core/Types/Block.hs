@@ -41,7 +41,7 @@ instance Aeson.ToJSON BlockHeader
 instance Aeson.FromJSON BlockHeader
 
 blockHeaderHashDifficulty :: BlockHeader -> Difficulty
-blockHeaderHashDifficulty header = Difficulty $ unDifficulty maxDifficulty `div` headerHash64
+blockHeaderHashDifficulty header = Difficulty $ unDifficulty maxDifficulty `div` headerHashNatural
   where
-    headerHash64 = Crypto.hashToWord64 headerHash
-    headerHash   = Crypto.hash header
+    headerHashNatural = Crypto.hashToNatural headerHash
+    headerHash        = Crypto.hash header

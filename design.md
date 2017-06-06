@@ -111,15 +111,15 @@ validateTransaction :: Blockchain -> Transaction -> Either TransactionException 
 
 -- transaction creation
 createTransaction
-    :: [(PrivateKey, PubKey)] -> [(PubKey, Int)] -> Int -> Blockchain
+    :: [KeyPair] -> [(PubKey, Int)] -> Int -> Blockchain
     -> Either CreateTransactionException Transaction
-createTransaction srcAddresses targetAddresses fee blockchain = ...
+createTransaction srcs targets fee blockchain = ...
 
 createSimpleTransaction
-    :: PrivateKey -> PubKey
-    :: PublicKey -> Int -> Int -> Blockchain
+    :: KeyPair -> PubKey
+    -> Int -> Int -> Blockchain
     -> Either CreateTransactionException Transaction
-createSimpleTransaction srcAddress targetAddress fee blockchain = ...
+createSimpleTransaction src target value fee blockchain = ...
 
 -- TODO: future mempool considerations
 -- TXIDs of transactions that have been verified as valid but which have not yet appeared in a block.

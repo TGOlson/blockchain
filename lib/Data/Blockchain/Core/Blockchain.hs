@@ -9,6 +9,7 @@ module Data.Blockchain.Core.Blockchain
     , verifyBlockchain
     , addBlock
     -- Chain inspection
+    , addressValues
     , unspentTransactionOutputs
     , longestChain
     , flatten
@@ -193,6 +194,7 @@ verifyBlockHeaderReferences (Block header coinbase txs) = do
 verifyTransactions :: Block -> [Block] -> Word.Word -> Either BlockException ()
 verifyTransactions (Block _header coinbaseTx txs) prevBlocks reward = do
     -- ensure coinbase transaction is of correct value
+    -- TODO: coinbase can be reward + fees
     verify (txOutValue (coinbaseTransactionOut coinbaseTx) == reward) InvalidCoinbaseTransactionValue
 
     sequence_ (verifyTransaction <$> txs)
@@ -215,11 +217,17 @@ verifyTransactions (Block _header coinbaseTx txs) prevBlocks reward = do
 
         verify (txOutValue prevTxOut >= outputValue) InvalidTransactionValues
 
-unspentTransactionOutputs :: Blockchain -> H.HashMap Crypto.PublicKey Word.Word
-unspentTransactionOutputs blockchain = H.fromListWith (+) (toPair <$> unspentTxOuts)
+addressValues :: Blockchain -> H.HashMap Crypto.PublicKey Word.Word
+addressValues blockchain = H.fromListWith (+) (toPair <$> unspentTxOuts)
   where
     toPair (TransactionOut value pubKey) = (pubKey, value)
     unspentTxOuts = H.elems $ unspentTransactionOutputsInternal (NonEmpty.toList $ longestChain blockchain)
+
+unspentTransactionOutputs :: Blockchain -> H.HashMap Crypto.PublicKey [(TransactionOutRef, TransactionOut)]
+unspentTransactionOutputs blockchain = H.fromListWith (++) (toPair <$> unspentTxOuts)
+  where
+    toPair (txRef, txOut) = (signaturePubKey txOut, pure (txRef, txOut))
+    unspentTxOuts = H.toList $ unspentTransactionOutputsInternal (NonEmpty.toList $ longestChain blockchain)
 
 -- Note: this is required to be an internal method
 -- As we assume the list of blocks is a verified sub-chain.

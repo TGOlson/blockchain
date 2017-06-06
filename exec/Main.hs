@@ -31,7 +31,7 @@ generateSingletonChain = do
     writeJSON "data/singleton_chain/valid_next_block_coinbase_private_key.json" privKey
   where
     config = Blockchain.BlockchainConfig
-        { initialDifficulty             = Blockchain.Difficulty 1000
+        { initialDifficulty             = Blockchain.Difficulty 100
         , targetSecondsPerBlock         = 60
         , difficultyRecalculationHeight = 100
         , initialMiningReward           = 100
