@@ -20,8 +20,8 @@ expectedRootHash = unsafefromByteString "e9683665a90bd70aabd7705cba57c2be2a4e913
 
 spec :: Spec
 spec =
-    describe "HashTree" $ do
-        it "should create a hash tree for a known hash" $
+    describe "Data.Blockchain.Core.Crypto.HashTree" $ do
+        it "should create a hash tree for a known hash" $ once $
             unHashTreeRoot (hashTreeRoot testData) === expectedRootHash
 
         prop "should hash a single item correctly" $

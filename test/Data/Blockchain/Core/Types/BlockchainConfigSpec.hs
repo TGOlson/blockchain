@@ -17,7 +17,7 @@ testConfig = BlockchainConfig
     }
 
 spec :: Spec
-spec = describe "BlockchainConfig" $ do
+spec = describe "Data.Blockchain.Core.Types.BlockchainConfig" $ do
     describe "targetReward" $ do
         it "should produce the correct reward" $
             and [ targetReward testConfig 0  == 100

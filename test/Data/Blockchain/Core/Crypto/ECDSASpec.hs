@@ -8,7 +8,7 @@ import Data.Blockchain.Core.Crypto.ECDSA
 
 spec :: Spec
 spec =
-    describe "ECDSA" $ do
+    describe "Data.Blockchain.Core.Crypto.ECDSA" $ do
         prop "should round trip public key" $
             \(publicKey :: PublicKey) -> Aeson.decode (Aeson.encode publicKey) === Just publicKey
 

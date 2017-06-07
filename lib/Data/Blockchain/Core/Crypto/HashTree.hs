@@ -29,7 +29,7 @@ hashTreeRoot :: forall a. Hashable a => [a] -> HashTreeRoot [a]
 hashTreeRoot = HashTreeRoot . buildHash
   where
     buildHash :: [a] -> ByteStringHash
-    buildHash []  = hash ""
+    buildHash []  = hash mempty
     buildHash [x] = toByteStringHash (hash x)
     buildHash xs  =
         joinHash (buildHash left) (buildHash right)
