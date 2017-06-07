@@ -16,7 +16,7 @@ testData = replicate (numBytes `div` blockSize) block ++ [partialBlock]
     partialBlock = Char8.replicate (numBytes `mod` blockSize) '\000'
 
 expectedRootHash :: ByteStringHash
-expectedRootHash = unsafefromByteString "e9683665a90bd70aabd7705cba57c2be2a4e913a0ca1a14d765497112c178120"
+expectedRootHash = unsafeFromByteString "e9683665a90bd70aabd7705cba57c2be2a4e913a0ca1a14d765497112c178120"
 
 spec :: Spec
 spec =
