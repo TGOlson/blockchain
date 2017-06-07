@@ -24,17 +24,32 @@ data KeyPair = KeyPair
     }
 
 newtype Signature = Signature { unSignature :: Crypto.Signature }
-  deriving (Eq, Show)
+  deriving (Eq)
+
+instance Show Signature where
+    show = signatureToHex
 
 instance Aeson.ToJSON Signature where
-    toJSON = Aeson.String . Text.pack . show . unSignature
+    toJSON = Aeson.String . Text.pack . signatureToHex
 
 instance Aeson.FromJSON Signature where
     parseJSON = Aeson.withText "Signature" $ \txt -> do
         let str = Text.unpack txt
-            sig = read str -- TODO: unsafe!
+            rStr = take 64 str
+            sStr = drop 64 str
+            r = fst $ head (Numeric.readHex rStr) -- TODO: unsafe!
+            s = fst $ head (Numeric.readHex sStr) -- TODO: unsafe!
+            sig = Crypto.Signature r s
 
         return (Signature sig)
+
+signatureToHex :: Signature -> String
+signatureToHex (Signature (Crypto.Signature r s)) = rHex ++ sHex
+  where
+    rRawHex = Numeric.showHex r ""
+    sRawHex = Numeric.showHex s ""
+    rHex    = replicate (64 - length rRawHex) '0' ++ rRawHex
+    sHex    = replicate (64 - length sRawHex) '0' ++ sRawHex
 
 newtype PublicKey = PublicKey { unPublicKey :: Crypto.PublicPoint }
   deriving (Eq)

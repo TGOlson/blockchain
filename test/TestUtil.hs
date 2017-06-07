@@ -36,6 +36,9 @@ propNumTests n tag = modifyMaxSuccess (const n) . prop tag
 unsafefromByteString :: BS.ByteString -> Hash a
 unsafefromByteString = Maybe.fromMaybe (error "Invalid hash string") . fromByteString
 
+arbitraryPositive :: (Num a, Ord a, Arbitrary a) => Gen a
+arbitraryPositive = getPositive <$> arbitrary
+
 -- Instances -------------------------------------------------------------------------------------------------
 
 -- Blockchain types
@@ -92,19 +95,22 @@ instance Arbitrary (Hash a) where
       where
         hexChar = elements $ ['0' .. '9'] ++ ['a' .. 'f']
 
--- Note: Signature and PublicKey are likely unusable.
 instance Arbitrary Signature where
-    arbitrary = Signature <$> (Crypto.Signature <$> arbitrary <*> arbitrary)
+    arbitrary = Signature <$> arbitrarySig
+      where
+        arbitrarySig = Crypto.Signature
+            <$> arbitraryPositive
+            <*> arbitraryPositive
 
 instance Arbitrary PublicKey where
     arbitrary = PublicKey <$> arbitraryPoint
       where
         arbitraryPoint = Crypto.Point
-            <$> (getPositive <$> arbitrary)
-            <*> (getPositive <$> arbitrary)
+            <$> arbitraryPositive
+            <*> arbitraryPositive
 
 instance Arbitrary PrivateKey where
-    arbitrary = PrivateKey <$> (getPositive <$> arbitrary)
+    arbitrary = PrivateKey <$> arbitraryPositive
 
 -- Other Types
 

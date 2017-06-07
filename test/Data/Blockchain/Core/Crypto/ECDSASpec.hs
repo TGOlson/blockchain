@@ -9,11 +9,14 @@ import Data.Blockchain.Core.Crypto.ECDSA
 spec :: Spec
 spec =
     describe "Data.Blockchain.Core.Crypto.ECDSA" $ do
-        prop "should round trip public key" $
+        prop "should round-trip json serialize public key" $
             \(publicKey :: PublicKey) -> Aeson.decode (Aeson.encode publicKey) === Just publicKey
 
-        prop "should round trip private key" $
+        prop "should round-trip json serialize private key" $
             \(privateKey :: PrivateKey) -> Aeson.decode (Aeson.encode privateKey) === Just privateKey
+
+        prop "should round-trip json serialize signature" $
+            \(signature :: Signature) -> Aeson.decode (Aeson.encode signature) === Just signature
 
         it "should sign and verify correctly" $ once $
             \bs -> ioProperty $ do
