@@ -8,6 +8,7 @@ module Data.Blockchain.Core.Crypto.ECDSA
     , generate
     ) where
 
+import qualified Control.Monad              as M
 import qualified Crypto.Hash                as Crypto
 import qualified Crypto.PubKey.ECC.ECDSA    as Crypto
 import qualified Crypto.PubKey.ECC.Generate as Crypto
@@ -34,14 +35,12 @@ instance Aeson.ToJSON Signature where
 
 instance Aeson.FromJSON Signature where
     parseJSON = Aeson.withText "Signature" $ \txt -> do
-        let str = Text.unpack txt
-            rStr = take 64 str
-            sStr = drop 64 str
-            r = fst $ head (Numeric.readHex rStr) -- TODO: unsafe!
-            s = fst $ head (Numeric.readHex sStr) -- TODO: unsafe!
-            sig = Crypto.Signature r s
+        M.unless (Text.length txt == 128) $ fail "Invalid key length"
 
-        return (Signature sig)
+        (Hex r) <- parseHex $ Text.take 64 txt
+        (Hex s) <- parseHex $ Text.drop 64 txt
+
+        return $ Signature (Crypto.Signature r s)
 
 signatureToHex :: Signature -> String
 signatureToHex (Signature (Crypto.Signature r s)) = rHex ++ sHex
@@ -65,14 +64,25 @@ instance Aeson.ToJSON PublicKey where
 
 instance Aeson.FromJSON PublicKey where
     parseJSON = Aeson.withText "PublicKey" $ \txt -> do
-        let str = Text.unpack txt
-            xStr = take 64 str
-            yStr = drop 64 str
-            x = fst $ head (Numeric.readHex xStr) -- TODO: unsafe!
-            y = fst $ head (Numeric.readHex yStr) -- TODO: unsafe!
-            point = Crypto.Point x y
+        M.unless (Text.length txt == 128) $ fail "Invalid key length"
 
-        return (PublicKey point)
+        (Hex x) <- parseHex $ Text.take 64 txt
+        (Hex y) <- parseHex $ Text.drop 64 txt
+
+        return $ PublicKey (Crypto.Point x y)
+
+
+parseHex :: Monad m => Text.Text -> m Hex
+parseHex = maybe (fail "Invalid hex chars") return . hex . Text.unpack
+
+newtype Hex = Hex { unHex :: Integer }
+
+hex :: String -> Maybe Hex
+hex str = case Numeric.readHex str of
+    [(x, "")] -> Just (Hex x)
+    _         -> Nothing
+
+
 
 publicKeyToHex :: PublicKey -> String
 publicKeyToHex (PublicKey Crypto.PointO)      = error "Unexpected pattern match - PointO" -- TODO: move invariant to type level?
@@ -90,11 +100,7 @@ instance Aeson.ToJSON PrivateKey where
     toJSON (PrivateKey number) = Aeson.String $ Text.pack (Numeric.showHex number mempty)
 
 instance Aeson.FromJSON PrivateKey where
-    parseJSON = Aeson.withText "PrivateKey" $ \txt -> do
-        let str = Text.unpack txt
-            num = fst $ head (Numeric.readHex str) -- TODO: unsafe!
-
-        return (PrivateKey num)
+    parseJSON = Aeson.withText "PrivateKey" $ fmap (PrivateKey . unHex) . parseHex
 
 hashType :: Crypto.SHA256
 hashType = Crypto.SHA256

@@ -28,6 +28,7 @@ dependencies:
   - byteable
   - bytestring
   - cryptonite
+  - deepseq
   - either
   - errors
   - hashable
