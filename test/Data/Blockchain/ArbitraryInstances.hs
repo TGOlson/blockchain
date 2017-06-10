@@ -7,7 +7,6 @@ import Test.QuickCheck
 import qualified Crypto.PubKey.ECC.ECDSA as Crypto
 import qualified Crypto.PubKey.ECC.Types as Crypto
 import qualified Data.ByteString.Char8   as BS
-import qualified Data.HashMap.Strict     as H
 import qualified Data.List.NonEmpty      as NonEmpty
 import qualified Data.Time.Calendar      as Time
 import qualified Data.Time.Clock         as Time
@@ -23,7 +22,7 @@ instance Arbitrary BlockchainConfig where
         <*> arbitrary
         <*> arbitrary
         <*> arbitrary
-        <*> (H.fromList <$> arbitrary)
+        <*> arbitrary
 
 instance Arbitrary Block where
     arbitrary = Block

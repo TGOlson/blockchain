@@ -1,14 +1,15 @@
 module Data.Blockchain.Core.Types.BlockchainConfig
     ( BlockchainConfig(..)
+    , defaultConfig
     , targetReward
     , targetDifficulty
     ) where
 
-import qualified Data.Aeson          as Aeson
-import           Data.Aeson          ((.=), (.:))
-import qualified Data.HashMap.Strict as H
-import qualified Data.Time.Clock     as Time
-import qualified Data.Word           as Word
+import qualified Control.Monad   as Monad
+import qualified Data.Aeson      as Aeson
+import qualified Data.Time.Clock as Time
+import qualified Data.Word       as Word
+import qualified GHC.Generics    as Generic
 
 import Data.Blockchain.Core.Types.Block
 import Data.Blockchain.Core.Types.Difficulty
@@ -18,43 +19,38 @@ data BlockchainConfig = BlockchainConfig
     , targetSecondsPerBlock         :: Word.Word
     , difficultyRecalculationHeight :: Word.Word
     , initialMiningReward           :: Word.Word
-    -- Defines block heights where reward changes
-    -- An empty map means the current reward is always the initial reward
-    , miningRewardTransitionMap     :: H.HashMap Word.Word Word.Word
+    -- Defines num blocks when reward is halved
+    -- `0` means reward never changes
+    , miningRewardHalvingHeight     :: Word.Word
     }
-  deriving (Eq, Show)
+  deriving (Generic.Generic, Eq, Show)
 
--- defaultConfig :: BlockchainConfig
--- defaultConfig = BlockchainConfig
+instance Aeson.ToJSON BlockchainConfig
+instance Aeson.FromJSON BlockchainConfig
 
-
-instance Aeson.ToJSON BlockchainConfig where
-    toJSON BlockchainConfig{..} = Aeson.object
-        [ "initialDifficulty"             .= initialDifficulty
-        , "targetSecondsPerBlock"         .= targetSecondsPerBlock
-        , "difficultyRecalculationHeight" .= difficultyRecalculationHeight
-        , "initialMiningReward"           .= initialMiningReward
-        -- TODO: serialize to json object
-        -- Need to put into form: HashMap Text Aeson.Value
-        , "miningRewardTransitionMap"     .= H.toList miningRewardTransitionMap
-        ]
-
-instance Aeson.FromJSON BlockchainConfig where
-    parseJSON = Aeson.withObject "BlockchainConfig" $ \v -> BlockchainConfig
-        <$> v .: "initialDifficulty"
-        <*> v .: "targetSecondsPerBlock"
-        <*> v .: "difficultyRecalculationHeight"
-        <*> v .: "initialMiningReward"
-        <*> ( H.fromList <$> v .: "miningRewardTransitionMap" )
+defaultConfig :: BlockchainConfig
+defaultConfig = BlockchainConfig
+    { initialDifficulty             = Difficulty 100
+    , targetSecondsPerBlock         = 10
+    , difficultyRecalculationHeight = 100
+    , initialMiningReward           = 100
+    , miningRewardHalvingHeight     = 500
+    }
 
 targetReward :: BlockchainConfig -> Word.Word -> Word.Word
-targetReward config height =
-    case currentBounds of
-        []     -> initialMiningReward config
-        bounds -> snd (maximum bounds)
-  where
-    currentBounds = filter (\(h, _) -> h <= height) rewardBounds
-    rewardBounds  = H.toList $ miningRewardTransitionMap config
+targetReward config height = either id id $ do
+    let initialReward = initialMiningReward config
+        halveHeight   = miningRewardHalvingHeight config
+
+    Monad.when (halveHeight == 0) $ Left initialReward
+
+    let numHalves = height `div` halveHeight
+
+    -- 2^64 is greater than maxBound :: Word
+    -- And any word halved 64 times will be zero
+    Monad.when (numHalves >= 64) $ Left 0
+
+    return $ initialReward `div` (2 ^ numHalves)
 
 -- TODO: account for the blockchain having two chains of the same length
 -- if two chains are the same length, lowest difficulty determines the target

@@ -2,10 +2,9 @@ module Data.Blockchain.Core.Types.BlockchainConfigSpec (spec) where
 
 import TestUtil
 
-import qualified Data.HashMap.Strict as H
-import qualified Data.Time.Clock     as Time
+import qualified Data.Time.Clock as Time
 
-import           Data.Blockchain.Core.Types
+import Data.Blockchain.Core.Types
 
 testConfig :: BlockchainConfig
 testConfig = BlockchainConfig
@@ -13,25 +12,27 @@ testConfig = BlockchainConfig
     , targetSecondsPerBlock         = 60
     , difficultyRecalculationHeight = 10
     , initialMiningReward           = 100
-    , miningRewardTransitionMap     = H.fromList [(5, 50), (20, 10)]
+    , miningRewardHalvingHeight     = 100
     }
 
 spec :: Spec
 spec = describe "Data.Blockchain.Core.Types.BlockchainConfig" $ do
     describe "targetReward" $ do
         it "should produce the correct reward" $
-            and [ targetReward testConfig 0  == 100
-                , targetReward testConfig 4  == 100
-                , targetReward testConfig 5  == 50
-                , targetReward testConfig 19 == 50
-                , targetReward testConfig 20 == 10
-                , targetReward testConfig 21 == 10
+            and [ targetReward testConfig 0   == 100
+                , targetReward testConfig 99  == 100
+                , targetReward testConfig 100 == 50
+                , targetReward testConfig 101 == 50
+                , targetReward testConfig 300 == 12
+                , targetReward testConfig 600 == 1
+                , targetReward testConfig 700 == 0
+                , targetReward testConfig 800 == 0
                 ]
 
         prop "should always find a valid reward" $
             \conf height ->
-                let possibleRewards = initialMiningReward conf : H.elems (miningRewardTransitionMap conf)
-                in targetReward conf height `elem` possibleRewards
+                let reward = targetReward conf height
+                in  reward >= 0 && reward <= initialMiningReward conf
 
     describe "targetDifficulty" $ do
         prop "should use initial config when no blocks" $

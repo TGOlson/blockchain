@@ -20,7 +20,7 @@ main = Env.getArgs >>= \case
 
 generateSingletonChain :: IO ()
 generateSingletonChain = do
-    blockchain <- Mining.createBlockchain config -- TODO: diff module
+    blockchain <- Mining.createBlockchain Blockchain.defaultConfig -- TODO: diff module
 
     (Crypto.KeyPair pubKey privKey) <- Crypto.generate
 
@@ -29,14 +29,6 @@ generateSingletonChain = do
     writeJSON "data/singleton_chain/blockchain.json" blockchain
     writeJSON "data/singleton_chain/valid_next_block.json" block
     writeJSON "data/singleton_chain/valid_next_block_coinbase_private_key.json" privKey
-  where
-    config = Blockchain.BlockchainConfig
-        { initialDifficulty             = Blockchain.Difficulty 100
-        , targetSecondsPerBlock         = 60
-        , difficultyRecalculationHeight = 100
-        , initialMiningReward           = 100
-        , miningRewardTransitionMap     = mempty
-        }
 
 -- mineBlock :: IO ()
 -- mineBlock = do
