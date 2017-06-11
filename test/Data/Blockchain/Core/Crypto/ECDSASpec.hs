@@ -1,13 +1,13 @@
 module Data.Blockchain.Core.Crypto.ECDSASpec (spec) where
 
-import TestUtil
+import           TestUtil
 
-import qualified Data.Aeson as Aeson
+import qualified Data.Aeson                        as Aeson
 
-import Control.DeepSeq
-import Data.Blockchain.Core.Crypto.ECDSA
+import           Control.DeepSeq
+import           Data.Blockchain.Core.Crypto.ECDSA
 
-import qualified Data.ByteString as BS
+import qualified Data.ByteString                   as BS
 
 
 testDeserialize :: (Aeson.FromJSON a, NFData b) => (a -> b) -> BS.ByteString -> Bool

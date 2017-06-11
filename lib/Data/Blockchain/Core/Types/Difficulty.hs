@@ -2,8 +2,8 @@ module Data.Blockchain.Core.Types.Difficulty
     ( Difficulty(..)
     ) where
 
-import qualified Data.Aeson      as Aeson
-import qualified Numeric.Natural as Natural
+import qualified Data.Aeson                    as Aeson
+import qualified Numeric.Natural               as Natural
 
 import qualified Data.Blockchain.Core.Util.Hex as Hex
 

@@ -3,9 +3,9 @@ module Data.Blockchain.Core.Types.Block
     , BlockHeader(..)
     ) where
 
-import qualified Data.Aeson      as Aeson
-import qualified Data.Time.Clock as Time
-import qualified GHC.Generics    as Generic
+import qualified Data.Aeson                             as Aeson
+import qualified Data.Time.Clock                        as Time
+import qualified GHC.Generics                           as Generic
 
 import qualified Data.Blockchain.Core.Crypto            as Crypto
 import           Data.Blockchain.Core.Types.Difficulty

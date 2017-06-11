@@ -1,6 +1,6 @@
 module Main where
 
-import qualified Test.Hspec as Hspec
+import qualified Test.Hspec                                      as Hspec
 
 import qualified Data.Blockchain.Core.BlockchainSpec
 import qualified Data.Blockchain.Core.Builder.TransactionSpec

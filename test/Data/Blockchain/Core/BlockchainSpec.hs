@@ -1,15 +1,15 @@
 module Data.Blockchain.Core.BlockchainSpec (spec) where
 
-import TestUtil
+import           TestUtil
 
-import qualified Data.Aeson           as Aeson
-import qualified Data.ByteString.Lazy as Lazy
-import qualified Data.HashMap.Strict  as H
-import qualified Data.List.NonEmpty   as NonEmpty
+import qualified Data.Aeson                      as Aeson
+import qualified Data.ByteString.Lazy            as Lazy
+import qualified Data.HashMap.Strict             as H
+import qualified Data.List.NonEmpty              as NonEmpty
 
-import Data.Blockchain.Core.Blockchain
-import Data.Blockchain.Core.Crypto
-import Data.Blockchain.Core.Types
+import           Data.Blockchain.Core.Blockchain
+import           Data.Blockchain.Core.Crypto
+import           Data.Blockchain.Core.Types
 
 
 throwLeft :: Show a => Either a b -> b

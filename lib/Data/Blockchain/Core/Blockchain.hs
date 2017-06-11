@@ -16,19 +16,19 @@ module Data.Blockchain.Core.Blockchain
     , flatten
     ) where
 
-import qualified Control.Monad           as M
-import qualified Data.Aeson              as Aeson
-import qualified Data.Aeson.Types        as Aeson
-import qualified Data.ByteString.Lazy    as Lazy
-import qualified Data.Either             as Either
-import qualified Data.Either.Combinators as Either
-import qualified Data.Foldable           as Foldable
-import qualified Data.HashMap.Strict     as H
-import qualified Data.List               as List
-import qualified Data.List.NonEmpty      as NonEmpty
-import qualified Data.Ord                as Ord
-import qualified Data.Word               as Word
-import qualified GHC.Generics            as Generic
+import qualified Control.Monad                 as M
+import qualified Data.Aeson                    as Aeson
+import qualified Data.Aeson.Types              as Aeson
+import qualified Data.ByteString.Lazy          as Lazy
+import qualified Data.Either                   as Either
+import qualified Data.Either.Combinators       as Either
+import qualified Data.Foldable                 as Foldable
+import qualified Data.HashMap.Strict           as H
+import qualified Data.List                     as List
+import qualified Data.List.NonEmpty            as NonEmpty
+import qualified Data.Ord                      as Ord
+import qualified Data.Word                     as Word
+import qualified GHC.Generics                  as Generic
 
 import qualified Data.Blockchain.Core.Crypto   as Crypto
 import           Data.Blockchain.Core.Types

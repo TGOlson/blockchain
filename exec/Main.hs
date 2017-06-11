@@ -1,8 +1,8 @@
 module Main where
 
-import qualified Data.Aeson           as Aeson
-import qualified Data.ByteString.Lazy as Lazy
-import qualified System.Environment   as Env
+import qualified Data.Aeson                      as Aeson
+import qualified Data.ByteString.Lazy            as Lazy
+import qualified System.Environment              as Env
 
 import qualified Data.Blockchain.Core.Blockchain as Blockchain
 import qualified Data.Blockchain.Core.Crypto     as Crypto

@@ -3,11 +3,11 @@ module Data.Blockchain.Core.Types.UnverifiedBlockchain
     , UnverifiedBlockchainNode(..)
     ) where
 
-import qualified Data.Aeson   as Aeson
-import qualified GHC.Generics as Generic
+import qualified Data.Aeson                                  as Aeson
+import qualified GHC.Generics                                as Generic
 
-import Data.Blockchain.Core.Types.Block
-import Data.Blockchain.Core.Types.BlockchainConfig
+import           Data.Blockchain.Core.Types.Block
+import           Data.Blockchain.Core.Types.BlockchainConfig
 
 
 data UnverifiedBlockchain = UnverifiedBlockchain

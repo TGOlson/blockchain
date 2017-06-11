@@ -4,19 +4,19 @@ module Data.Blockchain.Core.Builder.Transaction
     , createSimpleTransaction
     ) where
 
-import Control.Monad             (when, unless)
-import Control.Monad.Trans.Class (lift)
+import           Control.Monad                   (unless, when)
+import           Control.Monad.Trans.Class       (lift)
 
-import qualified Control.Error.Util   as Error
-import qualified Control.Monad.Except as Except
-import qualified Data.Aeson           as Aeson
-import qualified Data.ByteString.Lazy as Lazy
-import qualified Data.HashMap.Strict  as H
-import qualified Data.List.NonEmpty   as NonEmpty
-import qualified Data.Word            as Word
+import qualified Control.Error.Util              as Error
+import qualified Control.Monad.Except            as Except
+import qualified Data.Aeson                      as Aeson
+import qualified Data.ByteString.Lazy            as Lazy
+import qualified Data.HashMap.Strict             as H
+import qualified Data.List.NonEmpty              as NonEmpty
+import qualified Data.Word                       as Word
 
-import qualified Data.Blockchain.Core.Crypto     as Crypto
 import qualified Data.Blockchain.Core.Blockchain as Blockchain
+import qualified Data.Blockchain.Core.Crypto     as Crypto
 import qualified Data.Blockchain.Core.Types      as Blockchain
 
 data CreateTransactionException

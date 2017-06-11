@@ -1,12 +1,12 @@
 module Data.Blockchain.Core.Crypto.HashSpec (spec) where
 
-import TestUtil
+import           TestUtil
 
-import qualified Data.Aeson      as Aeson
-import qualified Data.ByteString as BS
-import qualified Data.ByteString.Char8 as Char8
+import qualified Data.Aeson                       as Aeson
+import qualified Data.ByteString                  as BS
+import qualified Data.ByteString.Char8            as Char8
 
-import Data.Blockchain.Core.Crypto.Hash
+import           Data.Blockchain.Core.Crypto.Hash
 
 spec :: Spec
 spec =

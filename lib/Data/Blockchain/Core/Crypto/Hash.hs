@@ -6,15 +6,15 @@ module Data.Blockchain.Core.Crypto.Hash
     , unsafeFromByteString
     ) where
 
-import qualified Crypto.Hash             as Crypto
-import qualified Data.Aeson              as Aeson
-import qualified Data.ByteArray.Encoding as Byte
-import qualified Data.ByteString         as BS
-import qualified Data.ByteString.Lazy    as Lazy
-import qualified Data.Hashable           as H
-import qualified Data.Maybe              as Maybe
-import qualified Data.Text               as Text
-import qualified Data.Text.Encoding      as Text
+import qualified Crypto.Hash                   as Crypto
+import qualified Data.Aeson                    as Aeson
+import qualified Data.ByteArray.Encoding       as Byte
+import qualified Data.ByteString               as BS
+import qualified Data.ByteString.Lazy          as Lazy
+import qualified Data.Hashable                 as H
+import qualified Data.Maybe                    as Maybe
+import qualified Data.Text                     as Text
+import qualified Data.Text.Encoding            as Text
 
 import qualified Data.Blockchain.Core.Util.Hex as Hex
 

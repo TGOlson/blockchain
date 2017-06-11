@@ -5,11 +5,11 @@ module Data.Blockchain.Core.Types.BlockchainConfig
     , targetDifficulty
     ) where
 
-import qualified Control.Monad   as Monad
-import qualified Data.Aeson      as Aeson
-import qualified Data.Time.Clock as Time
-import qualified Data.Word       as Word
-import qualified GHC.Generics    as Generic
+import qualified Control.Monad                         as Monad
+import qualified Data.Aeson                            as Aeson
+import qualified Data.Time.Clock                       as Time
+import qualified Data.Word                             as Word
+import qualified GHC.Generics                          as Generic
 
 import           Data.Blockchain.Core.Types.Block
 import           Data.Blockchain.Core.Types.Difficulty

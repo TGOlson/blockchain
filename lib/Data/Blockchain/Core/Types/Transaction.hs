@@ -6,11 +6,11 @@ module Data.Blockchain.Core.Types.Transaction
     , TransactionOut(..)
     ) where
 
-import qualified Data.Aeson         as Aeson
-import qualified Data.Hashable      as H
-import qualified Data.List.NonEmpty as NonEmpty
-import qualified Data.Word          as Word
-import qualified GHC.Generics       as Generic
+import qualified Data.Aeson                  as Aeson
+import qualified Data.Hashable               as H
+import qualified Data.List.NonEmpty          as NonEmpty
+import qualified Data.Word                   as Word
+import qualified GHC.Generics                as Generic
 
 
 import qualified Data.Blockchain.Core.Crypto as Crypto

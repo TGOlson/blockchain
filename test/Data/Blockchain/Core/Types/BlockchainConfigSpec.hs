@@ -1,11 +1,11 @@
 module Data.Blockchain.Core.Types.BlockchainConfigSpec (spec) where
 
-import TestUtil
+import           TestUtil
 
-import qualified Data.Time.Clock as Time
+import qualified Data.Time.Clock               as Time
 
-import Data.Blockchain.Core.Types
-import Data.Blockchain.Core.Util.Hex
+import           Data.Blockchain.Core.Types
+import           Data.Blockchain.Core.Util.Hex
 
 testConfig :: BlockchainConfig
 testConfig = BlockchainConfig

@@ -4,13 +4,13 @@ module Data.Blockchain.Mining.Block
     , createBlockchain
     ) where
 
-import qualified Data.List.NonEmpty as NonEmpty
-import qualified Data.Time.Clock    as Time
-import qualified Data.Word          as Word
+import qualified Data.List.NonEmpty              as NonEmpty
+import qualified Data.Time.Clock                 as Time
+import qualified Data.Word                       as Word
 
 import qualified Data.Blockchain.Core.Blockchain as Blockchain
-import qualified Data.Blockchain.Core.Types      as Blockchain
 import qualified Data.Blockchain.Core.Crypto     as Crypto
+import qualified Data.Blockchain.Core.Types      as Blockchain
 import qualified Data.Blockchain.Core.Util.Hex   as Hex
 
 mineBlock :: Crypto.PublicKey -> [Blockchain.Transaction] -> Blockchain.Blockchain -> IO Blockchain.Block

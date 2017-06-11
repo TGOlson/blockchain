@@ -1,6 +1,6 @@
 module Data.Blockchain.Mining.SolverSpec (spec) where
 
-import TestUtil
+import           TestUtil
 
 -- import Data.Blockchain.Crypto.Hash
 -- import Data.Blockchain.Solver
