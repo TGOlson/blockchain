@@ -8,7 +8,7 @@ module Data.Blockchain.Core.Crypto.Hash
     , fromByteString
     , unsafeFromByteString
     , toByteStringHash
-    , hashToNatural
+    , hashToHex
     ) where
 
 import qualified Crypto.Hash             as Crypto
@@ -21,8 +21,8 @@ import qualified Data.Maybe              as Maybe
 import qualified Data.Text               as Text
 import qualified Data.Text.Encoding      as Text
 import qualified Numeric
-import qualified Numeric.Natural         as Natural
 
+import qualified Data.Blockchain.Core.Util.Hex as Hex
 
 data Hash a = Hash { rawHash :: Crypto.Digest Crypto.SHA256 }
   deriving (Eq, Ord)
@@ -43,8 +43,8 @@ toByteStringHash = Hash . rawHash
 
 -- Note: ignore all possible invariants that `Numeric.readHex` would normally need to check
 -- we are only converting stringified hashes, which should always be valid hex strings
-hashToNatural :: Hash a -> Natural.Natural
-hashToNatural = fst . head . Numeric.readHex . show . rawHash
+hashToHex :: Hash a -> Hex.Hex256
+hashToHex = fst . head . Numeric.readHex . show . rawHash
 
 hashJSON :: Aeson.ToJSON a => a -> Hash a
 hashJSON = Hash . Crypto.hash . Lazy.toStrict . Aeson.encode
@@ -59,6 +59,9 @@ unsafeFromByteString = Maybe.fromMaybe (error "Invalid hash string") . fromByteS
 
 class Hashable a where
     hash :: a -> Hash a
+
+    hashHex :: a -> Hex.Hex256
+    hashHex = hashToHex . hash
 
 instance Hashable BS.ByteString where
     hash = Hash . Crypto.hash

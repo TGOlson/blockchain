@@ -1,25 +1,24 @@
 module Data.Blockchain.Core.Types.Difficulty
     ( Difficulty(..)
-    , minDifficulty
-    , maxDifficulty
+    , difficulty1Target
     ) where
 
-import qualified Data.Aeson      as Aeson
-import qualified Numeric
-import qualified Numeric.Natural as Natural
+import qualified Data.Aeson     as Aeson
+import qualified Data.LargeWord as Word
 
-newtype Difficulty = Difficulty { unDifficulty :: Natural.Natural }
-  deriving (Eq, Num, Ord, Show, Aeson.ToJSON, Aeson.FromJSON)
+import qualified Data.Blockchain.Core.Util.Hex as Hex
 
-minDifficulty :: Difficulty
-minDifficulty = Difficulty 1
+newtype Difficulty = Difficulty { unDifficulty :: Word.Word256 }
+  deriving (Bounded, Enum, Eq, Integral, Num, Real, Ord, Show)
 
--- TODO: should this be in blockchain config?
-maxDifficulty :: Difficulty
-maxDifficulty = Difficulty $ hexToNatural "00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
--- maxDifficulty = Difficulty $ hexToNatural "00000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+instance Aeson.ToJSON Difficulty where
+    toJSON = Aeson.toJSON . toInteger
 
--- unsafe
--- TODO: make safe version in util module
-hexToNatural :: String -> Natural.Natural
-hexToNatural = fst . head . Numeric.readHex
+instance Aeson.FromJSON Difficulty where
+    parseJSON = fmap fromInteger . Aeson.parseJSON
+
+-- TODO: `targetCycles :: Word -> Difficulty`
+
+-- TODO: from config
+difficulty1Target :: Hex.Hex256
+difficulty1Target = Hex.hex256LeadingZeros 2

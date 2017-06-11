@@ -233,8 +233,8 @@ unspentTransactionOutputs blockchain = H.fromListWith (++) (toPair <$> unspentTx
 -- As we assume the list of blocks is a verified sub-chain.
 -- TODO: similar issue to "verify transactions", does not recursively apply txouts within a transaction
 unspentTransactionOutputsInternal :: [Block] -> H.HashMap TransactionOutRef TransactionOut
-unspentTransactionOutputsInternal blocks =
-    foldr (\(Block _ coinbase txs) -> addTransactions txs . addCoinbaseTransaction coinbase) mempty blocks
+unspentTransactionOutputsInternal =
+    foldr (\(Block _ coinbase txs) -> addTransactions txs . addCoinbaseTransaction coinbase) mempty
   where
     addCoinbaseTransaction :: CoinbaseTransaction -> H.HashMap TransactionOutRef TransactionOut -> H.HashMap TransactionOutRef TransactionOut
     addCoinbaseTransaction coinbase = H.unionWith onDuplicateTxOutRef coinbaseTxOutRefMap
@@ -272,7 +272,7 @@ longestChain = List.maximumBy lengthOrDifficulty . flatten
         case Ord.comparing length chain1 chain2 of
             EQ -> Ord.comparing chainDifficulty chain1 chain2
             x  -> x
-    chainDifficulty = foldr (\block y -> unDifficulty (difficulty (blockHeader block)) + y) 0
+    chainDifficulty = sum . fmap (difficulty . blockHeader)
 
 flatten :: Blockchain -> NonEmpty.NonEmpty (NonEmpty.NonEmpty Block)
 flatten (Blockchain _ node) = flattenInternal node

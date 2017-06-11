@@ -52,9 +52,6 @@ targetReward config height = either id id $ do
 
     return $ initialReward `div` (2 ^ numHalves)
 
--- TODO: account for the blockchain having two chains of the same length
--- if two chains are the same length, lowest difficulty determines the target
--- could also implement that logic upstream
 -- TODO: array of blocks hold no assurances of expected invariants
 -- for example block1 could be created more recently than blockN
 -- should create a `SingleChain` wrapper

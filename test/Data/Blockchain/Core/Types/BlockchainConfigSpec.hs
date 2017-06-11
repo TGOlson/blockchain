@@ -44,7 +44,7 @@ spec = describe "Data.Blockchain.Core.Types.BlockchainConfig" $ do
                     lastBlock          = adjustTime (Time.addUTCTime $ fromIntegral n) block
                     blocks             = replicate 9 block ++ pure lastBlock
                     lastDiff           = difficulty (blockHeader block)
-                    expectedDifficulty = Difficulty $ round (toRational (unDifficulty lastDiff) * ratio)
+                    expectedDifficulty = Difficulty $ round (toRational lastDiff * ratio)
                 in targetDifficulty testConfig blocks === expectedDifficulty
 
         propWithSize 20 "should produce the correct difficulty when not recalculating" $
@@ -56,7 +56,7 @@ spec = describe "Data.Blockchain.Core.Types.BlockchainConfig" $ do
                   ==> targetDifficulty conf blocks === difficulty (blockHeader $ last blocks)
 
         prop "should always find a valid difficulty" $
-            \conf blocks -> targetDifficulty conf blocks >= Difficulty 0 -- TODO: want >= diff 1
+            \conf blocks -> targetDifficulty conf blocks >= minBound
 
 
 adjustTime :: (Time.UTCTime -> Time.UTCTime) -> Block -> Block

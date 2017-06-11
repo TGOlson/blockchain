@@ -8,7 +8,6 @@ module Data.Blockchain.Core.Crypto.ECDSA
     , generate
     ) where
 
-import qualified Control.Monad              as M
 import qualified Crypto.Hash                as Crypto
 import qualified Crypto.PubKey.ECC.ECDSA    as Crypto
 import qualified Crypto.PubKey.ECC.Generate as Crypto
@@ -17,93 +16,78 @@ import qualified Data.Aeson                 as Aeson
 import qualified Data.ByteString            as BS
 import qualified Data.Hashable              as H
 import qualified Data.Text                  as Text
-import qualified Numeric
+
+import Data.Blockchain.Core.Util.Hex
+
+-- Types -----------------------------------------------------------------------------------------------------
 
 data KeyPair = KeyPair
     { publicKey  :: PublicKey
     , privateKey :: PrivateKey
     }
 
+-- Signature
+
 newtype Signature = Signature { unSignature :: Crypto.Signature }
   deriving (Eq)
 
 instance Show Signature where
-    show = signatureToHex
+    show (Signature (Crypto.Signature r s)) = show (hex256FromInteger r) ++ show (hex256FromInteger s)
 
 instance Aeson.ToJSON Signature where
-    toJSON = Aeson.String . Text.pack . signatureToHex
+    toJSON = Aeson.toJSON . show
 
 instance Aeson.FromJSON Signature where
     parseJSON = Aeson.withText "Signature" $ \txt -> do
-        M.unless (Text.length txt == 128) $ fail "Invalid key length"
+        (rHex, sHex) <- parseHex256Tuple txt
 
-        (Hex r) <- parseHex $ Text.take 64 txt
-        (Hex s) <- parseHex $ Text.drop 64 txt
+        let sig = Crypto.Signature (toInteger rHex) (toInteger sHex)
 
-        return $ Signature (Crypto.Signature r s)
+        return (Signature sig)
 
-signatureToHex :: Signature -> String
-signatureToHex (Signature (Crypto.Signature r s)) = rHex ++ sHex
-  where
-    rRawHex = Numeric.showHex r ""
-    sRawHex = Numeric.showHex s ""
-    rHex    = replicate (64 - length rRawHex) '0' ++ rRawHex
-    sHex    = replicate (64 - length sRawHex) '0' ++ sRawHex
+-- PublicKey
 
 newtype PublicKey = PublicKey { unPublicKey :: Crypto.PublicPoint }
   deriving (Eq)
 
 instance H.Hashable PublicKey where
-    hashWithSalt _ = H.hash . show . unPublicKey
+    hashWithSalt _ = H.hash . show
 
 instance Show PublicKey where
-    show = publicKeyToHex
+    show = \case PublicKey Crypto.PointO      -> error "Unexpected pattern match - PointO" -- TODO: move invariant to type level?
+                 PublicKey (Crypto.Point x y) -> show (hex256FromInteger x) ++ show (hex256FromInteger y)
 
 instance Aeson.ToJSON PublicKey where
-    toJSON = Aeson.String . Text.pack . publicKeyToHex
+    toJSON = Aeson.toJSON . show
 
 instance Aeson.FromJSON PublicKey where
     parseJSON = Aeson.withText "PublicKey" $ \txt -> do
-        M.unless (Text.length txt == 128) $ fail "Invalid key length"
+        (xHex, yHex) <- parseHex256Tuple txt
 
-        (Hex x) <- parseHex $ Text.take 64 txt
-        (Hex y) <- parseHex $ Text.drop 64 txt
+        let point = Crypto.Point (toInteger xHex) (toInteger yHex)
 
-        return $ PublicKey (Crypto.Point x y)
+        return (PublicKey point)
 
-
-parseHex :: Monad m => Text.Text -> m Hex
-parseHex = maybe (fail "Invalid hex chars") return . hex . Text.unpack
-
-newtype Hex = Hex { unHex :: Integer }
-
-hex :: String -> Maybe Hex
-hex str = case Numeric.readHex str of
-    [(x, "")] -> Just (Hex x)
-    _         -> Nothing
-
-
-
-publicKeyToHex :: PublicKey -> String
-publicKeyToHex (PublicKey Crypto.PointO)      = error "Unexpected pattern match - PointO" -- TODO: move invariant to type level?
-publicKeyToHex (PublicKey (Crypto.Point x y)) = xHex ++ yHex
-  where
-      xRawHex = Numeric.showHex x ""
-      yRawHex = Numeric.showHex y ""
-      xHex    = replicate (64 - length xRawHex) '0' ++ xRawHex
-      yHex    = replicate (64 - length yRawHex) '0' ++ yRawHex
+-- PrivateKey
 
 newtype PrivateKey = PrivateKey { unPrivateKey :: Crypto.PrivateNumber }
   deriving (Eq, Show)
 
 instance Aeson.ToJSON PrivateKey where
-    toJSON (PrivateKey number) = Aeson.String $ Text.pack (Numeric.showHex number mempty)
+    toJSON = Aeson.toJSON . show
 
 instance Aeson.FromJSON PrivateKey where
-    parseJSON = Aeson.withText "PrivateKey" $ fmap (PrivateKey . unHex) . parseHex
+    parseJSON = Aeson.withText "PrivateKey" $ fmap (PrivateKey . toInteger) . parseHex256
+
+-- Core functions --------------------------------------------------------------------------------------------
+
+-- Constants
 
 hashType :: Crypto.SHA256
 hashType = Crypto.SHA256
+
+curve :: Crypto.Curve
+curve = Crypto.getCurveByName Crypto.SEC_p256k1
 
 sign :: PrivateKey -> BS.ByteString -> IO Signature
 sign (PrivateKey number) = fmap Signature . Crypto.sign privKey hashType
@@ -124,5 +108,20 @@ generate = do
 
     return $ KeyPair (PublicKey publicPoint) (PrivateKey privateNumber)
 
-curve :: Crypto.Curve
-curve = Crypto.getCurveByName Crypto.SEC_p256k1
+-- Util ------------------------------------------------------------------------------------------------------
+
+parseHex256 :: Monad m => Text.Text -> m Hex256
+parseHex256 = maybe (fail "Invalid hex 256 string") return . hex256 . Text.unpack
+
+parseHex256Tuple :: Monad m => Text.Text -> m (Hex256, Hex256)
+parseHex256Tuple txt = do
+    let (xStr, yStr) = Text.splitAt 64 txt
+
+    x <- parseHex256 xStr
+    y <- parseHex256 yStr
+
+    return (x, y)
+
+-- unsafe, but used internally on integers we know will always be positive
+hex256FromInteger :: Integer -> Hex256
+hex256FromInteger = fromInteger

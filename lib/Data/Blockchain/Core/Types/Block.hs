@@ -11,6 +11,7 @@ import qualified GHC.Generics    as Generic
 import qualified Data.Blockchain.Core.Crypto            as Crypto
 import           Data.Blockchain.Core.Types.Difficulty
 import           Data.Blockchain.Core.Types.Transaction
+import qualified Data.Blockchain.Core.Util.Hex          as Hex
 
 data Block = Block
     { blockHeader         :: BlockHeader
@@ -40,8 +41,8 @@ instance Crypto.Hashable BlockHeader where
 instance Aeson.ToJSON BlockHeader
 instance Aeson.FromJSON BlockHeader
 
+-- TODO: move difficulty1Target and revisit the hex/natural conversions
 blockHeaderHashDifficulty :: BlockHeader -> Difficulty
-blockHeaderHashDifficulty header = Difficulty $ unDifficulty maxDifficulty `div` headerHashNatural
+blockHeaderHashDifficulty header = Difficulty (Hex.unHex256 ratio)
   where
-    headerHashNatural = Crypto.hashToNatural headerHash
-    headerHash        = Crypto.hash header
+    ratio = difficulty1Target `div` Crypto.hashHex header

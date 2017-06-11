@@ -54,7 +54,7 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
     describe "verifyBlockchain" $ do
         it "should reject a chain with invalid difficulty reference in genesis block" $ once $ ioProperty $ do
             (UnverifiedBlockchain config node) <- loadUnverifiedTestBlockchain SingletonChain
-            let config' = config { initialDifficulty = minDifficulty }
+            let config' = config { initialDifficulty = minBound }
                 chain   = UnverifiedBlockchain config' node
 
             return $ verifyBlockchain chain === Left (AddBlockVerificationException InvalidDifficultyReference)

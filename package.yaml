@@ -32,6 +32,7 @@ dependencies:
   - either
   - errors
   - hashable
+  - largeword
   - memory
   - mtl
   - text
@@ -52,6 +53,7 @@ library:
     - Data.Blockchain.Core.Types.Block
     - Data.Blockchain.Core.Types.Difficulty
     - Data.Blockchain.Core.Types.Transaction
+    - Data.Blockchain.Core.Util.Hex
     - Data.Blockchain.Mining.Block
 
 executables:
