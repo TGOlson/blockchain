@@ -65,7 +65,7 @@ mineBlockInternal pubKey reward diff1 difficulty prevBlockHeaderHash txs = do
 mineHeader
     :: Crypto.Hash Blockchain.BlockHeader
     -> Crypto.Hash Blockchain.CoinbaseTransaction
-    -> Crypto.HashTreeRoot [Blockchain.Transaction]
+    -> Crypto.HashTreeRoot Blockchain.Transaction
     -> Hex.Hex256
     -> Blockchain.Difficulty
     -> IO Blockchain.BlockHeader

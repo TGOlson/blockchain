@@ -268,7 +268,7 @@ unspentTransactionOutputsInternal =
 -- TODO: consider best place for this function
 
 blockHeaderHashDifficulty :: Hex.Hex256 -> BlockHeader -> Difficulty
-blockHeaderHashDifficulty diff1 header = fromIntegral (diff1 `div` Crypto.hashHex header)
+blockHeaderHashDifficulty diff1 header = fromIntegral $ diff1 `div` Crypto.hashToHex (Crypto.hash header)
 
 -- Chain inspection -----------------------------------------------------------------------------------------
 

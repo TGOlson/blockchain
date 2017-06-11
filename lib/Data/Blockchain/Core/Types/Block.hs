@@ -26,7 +26,7 @@ data BlockHeader = BlockHeader
     { version                 :: Int
     , prevBlockHeaderHash     :: Crypto.Hash BlockHeader
     , coinbaseTransactionHash :: Crypto.Hash CoinbaseTransaction
-    , transactionHashTreeRoot :: Crypto.HashTreeRoot [Transaction]
+    , transactionHashTreeRoot :: Crypto.HashTreeRoot Transaction
     , time                    :: Time.UTCTime
     , difficulty              :: Difficulty
     , nonce                   :: Int

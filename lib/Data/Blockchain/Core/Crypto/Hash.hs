@@ -1,14 +1,10 @@
 module Data.Blockchain.Core.Crypto.Hash
     ( Hash
-    , rawHash
-    , ByteStringHash
-    , joinHash
-    , hashJSON
     , Hashable(..)
+    , hashJSON
+    , hashToHex
     , fromByteString
     , unsafeFromByteString
-    , toByteStringHash
-    , hashToHex
     ) where
 
 import qualified Crypto.Hash             as Crypto
@@ -20,31 +16,43 @@ import qualified Data.Hashable           as H
 import qualified Data.Maybe              as Maybe
 import qualified Data.Text               as Text
 import qualified Data.Text.Encoding      as Text
-import qualified Numeric
 
 import qualified Data.Blockchain.Core.Util.Hex as Hex
 
-data Hash a = Hash { rawHash :: Crypto.Digest Crypto.SHA256 }
+-- Types -----------------------------------------------------------------------------------------------------
+
+data Hash a = Hash { unHash :: Crypto.Digest Crypto.SHA256 }
   deriving (Eq, Ord)
 
 instance H.Hashable (Hash a) where
     hashWithSalt _ = H.hash . show
 
-type ByteStringHash = Hash BS.ByteString
-
-joinHash :: Hash a -> Hash a -> Hash a
-joinHash (Hash h1) (Hash h2) = Hash $ Crypto.hashFinalize $ Crypto.hashUpdates Crypto.hashInit [h1, h2]
-
 instance Show (Hash a) where
-    show = show . rawHash
+    show = show . unHash
 
-toByteStringHash :: Hash a -> ByteStringHash
-toByteStringHash = Hash . rawHash
+instance Aeson.ToJSON (Hash a) where
+    toJSON = Aeson.String . Text.pack . show . unHash
 
--- Note: ignore all possible invariants that `Numeric.readHex` would normally need to check
--- we are only converting stringified hashes, which should always be valid hex strings
+instance Aeson.FromJSON (Hash a) where
+    parseJSON = Aeson.withText "Hash" $
+        maybe (fail "Invalid bytestring hash") return . fromByteString . Text.encodeUtf8
+
+instance Monoid (Hash a) where
+    mempty = Hash $ Crypto.hash (mempty :: BS.ByteString)
+    mappend (Hash h1) (Hash h2) = Hash $ Crypto.hashFinalize $ Crypto.hashUpdates Crypto.hashInit [h1, h2]
+
+class Hashable a where
+    hash :: a -> Hash a
+
+instance Hashable BS.ByteString where
+    hash = Hash . Crypto.hash
+
+-- Utils -----------------------------------------------------------------------------------------------------
+
+-- Note: ignore all possible invariants that `Numeric.readHex` would normally need to check.
+-- We are only converting string-ified hashes, which should always be valid hex strings.
 hashToHex :: Hash a -> Hex.Hex256
-hashToHex = fst . head . Numeric.readHex . show . rawHash
+hashToHex = Maybe.fromMaybe (error "Unexpected hex conversion failure") . Hex.hex256 . show . unHash
 
 hashJSON :: Aeson.ToJSON a => a -> Hash a
 hashJSON = Hash . Crypto.hash . Lazy.toStrict . Aeson.encode
@@ -56,22 +64,3 @@ fromByteString bs = case Byte.convertFromBase Byte.Base16 bs of
 
 unsafeFromByteString :: BS.ByteString -> Hash a
 unsafeFromByteString = Maybe.fromMaybe (error "Invalid hash string") . fromByteString
-
-class Hashable a where
-    hash :: a -> Hash a
-
-    hashHex :: a -> Hex.Hex256
-    hashHex = hashToHex . hash
-
-instance Hashable BS.ByteString where
-    hash = Hash . Crypto.hash
-
-instance Aeson.ToJSON (Hash a) where
-    toJSON = Aeson.String . Text.pack . show . rawHash
-
-instance Aeson.FromJSON (Hash a) where
-    parseJSON = Aeson.withText "Hash" $ \txt -> do
-        let bs = Text.encodeUtf8 txt
-            h = unsafeFromByteString bs -- TODO: unsafe!
-
-        return h

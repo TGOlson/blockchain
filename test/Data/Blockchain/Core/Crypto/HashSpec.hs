@@ -12,7 +12,7 @@ spec :: Spec
 spec =
     describe "Data.Blockchain.Core.Crypto.Hash" $ do
         prop "should hash to a hex" $
-            \(bs :: BS.ByteString) -> hashHex bs >= minBound
+            \(bs :: BS.ByteString) -> hashToHex (hash bs) >= minBound
 
         prop "should round-trip json serialize" $
             \(bs :: BS.ByteString) -> let h = hash bs in
