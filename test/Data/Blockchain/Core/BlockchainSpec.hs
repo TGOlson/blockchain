@@ -2,6 +2,7 @@ module Data.Blockchain.Core.BlockchainSpec (spec) where
 
 import           TestUtil
 
+import qualified Control.Arrow                   as Arrow
 import qualified Data.Aeson                      as Aeson
 import qualified Data.ByteString.Lazy            as Lazy
 import qualified Data.HashMap.Strict             as H
@@ -166,4 +167,4 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
 
 
 showKeys :: H.HashMap PublicKey v -> H.HashMap String v
-showKeys = H.fromList . fmap (\(k, v) -> (show k, v)) . H.toList
+showKeys = H.fromList . fmap (Arrow.first show) . H.toList

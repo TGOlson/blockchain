@@ -89,7 +89,7 @@ verifyBlockchain (UnverifiedBlockchain config (UnverifiedBlockchainNode genesisB
     let (Block header _coinbase txs) = genesisBlock
         reward                       = initialMiningReward config
         blockchainHead               = Blockchain config (BlockchainNode genesisBlock mempty)
-        blocks                       = concatMap getBlocks nodes
+        blocks                       = nodes >>= getBlocks
 
     verify (null txs) GenesisBlockHasTransactions
     Either.mapLeft AddBlockVerificationException $ verifyBlockDifficulty header config mempty
@@ -97,7 +97,7 @@ verifyBlockchain (UnverifiedBlockchain config (UnverifiedBlockchainNode genesisB
     Either.mapLeft AddBlockVerificationException $ verifyBlockHeaderReferences genesisBlock
     Either.mapLeft AddBlockVerificationException $ Foldable.foldrM addBlock blockchainHead blocks
   where
-    getBlocks (UnverifiedBlockchainNode block ns) = block : concatMap getBlocks ns
+    getBlocks (UnverifiedBlockchainNode block ns) = block : (ns >>= getBlocks)
 
 -- ** Notes
 -- Check if the previous block referenced by the block exists and is valid.

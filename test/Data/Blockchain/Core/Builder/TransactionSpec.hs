@@ -1,3 +1,4 @@
+
 module Data.Blockchain.Core.Builder.TransactionSpec (spec) where
 
 import           TestUtil
@@ -50,9 +51,7 @@ spec = describe "Data.Blockchain.Core.Builder.Transaction" $
                 tx <- throwLeft <$> createSimpleTransaction keyPair targetPublicKey value fee blockchain'
 
                 -- TODO: better tests
-                return $ and [ length (transactionIn tx) == 1
-                             , length (transactionOut tx) == 2
-                             ]
+                return $ length (transactionIn tx) == 1 && length (transactionOut tx) == 2
 
         propNumTests 5 "should not issue a refund if entire balance is spent" $
             \(Small value) targetPublicKey -> value < 100 ==> ioProperty $ do
@@ -67,9 +66,7 @@ spec = describe "Data.Blockchain.Core.Builder.Transaction" $
                 tx <- throwLeft <$> createSimpleTransaction keyPair targetPublicKey value fee blockchain'
 
                 -- TODO: better tests
-                return $ and [ length (transactionIn tx) == 1
-                             , length (transactionOut tx) == 1
-                             ]
+                return $ length (transactionIn tx) == 1 && length (transactionOut tx) == 1
 
         propNumTests 5 "should reject transactions attempting to spend from empty address" $
             \(Small value) (Small fee) publicKey targetPublicKey -> value + fee < 100 ==> ioProperty $ do
