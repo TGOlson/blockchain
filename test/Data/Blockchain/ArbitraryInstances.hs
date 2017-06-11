@@ -10,7 +10,6 @@ import qualified Data.ByteString.Char8   as BS
 import qualified Data.List.NonEmpty      as NonEmpty
 import qualified Data.Time.Calendar      as Time
 import qualified Data.Time.Clock         as Time
-import qualified Data.LargeWord          as Word
 
 import Data.Blockchain.Core.Crypto
 import Data.Blockchain.Core.Types
@@ -58,7 +57,7 @@ instance Arbitrary TransactionOutRef where
     arbitrary = TransactionOutRef <$> arbitrary <*> arbitrary
 
 instance Arbitrary Difficulty where
-    arbitrary = Difficulty <$> arbitraryWord256
+    arbitrary = Difficulty <$> arbitrary
 
 -- Crypto Types
 
@@ -87,7 +86,7 @@ instance Arbitrary PrivateKey where
 -- Other Types
 
 instance Arbitrary Hex256 where
-    arbitrary = Hex256 <$> arbitraryWord256
+    arbitrary = Hex256 <$> arbitrary
 
 instance Arbitrary a => Arbitrary (NonEmpty.NonEmpty a) where
     arbitrary = NonEmpty.fromList <$> listOf1 arbitrary
@@ -104,9 +103,6 @@ instance Arbitrary Time.UTCTime where
         dayTimeGen = Time.secondsToDiffTime <$> elements [0 .. 86400]
 
 -- Utils
-
-arbitraryWord256 :: Gen Word.Word256
-arbitraryWord256 = fromInteger <$> arbitrary
 
 arbitraryPositive :: (Num a, Ord a, Arbitrary a) => Gen a
 arbitraryPositive = getPositive <$> arbitrary

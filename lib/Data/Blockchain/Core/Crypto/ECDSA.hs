@@ -71,7 +71,10 @@ instance Aeson.FromJSON PublicKey where
 -- PrivateKey
 
 newtype PrivateKey = PrivateKey { unPrivateKey :: Crypto.PrivateNumber }
-  deriving (Eq, Show)
+  deriving (Eq)
+
+instance Show PrivateKey where
+    show = show . hex256FromInteger . unPrivateKey
 
 instance Aeson.ToJSON PrivateKey where
     toJSON = Aeson.toJSON . show
