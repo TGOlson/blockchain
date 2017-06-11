@@ -24,6 +24,7 @@ instance Arbitrary BlockchainConfig where
         <*> arbitrary
         <*> arbitrary
         <*> arbitrary
+        <*> arbitrary
 
 instance Arbitrary Block where
     arbitrary = Block

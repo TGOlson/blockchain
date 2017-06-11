@@ -1,6 +1,5 @@
 module Data.Blockchain.Core.Types.Difficulty
     ( Difficulty(..)
-    , difficulty1Target
     ) where
 
 import qualified Data.Aeson      as Aeson
@@ -20,9 +19,3 @@ instance Aeson.ToJSON Difficulty where
 
 instance Aeson.FromJSON Difficulty where
     parseJSON = fmap fromInteger . Aeson.parseJSON
-
--- TODO: `targetCycles :: Word -> Difficulty`
-
--- TODO: from config
-difficulty1Target :: Hex.Hex256
-difficulty1Target = Hex.hex256LeadingZeros 2

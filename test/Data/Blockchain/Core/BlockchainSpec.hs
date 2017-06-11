@@ -158,8 +158,8 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
                 unspent     = addressValues blockchain'
 
             return $ showKeys unspent === H.fromList
-                [ ("527116941122d10c02e05c59af5ba550f6dc3f9503e6c3579fc61d87575b5392a4300044ea46305265df9ef8f1529575e6eb5ab192f9f5de0739008e32cf1780", 100)
-                , ("c6e57daea40a427c7669bcb4403a36e546571ec2ecf3d6c95e310769abf1b2ea0d05cb673c5f60af4c9103d3628295cc8125b7a01d112274bb77d2a75c870a06", 100)
+                [ ("74bbe6d5f70f7d7e433b9b6d5d77a391492cc93161d9f108cef18d64959930cf1d55ef0844c0607f5568d1cd9233995154b5758915eb595e1dee472d13a18517", 100)
+                , ("8330da21047df515590bc752ac27210d3eb11bc1ec1b4dcb8f6c6b0b018fb5d44feb11798ca599b0c1549146508933833c4553d420504bef2c5f96dd42e143df", 100)
                 ]
 
         -- TODO: test w/ more transactions (and non-coinbase txs)

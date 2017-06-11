@@ -11,16 +11,20 @@ import qualified Data.Time.Clock as Time
 import qualified Data.Word       as Word
 import qualified GHC.Generics    as Generic
 
-import Data.Blockchain.Core.Types.Block
-import Data.Blockchain.Core.Types.Difficulty
+import           Data.Blockchain.Core.Types.Block
+import           Data.Blockchain.Core.Types.Difficulty
+import qualified Data.Blockchain.Core.Util.Hex         as Hex
 
 data BlockchainConfig = BlockchainConfig
     { initialDifficulty             :: Difficulty
+    -- Maximum hash - difficulties will be calculated using this value
+    , difficulty1Target             :: Hex.Hex256
     , targetSecondsPerBlock         :: Word.Word
     , difficultyRecalculationHeight :: Word.Word
     , initialMiningReward           :: Word.Word
     -- Defines num blocks when reward is halved
     -- `0` means reward never changes
+    -- TODO: should probably test that ^^
     , miningRewardHalvingHeight     :: Word.Word
     }
   deriving (Generic.Generic, Eq, Show)
@@ -30,7 +34,8 @@ instance Aeson.FromJSON BlockchainConfig
 
 defaultConfig :: BlockchainConfig
 defaultConfig = BlockchainConfig
-    { initialDifficulty             = Difficulty 100
+    { initialDifficulty             = Difficulty 1
+    , difficulty1Target             = Hex.hex256LeadingZeros 4
     , targetSecondsPerBlock         = 10
     , difficultyRecalculationHeight = 100
     , initialMiningReward           = 100
@@ -70,7 +75,7 @@ targetDifficulty config blocks =
                 avgSolveTime   = realToFrac diffTime / fromIntegral recalcHeight
                 ratio          = avgSolveTime / fromIntegral (targetSecondsPerBlock config)
                 lastDifficulty = difficulty (blockHeader lastBlock)
-                nextDifficulty = Difficulty $ round $ ratio * toRational (unDifficulty lastDifficulty)
+                nextDifficulty = Difficulty $ round $ ratio * toRational lastDifficulty
             in nextDifficulty
 
         _ -> difficulty $ blockHeader $ last blocks

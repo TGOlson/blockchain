@@ -5,10 +5,12 @@ import TestUtil
 import qualified Data.Time.Clock as Time
 
 import Data.Blockchain.Core.Types
+import Data.Blockchain.Core.Util.Hex
 
 testConfig :: BlockchainConfig
 testConfig = BlockchainConfig
     { initialDifficulty             = Difficulty 1000
+    , difficulty1Target             = hex256LeadingZeros 2
     , targetSecondsPerBlock         = 60
     , difficultyRecalculationHeight = 10
     , initialMiningReward           = 100

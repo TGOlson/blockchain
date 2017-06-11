@@ -9,6 +9,7 @@ module Data.Blockchain.Core.Blockchain
     , verifyBlockchain
     , addBlock
     -- Chain inspection
+    , blockHeaderHashDifficulty
     , addressValues
     , unspentTransactionOutputs
     , longestChain
@@ -29,8 +30,9 @@ import qualified Data.Ord                as Ord
 import qualified Data.Word               as Word
 import qualified GHC.Generics            as Generic
 
-import qualified Data.Blockchain.Core.Crypto as Crypto
+import qualified Data.Blockchain.Core.Crypto   as Crypto
 import           Data.Blockchain.Core.Types
+import qualified Data.Blockchain.Core.Util.Hex as Hex
 
 -- Types ----------------------------------------------------------------------------------------------------
 
@@ -168,7 +170,7 @@ addBlock blk (Blockchain config node) = Blockchain config <$> addBlockToNode blk
 verifyBlockDifficulty :: BlockHeader -> BlockchainConfig -> [Block] -> Either BlockException ()
 verifyBlockDifficulty header config blocks = do
     verify (difficulty header == diff) InvalidDifficultyReference
-    verify (blockHeaderHashDifficulty header >= diff) InvalidDifficulty
+    verify (blockHeaderHashDifficulty (difficulty1Target config) header >= diff) InvalidDifficulty
   where
     diff = targetDifficulty config blocks
 
@@ -262,6 +264,11 @@ unspentTransactionOutputsInternal =
     onDuplicateTxOutRef txOutRef = error ("Unexpected error when computing transaction map - duplicate transaction: " ++ show txOutRef)
     onNotFoundTxOutRef  txOutRef = error ("Unexpected error when computing transaction map - transaction not found: " ++ show txOutRef)
 
+-- Exported util
+-- TODO: consider best place for this function
+
+blockHeaderHashDifficulty :: Hex.Hex256 -> BlockHeader -> Difficulty
+blockHeaderHashDifficulty diff1 header = fromIntegral (diff1 `div` Crypto.hashHex header)
 
 -- Chain inspection -----------------------------------------------------------------------------------------
 
