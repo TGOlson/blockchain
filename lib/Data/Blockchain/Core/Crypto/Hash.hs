@@ -1,7 +1,6 @@
 module Data.Blockchain.Core.Crypto.Hash
     ( Hash
-    , Hashable(..)
-    , hashJSON
+    , ToHash(..)
     , hashToHex
     , fromByteString
     , unsafeFromByteString
@@ -41,10 +40,13 @@ instance Monoid (Hash a) where
     mempty = Hash $ Crypto.hash (mempty :: BS.ByteString)
     mappend (Hash h1) (Hash h2) = Hash $ Crypto.hashFinalize $ Crypto.hashUpdates Crypto.hashInit [h1, h2]
 
-class Hashable a where
+class ToHash a where
     hash :: a -> Hash a
 
-instance Hashable BS.ByteString where
+    default hash :: Aeson.ToJSON a => a -> Hash a
+    hash = Hash . Crypto.hash . Lazy.toStrict . Aeson.encode
+
+instance ToHash BS.ByteString where
     hash = Hash . Crypto.hash
 
 -- Utils -----------------------------------------------------------------------------------------------------
@@ -53,9 +55,6 @@ instance Hashable BS.ByteString where
 -- We are only converting string-ified hashes, which should always be valid hex strings.
 hashToHex :: Hash a -> Hex.Hex256
 hashToHex = Maybe.fromMaybe (error "Unexpected hex conversion failure") . Hex.hex256 . show . unHash
-
-hashJSON :: Aeson.ToJSON a => a -> Hash a
-hashJSON = Hash . Crypto.hash . Lazy.toStrict . Aeson.encode
 
 fromByteString :: BS.ByteString -> Maybe (Hash a)
 fromByteString bs = case Byte.convertFromBase Byte.Base16 bs of

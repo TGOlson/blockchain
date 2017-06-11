@@ -14,8 +14,8 @@ instance Bounded Difficulty where
     minBound = 0
     maxBound = fromIntegral (maxBound :: Hex.Hex256)
 
-instance Aeson.ToJSON Difficulty where
-    toJSON = Aeson.toJSON . toInteger
-
 instance Aeson.FromJSON Difficulty where
     parseJSON = fmap fromInteger . Aeson.parseJSON
+
+instance Aeson.ToJSON Difficulty where
+    toJSON = Aeson.toJSON . toInteger

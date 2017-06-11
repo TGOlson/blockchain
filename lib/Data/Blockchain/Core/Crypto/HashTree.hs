@@ -18,7 +18,7 @@ newtype HashTreeRoot a = HashTreeRoot { unHashTreeRoot :: Hash a }
 -- ┌─┴─┐ ┌─┴─┐ │  ┌─┴─┐ ┌─┴─┐ ┌─┴─┐  ┌─┴─┐ ┌─┴─┐ ┌─┴─┐   │
 --    (5-leaf)         (6-leaf)             (7-leaf)
 
-hashTreeRoot :: forall a. Hashable a => [a] -> HashTreeRoot a
+hashTreeRoot :: forall a. ToHash a => [a] -> HashTreeRoot a
 hashTreeRoot = HashTreeRoot . buildHash
   where
     buildHash :: [a] -> Hash a

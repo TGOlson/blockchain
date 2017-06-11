@@ -15,6 +15,7 @@ ghc-options: -Wall -Werror
 
 default-extensions:
   - BangPatterns
+  - DefaultSignatures
   - DeriveGeneric
   - GeneralizedNewtypeDeriving
   - LambdaCase
@@ -32,7 +33,6 @@ dependencies:
   - either
   - errors
   - hashable
-  - largeword
   - memory
   - mtl
   - text

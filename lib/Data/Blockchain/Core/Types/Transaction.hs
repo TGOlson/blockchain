@@ -22,34 +22,29 @@ data Transaction = Transaction
     }
   deriving (Generic.Generic, Eq, Show)
 
-instance Crypto.Hashable Transaction where
-    hash = Crypto.hashJSON
-
-instance Aeson.ToJSON Transaction
 instance Aeson.FromJSON Transaction
+instance Aeson.ToJSON  Transaction
+instance Crypto.ToHash Transaction
 
 newtype CoinbaseTransaction = CoinbaseTransaction
     { coinbaseTransactionOut :: NonEmpty.NonEmpty TransactionOut
     }
   deriving (Generic.Generic, Eq, Show)
 
-instance Crypto.Hashable CoinbaseTransaction where
-    hash = Crypto.hashJSON
-
-instance Aeson.ToJSON CoinbaseTransaction
 instance Aeson.FromJSON CoinbaseTransaction
+instance Aeson.ToJSON CoinbaseTransaction
+instance Crypto.ToHash CoinbaseTransaction
 
 data TransactionIn = TransactionIn
     { transactionOutRef :: TransactionOutRef
-    , signature         :: Crypto.Signature -- Signature from prev transaction, using pubkey from prev transaction
+     -- Signature from prev transaction, using pubkey from prev transaction
+    , signature         :: Crypto.Signature
     }
   deriving (Generic.Generic, Eq, Show)
 
-instance Crypto.Hashable TransactionIn where
-    hash = Crypto.hashJSON
-
 instance Aeson.ToJSON TransactionIn
 instance Aeson.FromJSON TransactionIn
+instance Crypto.ToHash TransactionIn
 
 -- Pointer to a specific TransactionOut
 data TransactionOutRef = TransactionOutRef
@@ -60,8 +55,8 @@ data TransactionOutRef = TransactionOutRef
 
 instance H.Hashable TransactionOutRef
 
-instance Aeson.ToJSON TransactionOutRef
 instance Aeson.FromJSON TransactionOutRef
+instance Aeson.ToJSON TransactionOutRef
 
 data TransactionOut = TransactionOut
     -- > maxBound :: Word
@@ -72,8 +67,6 @@ data TransactionOut = TransactionOut
     }
   deriving (Generic.Generic, Eq, Show)
 
-instance Crypto.Hashable TransactionOut where
-    hash = Crypto.hashJSON
-
-instance Aeson.ToJSON TransactionOut
 instance Aeson.FromJSON TransactionOut
+instance Aeson.ToJSON TransactionOut
+instance Crypto.ToHash TransactionOut

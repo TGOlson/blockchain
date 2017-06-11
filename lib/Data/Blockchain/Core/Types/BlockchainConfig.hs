@@ -29,8 +29,8 @@ data BlockchainConfig = BlockchainConfig
     }
   deriving (Generic.Generic, Eq, Show)
 
-instance Aeson.ToJSON BlockchainConfig
 instance Aeson.FromJSON BlockchainConfig
+instance Aeson.ToJSON BlockchainConfig
 
 defaultConfig :: BlockchainConfig
 defaultConfig = BlockchainConfig

@@ -19,8 +19,8 @@ data Block = Block
   deriving (Generic.Generic, Eq, Show)
 
 -- TODO: add block header hash for more efficient hash comparison
-instance Aeson.ToJSON Block
 instance Aeson.FromJSON Block
+instance Aeson.ToJSON Block
 
 data BlockHeader = BlockHeader
     { version                 :: Int
@@ -33,8 +33,6 @@ data BlockHeader = BlockHeader
     }
   deriving (Generic.Generic, Eq, Show)
 
-instance Crypto.Hashable BlockHeader where
-    hash = Crypto.hashJSON
-
-instance Aeson.ToJSON BlockHeader
 instance Aeson.FromJSON BlockHeader
+instance Aeson.ToJSON BlockHeader
+instance Crypto.ToHash BlockHeader
