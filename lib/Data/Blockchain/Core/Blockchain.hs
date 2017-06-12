@@ -6,7 +6,7 @@ module Data.Blockchain.Core.Blockchain
     , blockchainConfig
     , blockchainNode
     , BlockchainNode(..)
-    , BlockchainVerificationException(..)
+    , ValidationException(..)
     , BlockException(..)
     -- Construction
     , construct
@@ -74,10 +74,10 @@ instance Aeson.FromJSON BlockchainNode where
 instance Aeson.ToJSON BlockchainNode where
     toEncoding = Aeson.genericToEncoding (stripFieldPrefix "node")
 
-data BlockchainVerificationException
+data ValidationException
     = GenesisBlockHasTransactions
     | GenesisBlockException BlockException
-    | AddBlockVerificationException BlockException
+    | BlockValidationException BlockException
   deriving (Eq, Show)
 
 data BlockException
@@ -99,12 +99,13 @@ data BlockException
     | InvalidTransactionSignature
   deriving (Eq, Show)
 
+
 -- Construction ---------------------------------------------------------------------------------------------
 
 construct :: BlockchainConfig -> BlockchainNode -> Blockchain Unvalidated
 construct = Blockchain
 
-validate :: Blockchain Unvalidated -> Either BlockchainVerificationException (Blockchain Validated)
+validate :: Blockchain Unvalidated -> Either ValidationException (Blockchain Validated)
 validate (Blockchain config (BlockchainNode genesisBlock nodes)) = do
     let (Block header _coinbase txs) = genesisBlock
         reward                       = initialMiningReward config
@@ -112,28 +113,13 @@ validate (Blockchain config (BlockchainNode genesisBlock nodes)) = do
         blocks                       = nodes >>= getBlocks
 
     verify (null txs) GenesisBlockHasTransactions
-    Either.mapLeft AddBlockVerificationException $ verifyBlockDifficulty header config mempty
-    Either.mapLeft AddBlockVerificationException $ verifyTransactions genesisBlock mempty reward
-    Either.mapLeft AddBlockVerificationException $ verifyBlockHeaderReferences genesisBlock
-    Either.mapLeft AddBlockVerificationException $ Foldable.foldrM addBlock blockchainHead blocks
+    Either.mapLeft BlockValidationException $ validateBlockDifficulty header config mempty
+    Either.mapLeft BlockValidationException $ validateTransactions genesisBlock mempty reward
+    Either.mapLeft BlockValidationException $ validateBlockHeaderReferences genesisBlock
+    Either.mapLeft BlockValidationException $ Foldable.foldrM addBlock blockchainHead blocks
   where
     getBlocks (BlockchainNode block ns) = block : (ns >>= getBlocks)
 
--- ** Notes
--- Check if the previous block referenced by the block exists and is valid.
--- Check that the timestamp of the block is greater than that of the previous block[2] and less than 2 hours into the future
--- Check that the proof of work on the block is valid.
--- Let S[0] be the state at the end of the previous block.
--- Suppose TX is the block's transaction list with n transactions. For all i in 0...n-1, set S[i+1] = APPLY(S[i],TX[i]) If any application returns an error, exit and return false.
--- Return true, and register S[n] as the state at the end of this block.
-
--- rules
--- https://en.bitcoin.it/wiki/Protocol_rules#.22block.22_messages
--- block needs to be unique (not already in chain)
--- block needs to reference a valid parent
--- transaction txins need to reference valid txouts from other transactions in same chain
--- transaction txout need to be less the sum of input txouts
--- transaction txin need to have valid signature by input txouts
 addBlock :: Block -> Blockchain Validated -> Either BlockException (Blockchain Validated)
 addBlock blk (Blockchain config node) = Blockchain config <$> addBlockToNode blk mempty node
   where
@@ -147,10 +133,10 @@ addBlock blk (Blockchain config node) = Blockchain config <$> addBlockToNode blk
                 newBlockHeader = blockHeader newBlock
 
             verify (newBlock `notElem` blocks) BlockAlreadyExists
-            verifyBlockCreationTime newBlockHeader (blockHeader block)
-            verifyBlockDifficulty newBlockHeader config prevBlocks
-            verifyTransactions newBlock prevBlocks (targetReward config $ fromIntegral height)
-            verifyBlockHeaderReferences newBlock
+            validateBlockCreationTime newBlockHeader (blockHeader block)
+            validateBlockDifficulty newBlockHeader config prevBlocks
+            validateTransactions newBlock prevBlocks (targetReward config $ fromIntegral height)
+            validateBlockHeaderReferences newBlock
 
             return updatedNode
         else
@@ -167,7 +153,7 @@ addBlock blk (Blockchain config node) = Blockchain config <$> addBlockToNode blk
     --   If one result is `Right Blockchain` and the rest are `Left NoParentFound`
     --      the result is that new block chain and all the previous chains.
     --   If more than one result is `Right Blockchain` it is an unexpected result and the function will error.
-    -- TODO: this no longer makes sense... revisit
+    -- TODO: this no longer makes sense... write tests and revisit
     reduceAddBlockResults :: [Either (BlockException, BlockchainNode) BlockchainNode] -> Either BlockException [BlockchainNode]
     reduceAddBlockResults results = case (blockAlreadyExists, rightResults) of
         (True, _)    -> Left BlockAlreadyExists
@@ -185,27 +171,37 @@ addBlock blk (Blockchain config node) = Blockchain config <$> addBlockToNode blk
         -- However, we do expect our reducing function to monitor for that invariant during original insert.
         blockAlreadyExists = BlockAlreadyExists `elem` exceptions
 
+
+-- Internal Validation ---------------------------------------------------------------------------------------
+
 -- block references expected difficulty
 -- block header hashes to expected difficulty
-verifyBlockDifficulty :: BlockHeader -> BlockchainConfig -> [Block] -> Either BlockException ()
-verifyBlockDifficulty header config blocks = do
+validateBlockDifficulty :: BlockHeader -> BlockchainConfig -> [Block] -> Either BlockException ()
+validateBlockDifficulty header config blocks = do
     verify (difficulty header == diff) InvalidDifficultyReference
     verify (blockHeaderHashDifficulty (difficulty1Target config) header >= diff) InvalidDifficulty
   where
     diff = targetDifficulty config blocks
 
+-- Exported util
+-- TODO: find better place for this function
+
+blockHeaderHashDifficulty :: Hex.Hex256 -> BlockHeader -> Difficulty
+blockHeaderHashDifficulty diff1 header = fromIntegral $ diff1 `div` Crypto.hashToHex (Crypto.hash header)
+
+
 -- block was not created before parent
 -- TODO: The protocol rejects blocks with a timestamp earlier than the median of the timestamps from the previous 11 blocks
 -- TODO: block created less than X hours, or N blocks intervals, into future
-verifyBlockCreationTime :: BlockHeader -> BlockHeader -> Either BlockException ()
-verifyBlockCreationTime newBlockHeader parentBlockHeader =
+validateBlockCreationTime :: BlockHeader -> BlockHeader -> Either BlockException ()
+validateBlockCreationTime newBlockHeader parentBlockHeader =
     verify (newBlockTimestamp > time parentBlockHeader) TimestampTooOld
     -- verify (newBlockTimestamp < now) TimestampTooFarIntoFuture
   where
     newBlockTimestamp = time newBlockHeader
 
-verifyBlockHeaderReferences :: Block -> Either BlockException ()
-verifyBlockHeaderReferences (Block header coinbase txs) = do
+validateBlockHeaderReferences :: Block -> Either BlockException ()
+validateBlockHeaderReferences (Block header coinbase txs) = do
     verify (Crypto.hash coinbase == coinbaseTransactionHash header) InvalidCoinbaseTransactionHash
     verify (Crypto.hashTreeRoot txs == transactionHashTreeRoot header) InvalidTransactionHashTreeRoot
 
@@ -213,13 +209,13 @@ verifyBlockHeaderReferences (Block header coinbase txs) = do
 -- this means we should try to apply a transaction, if it fails, try to apply next transaction
 -- recurse until stable
 -- TODO: until this is implemented it will be possible to "double spend" in the same block... : (
-verifyTransactions :: Block -> [Block] -> Word.Word -> Either BlockException ()
-verifyTransactions (Block _header coinbaseTx txs) prevBlocks reward = do
+validateTransactions :: Block -> [Block] -> Word.Word -> Either BlockException ()
+validateTransactions (Block _header coinbaseTx txs) prevBlocks reward = do
     -- ensure coinbase transaction is of correct value
     -- TODO: coinbase can be reward + fees
     verify (txOutValue (coinbaseTransactionOut coinbaseTx) == reward) InvalidCoinbaseTransactionValue
 
-    sequence_ (verifyTransaction <$> txs)
+    sequence_ (validateTransaction <$> txs)
   where
     txOutValue :: NonEmpty.NonEmpty TransactionOut -> Word.Word
     txOutValue = sum . fmap value
@@ -227,8 +223,8 @@ verifyTransactions (Block _header coinbaseTx txs) prevBlocks reward = do
     unspentTransactions :: H.HashMap TransactionOutRef TransactionOut
     unspentTransactions = unspentTransactionOutputsInternal prevBlocks
 
-    verifyTransaction :: Transaction -> Either BlockException ()
-    verifyTransaction (Transaction txIn txOut) = do
+    validateTransaction :: Transaction -> Either BlockException ()
+    validateTransaction (Transaction txIn txOut) = do
         let outputValue = txOutValue txOut
 
         prevTxOut <- sequence $ flip fmap txIn $ \(TransactionIn ref sig) -> do
@@ -238,6 +234,9 @@ verifyTransactions (Block _header coinbaseTx txs) prevBlocks reward = do
             return tx
 
         verify (txOutValue prevTxOut >= outputValue) InvalidTransactionValues
+
+
+-- Transaction State -----------------------------------------------------------------------------------------
 
 addressValues :: Blockchain Validated -> H.HashMap Crypto.PublicKey Word.Word
 addressValues blockchain = H.fromListWith (+) (toPair <$> unspentTxOuts)
@@ -284,11 +283,6 @@ unspentTransactionOutputsInternal =
     onDuplicateTxOutRef txOutRef = error ("Unexpected error when computing transaction map - duplicate transaction: " ++ show txOutRef)
     onNotFoundTxOutRef  txOutRef = error ("Unexpected error when computing transaction map - transaction not found: " ++ show txOutRef)
 
--- Exported util
--- TODO: consider best place for this function
-
-blockHeaderHashDifficulty :: Hex.Hex256 -> BlockHeader -> Difficulty
-blockHeaderHashDifficulty diff1 header = fromIntegral $ diff1 `div` Crypto.hashToHex (Crypto.hash header)
 
 -- Chain inspection -----------------------------------------------------------------------------------------
 
@@ -302,7 +296,7 @@ longestChain = List.maximumBy lengthOrDifficulty . flatten
     chainDifficulty = sum . fmap (difficulty . blockHeader)
 
 flatten :: Blockchain Validated -> NonEmpty.NonEmpty (NonEmpty.NonEmpty Block)
-flatten (Blockchain _ node) = flattenInternal node
+flatten = flattenInternal . blockchainNode
   where
     flattenInternal :: BlockchainNode -> NonEmpty.NonEmpty (NonEmpty.NonEmpty Block)
     flattenInternal = \case

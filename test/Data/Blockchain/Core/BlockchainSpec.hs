@@ -43,7 +43,7 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
                 config' = config { initialDifficulty = minBound }
                 chain'  = construct config' (blockchainNode chain)
 
-            return $ validate chain' === Left (AddBlockVerificationException InvalidDifficultyReference)
+            return $ validate chain' === Left (BlockValidationException InvalidDifficultyReference)
 
         -- Note: this is a known modification that will change block hash to make it invalid
         -- if test data is re-generated, it may cause this test to fail
@@ -55,7 +55,7 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
                 block'       = block { blockHeader = blockHeader' }
                 chain'       = construct (blockchainConfig chain) (BlockchainNode block' nodes)
 
-            return $ validate chain' === Left (AddBlockVerificationException InvalidDifficulty)
+            return $ validate chain' === Left (BlockValidationException InvalidDifficulty)
 
         it "should reject a chain with transactions in genesis block" $ once $
             \tx -> ioProperty $ do
@@ -77,7 +77,7 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
                     block'   = block { coinbaseTransaction = coinbase }
                     chain' = construct (blockchainConfig chain) (BlockchainNode block' nodes)
 
-                return $ validate chain' === Left (AddBlockVerificationException InvalidCoinbaseTransactionValue)
+                return $ validate chain' === Left (BlockValidationException InvalidCoinbaseTransactionValue)
 
         it "should reject a chain with invalid coinbase hash in genesis block header" $ once $
             \txOut -> ioProperty $ do
@@ -89,7 +89,7 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
                     block'   = block { coinbaseTransaction = coinbase }
                     chain'   = construct (blockchainConfig chain) (BlockchainNode block' nodes)
 
-                return $ validate chain' === Left (AddBlockVerificationException InvalidCoinbaseTransactionHash)
+                return $ validate chain' === Left (BlockValidationException InvalidCoinbaseTransactionHash)
 
         -- TODO: test is possible, hard to do with empty transaction rule & expected header hash
         -- it "should reject a chain with invalid transaction hash in genesis block header" $ once $
