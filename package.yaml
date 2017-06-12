@@ -17,6 +17,7 @@ default-extensions:
   - BangPatterns
   - DefaultSignatures
   - DeriveGeneric
+  - FlexibleInstances
   - GeneralizedNewtypeDeriving
   - LambdaCase
   - OverloadedStrings
@@ -51,6 +52,7 @@ library:
     - Data.Blockchain.Core.Crypto.HashTree
     - Data.Blockchain.Core.Types
     - Data.Blockchain.Core.Types.Block
+    - Data.Blockchain.Core.Types.BlockchainConfig
     - Data.Blockchain.Core.Types.Difficulty
     - Data.Blockchain.Core.Types.Transaction
     - Data.Blockchain.Core.Util.Hex

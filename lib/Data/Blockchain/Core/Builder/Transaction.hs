@@ -26,13 +26,13 @@ data CreateTransactionException
   deriving (Eq, Show)
 
 createTransaction
-    :: [Crypto.KeyPair] -> [(Crypto.PublicKey, Int)] -> Int -> Blockchain.Blockchain
+    :: [Crypto.KeyPair] -> [(Crypto.PublicKey, Int)] -> Int -> Blockchain.Blockchain Blockchain.Validated
     -> Either CreateTransactionException Blockchain.Transaction
 createTransaction _srcs _targets _fee _blockchain = undefined
 
 createSimpleTransaction
     :: Crypto.KeyPair -> Crypto.PublicKey
-    -> Word.Word -> Word.Word -> Blockchain.Blockchain
+    -> Word.Word -> Word.Word -> Blockchain.Blockchain Blockchain.Validated
     -> IO (Either CreateTransactionException Blockchain.Transaction)
 createSimpleTransaction (Crypto.KeyPair srcPubKey srcPrivKey) targetPubKey value fee blockchain = Except.runExceptT $ do
     let unspentTransactionOutputs = Blockchain.unspentTransactionOutputs blockchain

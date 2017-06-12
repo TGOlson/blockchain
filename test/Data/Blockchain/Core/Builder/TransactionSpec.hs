@@ -17,12 +17,12 @@ import           Data.Blockchain.Core.Types
 throwLeft :: Show a => Either a b -> b
 throwLeft = either (error . show) id
 
-loadUnverifiedTestBlockchain :: IO UnverifiedBlockchain
+loadUnverifiedTestBlockchain :: IO (Blockchain Unvalidated)
 loadUnverifiedTestBlockchain = throwLeft . Aeson.eitherDecode <$> Lazy.readFile "data/singleton_chain/blockchain.json"
 
-loadVerifiedTestBlockchainWithValidBlock :: IO (Blockchain, Block)
+loadVerifiedTestBlockchainWithValidBlock :: IO (Blockchain Validated, Block)
 loadVerifiedTestBlockchainWithValidBlock = do
-    blockchain <- throwLeft . verifyBlockchain <$> loadUnverifiedTestBlockchain
+    blockchain <- throwLeft . validate <$> loadUnverifiedTestBlockchain
     -- TODO: hardcoded path breaks "test chain" pattern... fix it
     block <- throwLeft . Aeson.eitherDecode <$> Lazy.readFile "data/singleton_chain/valid_next_block.json"
 

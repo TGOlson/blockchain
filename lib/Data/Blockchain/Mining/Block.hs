@@ -13,7 +13,7 @@ import qualified Data.Blockchain.Core.Crypto     as Crypto
 import qualified Data.Blockchain.Core.Types      as Blockchain
 import qualified Data.Blockchain.Core.Util.Hex   as Hex
 
-mineBlock :: Crypto.PublicKey -> [Blockchain.Transaction] -> Blockchain.Blockchain -> IO Blockchain.Block
+mineBlock :: Crypto.PublicKey -> [Blockchain.Transaction] -> Blockchain.Blockchain Blockchain.Validated -> IO Blockchain.Block
 mineBlock pubKey txs blockchain =
     mineBlockInternal pubKey reward diff1 difficulty prevBlockHeaderHash txs
   where
@@ -24,14 +24,16 @@ mineBlock pubKey txs blockchain =
     prevBlock           = NonEmpty.head (Blockchain.longestChain blockchain)
     prevBlockHeaderHash = Crypto.hash (Blockchain.blockHeader prevBlock)
 
-createBlockchain :: Blockchain.BlockchainConfig -> IO Blockchain.Blockchain
-createBlockchain config = either (error . show) id <$> do
+createBlockchain :: Blockchain.BlockchainConfig -> IO (Blockchain.Blockchain Blockchain.Validated)
+createBlockchain config = either throwValidationError id <$> do
     genesisBlock <- mineGenesisBlock config
 
-    let node  = Blockchain.UnverifiedBlockchainNode genesisBlock []
-        chain = Blockchain.UnverifiedBlockchain config node
+    let node  = Blockchain.BlockchainNode genesisBlock mempty
+        chain = Blockchain.construct config node
 
-    return (Blockchain.verifyBlockchain chain)
+    return (Blockchain.validate chain)
+  where
+    throwValidationError e = error $ "Unexpected error creating blockchain: " ++ show e
 
 mineGenesisBlock :: Blockchain.BlockchainConfig -> IO Blockchain.Block
 mineGenesisBlock config = do

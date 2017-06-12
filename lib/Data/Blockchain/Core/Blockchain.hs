@@ -1,12 +1,16 @@
 module Data.Blockchain.Core.Blockchain
-    ( Blockchain
+    -- Types
+    ( Validated
+    , Unvalidated
+    , Blockchain
     , blockchainConfig
-    , UnverifiedBlockchain(..)
-    , UnverifiedBlockchainNode(..)
+    , blockchainNode
+    , BlockchainNode(..)
     , BlockchainVerificationException(..)
     , BlockException(..)
     -- Construction
-    , verifyBlockchain
+    , construct
+    , validate
     , addBlock
     -- Chain inspection
     , blockHeaderHashDifficulty
@@ -20,6 +24,7 @@ import qualified Control.Monad                 as M
 import qualified Data.Aeson                    as Aeson
 import qualified Data.Aeson.Types              as Aeson
 import qualified Data.ByteString.Lazy          as Lazy
+import qualified Data.Char                     as Char
 import qualified Data.Either                   as Either
 import qualified Data.Either.Combinators       as Either
 import qualified Data.Foldable                 as Foldable
@@ -36,26 +41,38 @@ import qualified Data.Blockchain.Core.Util.Hex as Hex
 
 -- Types ----------------------------------------------------------------------------------------------------
 
-data Blockchain = Blockchain
+data Validated
+data Unvalidated
+
+data Blockchain a = Blockchain
     { _config :: BlockchainConfig
     , _node   :: BlockchainNode
     }
   deriving (Generic.Generic, Eq, Show)
 
-instance Aeson.ToJSON Blockchain where
-    toEncoding = Aeson.genericToEncoding privateConsutructorOptions
+blockchainConfig :: Blockchain a -> BlockchainConfig
+blockchainConfig = _config
+
+blockchainNode :: Blockchain a -> BlockchainNode
+blockchainNode = _node
+
+instance Aeson.FromJSON (Blockchain Unvalidated) where
+    parseJSON = Aeson.genericParseJSON (stripFieldPrefix "_")
+
+instance Aeson.ToJSON (Blockchain a) where
+    toEncoding = Aeson.genericToEncoding (stripFieldPrefix "_")
 
 data BlockchainNode = BlockchainNode
-    { _block :: Block
-    , _nodes :: [BlockchainNode]
+    { nodeBlock :: Block
+    , nodeNodes :: [BlockchainNode]
     }
   deriving (Generic.Generic, Eq, Show)
 
-instance Aeson.ToJSON BlockchainNode where
-    toEncoding = Aeson.genericToEncoding privateConsutructorOptions
+instance Aeson.FromJSON BlockchainNode where
+    parseJSON = Aeson.genericParseJSON (stripFieldPrefix "node")
 
-blockchainConfig :: Blockchain -> BlockchainConfig
-blockchainConfig (Blockchain config _) = config
+instance Aeson.ToJSON BlockchainNode where
+    toEncoding = Aeson.genericToEncoding (stripFieldPrefix "node")
 
 data BlockchainVerificationException
     = GenesisBlockHasTransactions
@@ -84,8 +101,11 @@ data BlockException
 
 -- Construction ---------------------------------------------------------------------------------------------
 
-verifyBlockchain :: UnverifiedBlockchain -> Either BlockchainVerificationException Blockchain
-verifyBlockchain (UnverifiedBlockchain config (UnverifiedBlockchainNode genesisBlock nodes)) = do
+construct :: BlockchainConfig -> BlockchainNode -> Blockchain Unvalidated
+construct = Blockchain
+
+validate :: Blockchain Unvalidated -> Either BlockchainVerificationException (Blockchain Validated)
+validate (Blockchain config (BlockchainNode genesisBlock nodes)) = do
     let (Block header _coinbase txs) = genesisBlock
         reward                       = initialMiningReward config
         blockchainHead               = Blockchain config (BlockchainNode genesisBlock mempty)
@@ -97,7 +117,7 @@ verifyBlockchain (UnverifiedBlockchain config (UnverifiedBlockchainNode genesisB
     Either.mapLeft AddBlockVerificationException $ verifyBlockHeaderReferences genesisBlock
     Either.mapLeft AddBlockVerificationException $ Foldable.foldrM addBlock blockchainHead blocks
   where
-    getBlocks (UnverifiedBlockchainNode block ns) = block : (ns >>= getBlocks)
+    getBlocks (BlockchainNode block ns) = block : (ns >>= getBlocks)
 
 -- ** Notes
 -- Check if the previous block referenced by the block exists and is valid.
@@ -114,13 +134,13 @@ verifyBlockchain (UnverifiedBlockchain config (UnverifiedBlockchainNode genesisB
 -- transaction txins need to reference valid txouts from other transactions in same chain
 -- transaction txout need to be less the sum of input txouts
 -- transaction txin need to have valid signature by input txouts
-addBlock :: Block -> Blockchain -> Either BlockException Blockchain
+addBlock :: Block -> Blockchain Validated -> Either BlockException (Blockchain Validated)
 addBlock blk (Blockchain config node) = Blockchain config <$> addBlockToNode blk mempty node
   where
     addBlockToNode :: Block -> [Block] -> BlockchainNode -> Either BlockException BlockchainNode
     addBlockToNode newBlock prevBlocks (BlockchainNode block nodes) =
         if isParentNode then do
-            let blocks         = _block <$> nodes
+            let blocks         = nodeBlock <$> nodes
                 newNode        = BlockchainNode newBlock mempty
                 updatedNode    = BlockchainNode block (newNode : nodes)
                 height         = length prevBlocks + 1
@@ -219,13 +239,13 @@ verifyTransactions (Block _header coinbaseTx txs) prevBlocks reward = do
 
         verify (txOutValue prevTxOut >= outputValue) InvalidTransactionValues
 
-addressValues :: Blockchain -> H.HashMap Crypto.PublicKey Word.Word
+addressValues :: Blockchain Validated -> H.HashMap Crypto.PublicKey Word.Word
 addressValues blockchain = H.fromListWith (+) (toPair <$> unspentTxOuts)
   where
     toPair (TransactionOut value pubKey) = (pubKey, value)
     unspentTxOuts = H.elems $ unspentTransactionOutputsInternal (NonEmpty.toList $ longestChain blockchain)
 
-unspentTransactionOutputs :: Blockchain -> H.HashMap Crypto.PublicKey [(TransactionOutRef, TransactionOut)]
+unspentTransactionOutputs :: Blockchain Validated -> H.HashMap Crypto.PublicKey [(TransactionOutRef, TransactionOut)]
 unspentTransactionOutputs blockchain = H.fromListWith (++) (toPair <$> unspentTxOuts)
   where
     toPair (txRef, txOut) = (signaturePubKey txOut, pure (txRef, txOut))
@@ -272,7 +292,7 @@ blockHeaderHashDifficulty diff1 header = fromIntegral $ diff1 `div` Crypto.hashT
 
 -- Chain inspection -----------------------------------------------------------------------------------------
 
-longestChain :: Blockchain -> NonEmpty.NonEmpty Block
+longestChain :: Blockchain Validated -> NonEmpty.NonEmpty Block
 longestChain = List.maximumBy lengthOrDifficulty . flatten
   where
     lengthOrDifficulty chain1 chain2 =
@@ -281,7 +301,7 @@ longestChain = List.maximumBy lengthOrDifficulty . flatten
             x  -> x
     chainDifficulty = sum . fmap (difficulty . blockHeader)
 
-flatten :: Blockchain -> NonEmpty.NonEmpty (NonEmpty.NonEmpty Block)
+flatten :: Blockchain Validated -> NonEmpty.NonEmpty (NonEmpty.NonEmpty Block)
 flatten (Blockchain _ node) = flattenInternal node
   where
     flattenInternal :: BlockchainNode -> NonEmpty.NonEmpty (NonEmpty.NonEmpty Block)
@@ -297,8 +317,9 @@ verify cond = M.unless cond . Left
 maybeToEither :: a -> Maybe b -> Either a b
 maybeToEither e = maybe (Left e) Right
 
-privateConsutructorOptions :: Aeson.Options
-privateConsutructorOptions = Aeson.defaultOptions { Aeson.fieldLabelModifier = stripUnderscorePrefix }
+stripFieldPrefix :: String -> Aeson.Options
+stripFieldPrefix str = Aeson.defaultOptions { Aeson.fieldLabelModifier = stripPrefix }
   where
-    stripUnderscorePrefix = \case ('_' : xs) -> xs
-                                  xs         -> xs
+    stripPrefix x = maybe x lowercase (List.stripPrefix str x)
+    lowercase []     = []
+    lowercase (x:xs) = Char.toLower x : xs
