@@ -1,10 +1,10 @@
 module TestUtil
     ( module X
+    , Proxy.Proxy(..)
     , propWithSize
     , propNumTests
     , roundTripJSONSpec
     , safeJSONDeserializeSpec
-    , Proxy.Proxy(..)
     ) where
 
 import           Test.Hspec                         as X

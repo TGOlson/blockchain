@@ -8,6 +8,7 @@ import qualified Data.Blockchain.Core.Crypto.ECDSASpec
 import qualified Data.Blockchain.Core.Crypto.HashSpec
 import qualified Data.Blockchain.Core.Crypto.HashTreeSpec
 import qualified Data.Blockchain.Core.Types.BlockchainConfigSpec
+import qualified Data.Blockchain.Core.Types.DifficultySpec
 import qualified Data.Blockchain.Core.Util.HexSpec
 -- import qualified Data.Blockchain.Mining.SolverSpec
 
@@ -19,6 +20,7 @@ main = mapM_ Hspec.hspec
     , Data.Blockchain.Core.Crypto.HashSpec.spec
     , Data.Blockchain.Core.Crypto.HashTreeSpec.spec
     , Data.Blockchain.Core.Types.BlockchainConfigSpec.spec
+    , Data.Blockchain.Core.Types.DifficultySpec.spec
     , Data.Blockchain.Core.Util.HexSpec.spec
     -- , Data.Blockchain.Mining.SolverSpec.spec
     ]
