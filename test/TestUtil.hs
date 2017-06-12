@@ -19,7 +19,8 @@ import qualified Data.ByteString                    as BS
 import qualified Data.Data                          as Data
 import qualified Data.Proxy                         as Proxy
 
-import           Data.Blockchain.ArbitraryInstances ()
+import           Data.Blockchain.ArbitraryInstances as X
+import           Data.Blockchain.TestData           as X
 
 
 propWithSize :: Testable prop => Int -> String -> prop -> Spec

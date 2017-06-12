@@ -52,10 +52,10 @@ createSimpleTransaction (Crypto.KeyPair srcPubKey srcPrivKey) targetPubKey value
 
         return (Blockchain.TransactionIn txOutRef sig)
 
-    let refund          = totalValue - (value + fee)
-        txOut           = Blockchain.TransactionOut totalValue targetPubKey
-        maybeRefunTxOut = if refund > 0 then Just (Blockchain.TransactionOut refund srcPubKey)
-                                        else Nothing
-        txOuts'          = maybe (pure txOut) (: pure txOut) maybeRefunTxOut
+    let refund           = totalValue - (value + fee)
+        txOut            = Blockchain.TransactionOut value targetPubKey
+        maybeRefundTxOut = if refund > 0 then Just (Blockchain.TransactionOut refund srcPubKey)
+                                         else Nothing
+        txOuts'          = maybe (pure txOut) (: pure txOut) maybeRefundTxOut
 
     return $ Blockchain.Transaction (NonEmpty.fromList txIns) (NonEmpty.fromList txOuts')

@@ -1,103 +1,91 @@
-
 module Data.Blockchain.Core.Builder.TransactionSpec (spec) where
 
 import           TestUtil
 
-import qualified Data.Aeson                               as Aeson
-import qualified Data.ByteString.Lazy                     as Lazy
 import qualified Data.List.NonEmpty                       as NonEmpty
-import qualified Data.Word                                as Word
 
 import           Data.Blockchain.Core.Blockchain
 import           Data.Blockchain.Core.Builder.Transaction
 import           Data.Blockchain.Core.Crypto
 import           Data.Blockchain.Core.Types
 
-
 throwLeft :: Show a => Either a b -> b
 throwLeft = either (error . show) id
 
-loadUnverifiedTestBlockchain :: IO (Blockchain Unvalidated)
-loadUnverifiedTestBlockchain = throwLeft . Aeson.eitherDecode <$> Lazy.readFile "data/singleton_chain/blockchain.json"
+singletonBlockchainItems :: IO (Blockchain Validated, Block, PrivateKey)
+singletonBlockchainItems = do
+    blockchain <- validatedSingletonBlockchain
+    block      <- singletonBlockchainNextBlock
+    privateKey <- singletonBlockchainNextBlockPrivateKey
 
-loadVerifiedTestBlockchainWithValidBlock :: IO (Blockchain Validated, Block)
-loadVerifiedTestBlockchainWithValidBlock = do
-    blockchain <- throwLeft . validate <$> loadUnverifiedTestBlockchain
-    -- TODO: hardcoded path breaks "test chain" pattern... fix it
-    block <- throwLeft . Aeson.eitherDecode <$> Lazy.readFile "data/singleton_chain/valid_next_block.json"
+    return (blockchain, block, privateKey)
 
-    return (blockchain, block)
-
-
-readJSON :: Aeson.FromJSON a => FilePath -> IO a
-readJSON path =  throwLeft . Aeson.eitherDecode <$> Lazy.readFile path
-
-newtype MediumWord = MediumWord Word.Word deriving (Eq, Show)
-instance Arbitrary MediumWord where
-    arbitrary = elements $ MediumWord <$> [0..1000]
+-- TODO: lenses over blockchain?
+coinbasePublicKey :: Block -> PublicKey
+coinbasePublicKey = signaturePubKey . NonEmpty.head . coinbaseTransactionOut . coinbaseTransaction
 
 spec :: Spec
 spec = describe "Data.Blockchain.Core.Builder.Transaction" $
     describe "createSimpleTransaction" $ do
         propNumTests 5 "should create a valid transaction" $
             \(Small value) (Small fee) targetPublicKey -> value + fee < 100 ==> ioProperty $ do
-                (blockchain, block) <- loadVerifiedTestBlockchainWithValidBlock
-                privateKey <- readJSON "data/singleton_chain/valid_next_block_coinbase_private_key.json"
+                (blockchain, block, privateKey) <- singletonBlockchainItems
 
-                let publicKey   = signaturePubKey $ NonEmpty.head $ coinbaseTransactionOut (coinbaseTransaction block)
-                    keyPair     = KeyPair publicKey privateKey
+                let keyPair     = KeyPair (coinbasePublicKey block) privateKey
                     blockchain' = throwLeft (addBlock block blockchain)
 
-                tx <- throwLeft <$> createSimpleTransaction keyPair targetPublicKey value fee blockchain'
+                (Transaction txIn txOut) <- throwLeft <$>
+                    createSimpleTransaction keyPair targetPublicKey value fee blockchain'
 
-                -- TODO: better tests
-                return $ length (transactionIn tx) == 1 && length (transactionOut tx) == 2
+                return $
+                    length txIn == 1 &&
+                    txOut == NonEmpty.fromList
+                        [ TransactionOut (100 - value - fee) (coinbasePublicKey block)
+                        , TransactionOut value targetPublicKey
+                        ]
 
         propNumTests 5 "should not issue a refund if entire balance is spent" $
             \(Small value) targetPublicKey -> value < 100 ==> ioProperty $ do
-                (blockchain, block) <- loadVerifiedTestBlockchainWithValidBlock
-                privateKey <- readJSON "data/singleton_chain/valid_next_block_coinbase_private_key.json"
+                (blockchain, block, privateKey) <- singletonBlockchainItems
 
-                let publicKey   = signaturePubKey $ NonEmpty.head $ coinbaseTransactionOut (coinbaseTransaction block)
-                    keyPair     = KeyPair publicKey privateKey
+                let keyPair     = KeyPair (coinbasePublicKey block) privateKey
                     blockchain' = throwLeft (addBlock block blockchain)
                     fee         = 100 - value
 
-                tx <- throwLeft <$> createSimpleTransaction keyPair targetPublicKey value fee blockchain'
+                (Transaction txIn txOut) <- throwLeft <$>
+                    createSimpleTransaction keyPair targetPublicKey value fee blockchain'
 
-                -- TODO: better tests
-                return $ length (transactionIn tx) == 1 && length (transactionOut tx) == 1
+                return $
+                    length txIn == 1 &&
+                    txOut       == NonEmpty.fromList [ TransactionOut value targetPublicKey ]
 
         propNumTests 5 "should reject transactions attempting to spend from empty address" $
             \(Small value) (Small fee) publicKey targetPublicKey -> value + fee < 100 ==> ioProperty $ do
-                (blockchain, block) <- loadVerifiedTestBlockchainWithValidBlock
-                privateKey <- readJSON "data/singleton_chain/valid_next_block_coinbase_private_key.json"
+                (blockchain, block, privateKey) <- singletonBlockchainItems
 
                 let keyPair     = KeyPair publicKey privateKey
                     blockchain' = throwLeft (addBlock block blockchain)
 
-                createSimpleTransaction keyPair targetPublicKey value fee blockchain' >>=
-                    \res -> return (res === Left SourceAddressEmpty)
+                res <- createSimpleTransaction keyPair targetPublicKey value fee blockchain'
+                return $ res === Left SourceAddressEmpty
 
         propNumTests 5 "should reject transactions attempting to spend more than is available in the address" $
             \(MediumWord value) (MediumWord fee) targetPublicKey -> value + fee > 100 ==> ioProperty $ do
-                  (blockchain, block) <- loadVerifiedTestBlockchainWithValidBlock
-                  privateKey <- readJSON "data/singleton_chain/valid_next_block_coinbase_private_key.json"
+                  (blockchain, block, privateKey) <- singletonBlockchainItems
 
-                  let publicKey   = signaturePubKey $ NonEmpty.head $ coinbaseTransactionOut (coinbaseTransaction block)
-                      keyPair     = KeyPair publicKey privateKey
+                  let keyPair     = KeyPair (coinbasePublicKey block) privateKey
                       blockchain' = throwLeft (addBlock block blockchain)
 
-                  createSimpleTransaction keyPair targetPublicKey value fee blockchain' >>=
-                      \res -> return (res === Left SourceAddressInsufficientFunds)
+                  res <- createSimpleTransaction keyPair targetPublicKey value fee blockchain'
+                  return $ res === Left SourceAddressInsufficientFunds
 
         propNumTests 5 "should reject transactions with invalid private key" $
             \(Small value) (Small fee) privateKey targetPublicKey -> value + fee < 100 ==> ioProperty $ do
-                  (blockchain, block) <- loadVerifiedTestBlockchainWithValidBlock
+                  blockchain <- validatedSingletonBlockchain
+                  block      <- singletonBlockchainNextBlock
 
-                  let publicKey   = signaturePubKey $ NonEmpty.head $ coinbaseTransactionOut (coinbaseTransaction block)
-                      keyPair     = KeyPair publicKey privateKey
+                  let keyPair     = KeyPair (coinbasePublicKey block) privateKey
                       blockchain' = throwLeft (addBlock block blockchain)
 
-                  createSimpleTransaction keyPair targetPublicKey value fee blockchain' >>=
-                      \res -> return (res === Left InvalidPrivateKey)
+                  res <- createSimpleTransaction keyPair targetPublicKey value fee blockchain'
+                  return $ res === Left InvalidPrivateKey

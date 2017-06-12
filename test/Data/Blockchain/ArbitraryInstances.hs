@@ -1,6 +1,8 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module Data.Blockchain.ArbitraryInstances () where
+module Data.Blockchain.ArbitraryInstances
+    ( MediumWord(..)
+    ) where
 
 import           Test.QuickCheck
 
@@ -10,6 +12,7 @@ import qualified Data.ByteString.Char8         as BS
 import qualified Data.List.NonEmpty            as NonEmpty
 import qualified Data.Time.Calendar            as Time
 import qualified Data.Time.Clock               as Time
+import qualified Data.Word                     as Word
 
 import           Data.Blockchain.Core.Crypto
 import           Data.Blockchain.Core.Types
@@ -102,6 +105,10 @@ instance Arbitrary Time.UTCTime where
         dayDen     = Time.ModifiedJulianDay <$> elements [0 .. 60000]
         -- The time from midnight, 0 <= t < 86401s (because of leap-seconds)
         dayTimeGen = Time.secondsToDiffTime <$> elements [0 .. 86400]
+
+newtype MediumWord = MediumWord Word.Word deriving (Eq, Show)
+instance Arbitrary MediumWord where
+    arbitrary = elements $ MediumWord <$> [0..1000]
 
 -- Utils
 
