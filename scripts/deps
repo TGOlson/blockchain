@@ -1,0 +1,5 @@
+#!/bin/bash
+
+stack install --only-dependencies
+stack install hlint
+stack install stylish-haskell
