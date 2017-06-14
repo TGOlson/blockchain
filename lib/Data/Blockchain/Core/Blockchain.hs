@@ -315,5 +315,5 @@ stripFieldPrefix :: String -> Aeson.Options
 stripFieldPrefix str = Aeson.defaultOptions { Aeson.fieldLabelModifier = stripPrefix }
   where
     stripPrefix x = maybe x lowercase (List.stripPrefix str x)
-    lowercase []     = []
-    lowercase (x:xs) = Char.toLower x : xs
+    lowercase = \case []     -> []
+                      (x:xs) -> Char.toLower x : xs

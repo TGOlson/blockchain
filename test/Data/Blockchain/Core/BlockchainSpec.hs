@@ -4,7 +4,6 @@ import           TestUtil
 
 import qualified Control.Arrow                   as Arrow
 import qualified Data.Aeson                      as Aeson
-import qualified Data.ByteString.Lazy            as Lazy
 import qualified Data.HashMap.Strict             as H
 import qualified Data.List.NonEmpty              as NonEmpty
 
@@ -19,16 +18,15 @@ throwLeft = either (error . show) id
 spec :: Spec
 spec = describe "Data.Blockchain.Core.Blockchain" $ do
     it "should serialize round-trip" $ once $ ioProperty $ do
-        bs <- Lazy.readFile "data/singleton_chain/blockchain.json" -- TODO: more chains
+        chain <- singletonBlockchain
 
-        let unverifiedBlockchain = throwLeft (Aeson.eitherDecode bs)
-            blockchain           = throwLeft (validate unverifiedBlockchain)
+        let unverifiedBlockchain = throwLeft $ Aeson.eitherDecode (Aeson.encode chain)
 
-        return (Aeson.encode blockchain === bs)
+        return $ validate unverifiedBlockchain === Right chain
 
     describe "validate" $ do
         it "should reject a chain with invalid difficulty reference in genesis block" $ once $ ioProperty $ do
-            chain <- unvalidatedSingletonBlockchain
+            chain <- singletonBlockchainUnvalidated
             let config  = blockchainConfig chain
                 config' = config { initialDifficulty = minBound }
                 chain'  = construct config' (blockchainNode chain)
@@ -38,7 +36,7 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
         -- Note: this is a known modification that will change block hash to make it invalid
         -- if test data is re-generated, it may cause this test to fail
         it "should reject a chain with invalid genesis block difficulty" $ once $ ioProperty $ do
-            chain <- unvalidatedSingletonBlockchain
+            chain <- singletonBlockchainUnvalidated
 
             let (BlockchainNode block nodes) = blockchainNode chain
                 blockHeader' = (blockHeader block) { nonce = 1 }
@@ -49,7 +47,7 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
 
         it "should reject a chain with transactions in genesis block" $ once $
             \tx -> ioProperty $ do
-                chain <- unvalidatedSingletonBlockchain
+                chain <- singletonBlockchainUnvalidated
 
                 let (BlockchainNode block nodes) = blockchainNode chain
                     block' = block { transactions = pure tx }
@@ -59,7 +57,7 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
 
         it "should reject a chain with invalid coinbase reward in genesis block" $ once $
             \txOut -> ioProperty $ do
-                chain <- unvalidatedSingletonBlockchain
+                chain <- singletonBlockchainUnvalidated
 
                 let (BlockchainNode block nodes) = blockchainNode chain
                     txOut'   = txOut { value = 999 }
@@ -71,7 +69,7 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
 
         it "should reject a chain with invalid coinbase hash in genesis block header" $ once $
             \txOut -> ioProperty $ do
-                chain <- unvalidatedSingletonBlockchain
+                chain <- singletonBlockchainUnvalidated
 
                 let (BlockchainNode block nodes) = blockchainNode chain
                     txOut'   = txOut { value = 100 }
@@ -86,16 +84,16 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
 
     describe "addBlock" $ do
         it "should add a valid block" $ once $ ioProperty $ do
-            blockchain <- validatedSingletonBlockchain
-            block      <- singletonBlockchainNextBlock
+            blockchain <- singletonBlockchain
+            block      <- block1A
 
             let mainChain = longestChain $ throwLeft (addBlock block blockchain)
 
             return $ length mainChain == 2 && NonEmpty.last mainChain == block
 
         it "should reject a duplicate block" $ once $ ioProperty $ do
-            blockchain <- validatedSingletonBlockchain
-            block      <- singletonBlockchainNextBlock
+            blockchain <- singletonBlockchain
+            block      <- block1A
 
             let blockchain' = addBlock block $ throwLeft (addBlock block blockchain)
 
@@ -106,8 +104,8 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
         -- Note: this is a known modification that will change block hash to make it invalid
         -- if test data is re-generated, it may cause this test to fail
         it "should reject a chain with invalid genesis block difficulty" $ once $ ioProperty $ do
-            blockchain <- validatedSingletonBlockchain
-            block      <- singletonBlockchainNextBlock
+            blockchain <- singletonBlockchain
+            block      <- block1A
 
             let blockHeader' = (blockHeader block) { nonce = 1 }
                 block'       = block { blockHeader = blockHeader' }
@@ -116,8 +114,8 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
 
         it "should reject a chain with invalid coinbase reward in block" $ once $
             \txOut -> ioProperty $ do
-                blockchain <- validatedSingletonBlockchain
-                block      <- singletonBlockchainNextBlock
+                blockchain <- singletonBlockchain
+                block      <- block1A
 
                 let txOut'   = txOut { value = 999 }
                     coinbase = CoinbaseTransaction (pure txOut')
@@ -127,8 +125,8 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
 
         it "should reject a chain with invalid coinbase hash in block header" $ once $
             \txOut -> ioProperty $ do
-                blockchain <- validatedSingletonBlockchain
-                block      <- singletonBlockchainNextBlock
+                blockchain <- singletonBlockchain
+                block      <- block1A
 
                 let txOut'   = txOut { value = 100 }
                     coinbase = CoinbaseTransaction (pure txOut')
@@ -147,8 +145,8 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
 
     describe "addressValues" $
         it "should calculate unspent transaction outputs" $ once $ ioProperty $ do
-            blockchain <- validatedSingletonBlockchain
-            block      <- singletonBlockchainNextBlock
+            blockchain <- singletonBlockchain
+            block      <- block1A
 
             let blockchain' = throwLeft (addBlock block blockchain)
                 unspent     = addressValues blockchain'

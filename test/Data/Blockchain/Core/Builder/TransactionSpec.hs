@@ -14,9 +14,9 @@ throwLeft = either (error . show) id
 
 singletonBlockchainItems :: IO (Blockchain Validated, Block, PrivateKey)
 singletonBlockchainItems = do
-    blockchain <- validatedSingletonBlockchain
-    block      <- singletonBlockchainNextBlock
-    privateKey <- singletonBlockchainNextBlockPrivateKey
+    blockchain <- singletonBlockchain
+    block      <- block1A
+    privateKey <- block1ACoinbasePrivateKey
 
     return (blockchain, block, privateKey)
 
@@ -81,8 +81,8 @@ spec = describe "Data.Blockchain.Core.Builder.Transaction" $
 
         propNumTests 5 "should reject transactions with invalid private key" $
             \(Small value) (Small fee) privateKey targetPublicKey -> value + fee < 100 ==> ioProperty $ do
-                  blockchain <- validatedSingletonBlockchain
-                  block      <- singletonBlockchainNextBlock
+                  blockchain <- singletonBlockchain
+                  block      <- block1A
 
                   let keyPair     = KeyPair (coinbasePublicKey block) privateKey
                       blockchain' = throwLeft (addBlock block blockchain)

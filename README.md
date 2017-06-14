@@ -27,10 +27,9 @@ Notable differences from Bitcoin blockchain:
 # todo
 
 Now
-* consider `newtype SingleChain :: SingleChain [Block]` - let verification functions assume invariants that come from verified blockchain
-* get current state of blockchain addresses `Blockchain -> Map String Int`
-* generic assertions against inserts - valid blocks should always insert, invalid never should, etc.
-* find unspent outputs in chain
+* add tests w/ transactions too `addBlock` test
+* generate test chain w/ transactions
+* implement `createTransaction`
 * function that validates transactions
   * https://en.bitcoin.it/wiki/Protocol_rules#.22tx.22_messages
   * need to consider max transaction count (something akin to blocksize)

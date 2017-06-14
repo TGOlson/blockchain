@@ -1,8 +1,8 @@
 module Data.Blockchain.TestData
-    ( unvalidatedSingletonBlockchain
-    , validatedSingletonBlockchain
-    , singletonBlockchainNextBlock
-    , singletonBlockchainNextBlockPrivateKey
+    ( singletonBlockchainUnvalidated
+    , singletonBlockchain
+    , block1A
+    , block1ACoinbasePrivateKey
     ) where
 
 import qualified Data.Aeson                      as Aeson
@@ -12,19 +12,21 @@ import           Data.Blockchain.Core.Blockchain
 import           Data.Blockchain.Core.Crypto
 import           Data.Blockchain.Core.Types
 
--- Singleton Chain
+-- Test Data -------------------------------------------------------------------------------------------------
 
-unvalidatedSingletonBlockchain :: IO (Blockchain Unvalidated)
-unvalidatedSingletonBlockchain = readJSON "data/singleton_chain/blockchain.json"
+singletonBlockchainUnvalidated :: IO (Blockchain Unvalidated)
+singletonBlockchainUnvalidated = readJSON "data/singleton_blockchain.json"
 
-validatedSingletonBlockchain :: IO (Blockchain Validated)
-validatedSingletonBlockchain = throwLeft . validate <$> unvalidatedSingletonBlockchain
+singletonBlockchain :: IO (Blockchain Validated)
+singletonBlockchain = throwLeft . validate <$> singletonBlockchainUnvalidated
 
-singletonBlockchainNextBlock :: IO Block
-singletonBlockchainNextBlock = readJSON "data/singleton_chain/valid_next_block.json"
+block1A :: IO Block
+block1A = readJSON "data/block_1a.json"
 
-singletonBlockchainNextBlockPrivateKey :: IO PrivateKey
-singletonBlockchainNextBlockPrivateKey = readJSON "data/singleton_chain/valid_next_block_coinbase_private_key.json"
+block1ACoinbasePrivateKey :: IO PrivateKey
+block1ACoinbasePrivateKey = readJSON "data/block_1a_coinbase_private_key.json"
+
+-- Utils -----------------------------------------------------------------------------------------------------
 
 readJSON :: Aeson.FromJSON a => FilePath -> IO a
 readJSON path =  throwLeft . Aeson.eitherDecode <$> Lazy.readFile path
