@@ -60,6 +60,8 @@ mineBlockInternal pubKey reward diff1 difficulty prevBlockHeaderHash txs = do
         diff1
         difficulty
 
+    -- TODO: add up fees and include in coinbase reward
+    -- fee = address value - total tx value
     return (Blockchain.Block header coinbaseTx txs)
   where
     coinbaseTx = Blockchain.CoinbaseTransaction $ pure (Blockchain.TransactionOut reward pubKey)

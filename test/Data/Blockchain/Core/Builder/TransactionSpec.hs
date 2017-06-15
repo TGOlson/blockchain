@@ -9,9 +9,6 @@ import           Data.Blockchain.Core.Builder.Transaction
 import           Data.Blockchain.Core.Crypto
 import           Data.Blockchain.Core.Types
 
-throwLeft :: Show a => Either a b -> b
-throwLeft = either (error . show) id
-
 singletonBlockchainItems :: IO (Blockchain Validated, Block, PrivateKey)
 singletonBlockchainItems = do
     blockchain <- singletonBlockchain

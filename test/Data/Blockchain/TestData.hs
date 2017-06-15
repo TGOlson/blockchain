@@ -3,6 +3,7 @@ module Data.Blockchain.TestData
     , singletonBlockchain
     , block1A
     , block1ACoinbasePrivateKey
+    , throwLeft
     ) where
 
 import qualified Data.Aeson                      as Aeson

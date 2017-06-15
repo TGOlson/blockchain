@@ -11,10 +11,6 @@ import           Data.Blockchain.Core.Blockchain
 import           Data.Blockchain.Core.Crypto
 import           Data.Blockchain.Core.Types
 
-
-throwLeft :: Show a => Either a b -> b
-throwLeft = either (error . show) id
-
 spec :: Spec
 spec = describe "Data.Blockchain.Core.Blockchain" $ do
     it "should serialize round-trip" $ once $ ioProperty $ do
