@@ -14,8 +14,11 @@ import qualified Data.Blockchain.Core.Types      as Blockchain
 import qualified Data.Blockchain.Core.Util.Hex   as Hex
 
 mineBlock :: Crypto.PublicKey -> [Blockchain.Transaction] -> Blockchain.Blockchain Blockchain.Validated -> IO Blockchain.Block
-mineBlock pubKey txs blockchain =
-    -- TODO: verify transactions are valid
+mineBlock pubKey txs blockchain = do
+    -- TODO: cleanup
+    either (\e -> error $ "Invalid transaction list: " ++ show e) (const $ return ()) $
+        Blockchain.validateTransactions blockchain txs
+
     mineBlockInternal pubKey reward diff1 difficulty prevBlockHeaderHash txs
   where
     diff1               = Blockchain.difficulty1Target config

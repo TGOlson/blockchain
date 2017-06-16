@@ -10,8 +10,11 @@ module Data.Blockchain.Core.Blockchain
     , BlockException(..)
     -- Construction
     , construct
-    , validate
     , addBlock
+    -- Validation
+    , validate
+    , validateTransaction
+    , validateTransactions
     -- Chain inspection
     , blockHeaderHashDifficulty
     , addressValues
@@ -113,7 +116,7 @@ validate (Blockchain config (BlockchainNode genesisBlock nodes)) = do
 
     verify (null txs) GenesisBlockHasTransactions
     Either.mapLeft BlockValidationException $ validateBlockDifficulty header config mempty
-    Either.mapLeft BlockValidationException $ validateTransactions genesisBlock mempty reward
+    Either.mapLeft BlockValidationException $ validateBlockTransactions genesisBlock mempty reward
     Either.mapLeft BlockValidationException $ validateBlockHeaderReferences genesisBlock
     Either.mapLeft BlockValidationException $ Foldable.foldrM addBlock blockchainHead blocks
   where
@@ -134,7 +137,7 @@ addBlock newBlock (Blockchain config node) = Blockchain config <$> addBlockToNod
             verify (newBlock `notElem` siblingBlocks) BlockAlreadyExists
             validateBlockCreationTime newBlockHeader (blockHeader block)
             validateBlockDifficulty newBlockHeader config previousBlocks
-            validateTransactions newBlock previousBlocks (targetReward config $ fromIntegral height)
+            validateBlockTransactions newBlock previousBlocks (targetReward config $ fromIntegral height)
             validateBlockHeaderReferences newBlock
 
             return updatedNode
@@ -172,6 +175,17 @@ addBlock newBlock (Blockchain config node) = Blockchain config <$> addBlockToNod
         blockAlreadyExists = BlockAlreadyExists `elem` exceptions
 
 
+-- Exported Validators ---------------------------------------------------------------------------------------
+
+-- TODO: transaction-specific exceptions
+validateTransaction :: Blockchain Validated -> Transaction -> Either BlockException ()
+validateTransaction chain = validateTransactionInternal (NonEmpty.toList $ longestChain chain)
+
+validateTransactions :: Blockchain Validated -> [Transaction] -> Either BlockException ()
+validateTransactions chain = sequence_ . fmap (validateTransactionInternal prevBlocks)
+  where
+    prevBlocks = NonEmpty.toList (longestChain chain)
+
 -- Internal Validation ---------------------------------------------------------------------------------------
 
 -- block references expected difficulty
@@ -205,35 +219,37 @@ validateBlockHeaderReferences (Block header coinbase txs) = do
     verify (Crypto.hash coinbase == coinbaseTransactionHash header) InvalidCoinbaseTransactionHash
     verify (Crypto.hashTreeRoot txs == transactionHashTreeRoot header) InvalidTransactionHashTreeRoot
 
+
 -- TODO: transactions should be able to reference transactions within the same block
 -- this means we should try to apply a transaction, if it fails, try to apply next transaction
 -- recurse until stable
 -- TODO: until this is implemented it will be possible to "double spend" in the same block... : (
-validateTransactions :: Block -> [Block] -> Word.Word -> Either BlockException ()
-validateTransactions (Block _header coinbaseTx txs) prevBlocks reward = do
+validateBlockTransactions :: Block -> [Block] -> Word.Word -> Either BlockException ()
+validateBlockTransactions (Block _header coinbaseTx txs) prevBlocks reward = do
     -- ensure coinbase transaction is of correct value
     -- TODO: coinbase can be reward + fees
     verify (txOutValue (coinbaseTransactionOut coinbaseTx) == reward) InvalidCoinbaseTransactionValue
 
-    sequence_ (validateTransaction <$> txs)
-  where
-    txOutValue :: NonEmpty.NonEmpty TransactionOut -> Word.Word
-    txOutValue = sum . fmap value
+    sequence_ (validateTransactionInternal prevBlocks <$> txs)
 
+-- TODO: lenses
+txOutValue :: NonEmpty.NonEmpty TransactionOut -> Word.Word
+txOutValue = sum . fmap value
+
+validateTransactionInternal :: [Block] -> Transaction -> Either BlockException ()
+validateTransactionInternal prevBlocks (Transaction txIn txOut) = do
+    let outputValue = txOutValue txOut
+
+    prevTxOut <- sequence $ flip fmap txIn $ \(TransactionIn ref sig) -> do
+        tx <- maybeToEither TransactionOutRefNotFound (H.lookup ref unspentTransactions)
+        -- TODO: should keep transaction signing & verification round-tripping in same place
+        verify (verifyTransactionSignature sig tx) InvalidTransactionSignature
+        return tx
+
+    verify (txOutValue prevTxOut >= outputValue) InvalidTransactionValues
+  where
     unspentTransactions :: H.HashMap TransactionOutRef TransactionOut
     unspentTransactions = unspentTransactionOutputsInternal prevBlocks
-
-    validateTransaction :: Transaction -> Either BlockException ()
-    validateTransaction (Transaction txIn txOut) = do
-        let outputValue = txOutValue txOut
-
-        prevTxOut <- sequence $ flip fmap txIn $ \(TransactionIn ref sig) -> do
-            tx <- maybeToEither TransactionOutRefNotFound (H.lookup ref unspentTransactions)
-            -- TODO: should keep transaction signing & verification round-tripping in same place
-            verify (verifyTransactionSignature sig tx) InvalidTransactionSignature
-            return tx
-
-        verify (txOutValue prevTxOut >= outputValue) InvalidTransactionValues
 
 
 -- Transaction State -----------------------------------------------------------------------------------------
