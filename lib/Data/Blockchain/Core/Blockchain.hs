@@ -120,28 +120,29 @@ validate (Blockchain config (BlockchainNode genesisBlock nodes)) = do
     getBlocks (BlockchainNode block ns) = block : (ns >>= getBlocks)
 
 addBlock :: Block -> Blockchain Validated -> Either BlockException (Blockchain Validated)
-addBlock blk (Blockchain config node) = Blockchain config <$> addBlockToNode blk mempty node
+addBlock newBlock (Blockchain config node) = Blockchain config <$> addBlockToNode mempty node
   where
-    addBlockToNode :: Block -> [Block] -> BlockchainNode -> Either BlockException BlockchainNode
-    addBlockToNode newBlock prevBlocks (BlockchainNode block nodes) =
+    addBlockToNode :: [Block] -> BlockchainNode -> Either BlockException BlockchainNode
+    addBlockToNode priorChain (BlockchainNode block nodes) =
         if isParentNode then do
-            let blocks         = nodeBlock <$> nodes
+            let siblingBlocks  = nodeBlock <$> nodes
                 newNode        = BlockchainNode newBlock mempty
                 updatedNode    = BlockchainNode block (newNode : nodes)
-                height         = length prevBlocks + 1
+                height         = length previousBlocks + 1
                 newBlockHeader = blockHeader newBlock
 
-            verify (newBlock `notElem` blocks) BlockAlreadyExists
+            verify (newBlock `notElem` siblingBlocks) BlockAlreadyExists
             validateBlockCreationTime newBlockHeader (blockHeader block)
-            validateBlockDifficulty newBlockHeader config prevBlocks
-            validateTransactions newBlock prevBlocks (targetReward config $ fromIntegral height)
+            validateBlockDifficulty newBlockHeader config previousBlocks
+            validateTransactions newBlock previousBlocks (targetReward config $ fromIntegral height)
             validateBlockHeaderReferences newBlock
 
             return updatedNode
         else
-            let eBlockchains = fmap (\bs -> Either.mapLeft (\e -> (e, bs)) (addBlockToNode newBlock (prevBlocks ++ [block]) bs)) nodes in
+            let eBlockchains = fmap (\bs -> Either.mapLeft (\e -> (e, bs)) (addBlockToNode previousBlocks bs)) nodes in
             BlockchainNode block <$> reduceAddBlockResults eBlockchains
       where
+        previousBlocks = priorChain ++ pure block
         -- TODO: block headers should contain a hash of themselves,
         -- so that we don't have to hash every single time
         isParentNode = Crypto.hash (blockHeader block) == prevBlockHeaderHash (blockHeader newBlock)

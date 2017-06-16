@@ -169,20 +169,22 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
                     ]
 
             return (flatten blockchain'' === expected)
-    describe "longestChain" $
-        -- it "should find the longest chain when no branches" $ once $ ioProperty $ do
-        --     blockchain <- singletonBlockchain
-        --     b1a      <- block1A
-        --     b1b      <- block1B
-        --     -- b2a      <- block2A
-        --
-        --     let blockchain'   = addBlock' b1a blockchain
-        --         blockchain''  = addBlock' b1b blockchain'
-        --         -- blockchain''' = addBlock' b2a blockchain''
-        --
-        --     return $ (lastBlock blockchain'   == b1a) &&
-        --              (lastBlock blockchain''  == b1a) &&
-        --              (lastBlock blockchain''' == b2a)
+    describe "longestChain" $ do
+        it "should find the longest chain when no branches" $ once $ ioProperty $ do
+            blockchain <- singletonBlockchain
+            b0         <- genesisBlock
+            b1a        <- block1A
+            b1b        <- block1B
+            b2a        <- block2A
+
+            let blockchain'   = addBlock' b1a blockchain
+                blockchain''  = addBlock' b1b blockchain'
+                blockchain''' = addBlock' b2a blockchain''
+
+            return $ (longestChain blockchain'   == NonEmpty.fromList [b0, b1a]) &&
+                     (longestChain blockchain''  == NonEmpty.fromList [b0, b1a]) &&
+                     (longestChain blockchain''' == NonEmpty.fromList [b0, b1a, b2a])
+
         it "should find the longest chain when chain has branches" $ once $ ioProperty $ do
             blockchain <- singletonBlockchain
             b0         <- genesisBlock
