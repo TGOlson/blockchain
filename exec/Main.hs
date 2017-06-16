@@ -15,10 +15,10 @@ main = generateSingletonChain
 
 generateSingletonChain :: IO ()
 generateSingletonChain = do
-    blockchain <- singletonBlockchain
+    singleton <- singletonBlockchain
 
     block1 <- readJSON "data/block_1a.json"
-    let blockchain' = throwLeft $ Blockchain.addBlock block1 blockchain
+    let blockchain' = throwLeft $ Blockchain.addBlock block1 singleton
 
     pk <- block1ACoinbasePrivateKey
     let pubKey = coinbasePublicKey block1

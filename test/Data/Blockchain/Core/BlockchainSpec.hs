@@ -154,6 +154,50 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
 
         -- TODO: test w/ more transactions (and non-coinbase txs)
 
+    describe "flatten" $
+        it "should flatten the chain the longest chain" $ once $ ioProperty $ do
+            blockchain <- singletonBlockchain
+            b0         <- genesisBlock
+            b1a        <- block1A
+            b1b        <- block1B
+
+            let blockchain'   = addBlock' b1a blockchain
+                blockchain''  = addBlock' b1b blockchain'
+                expected      = NonEmpty.fromList
+                    [ NonEmpty.fromList [b0, b1b]
+                    , NonEmpty.fromList [b0, b1a]
+                    ]
+
+            return (flatten blockchain'' === expected)
+    describe "longestChain" $
+        -- it "should find the longest chain when no branches" $ once $ ioProperty $ do
+        --     blockchain <- singletonBlockchain
+        --     b1a      <- block1A
+        --     b1b      <- block1B
+        --     -- b2a      <- block2A
+        --
+        --     let blockchain'   = addBlock' b1a blockchain
+        --         blockchain''  = addBlock' b1b blockchain'
+        --         -- blockchain''' = addBlock' b2a blockchain''
+        --
+        --     return $ (lastBlock blockchain'   == b1a) &&
+        --              (lastBlock blockchain''  == b1a) &&
+        --              (lastBlock blockchain''' == b2a)
+        it "should find the longest chain when chain has branches" $ once $ ioProperty $ do
+            blockchain <- singletonBlockchain
+            b0         <- genesisBlock
+            b1a        <- block1A
+            b1b        <- block1B
+
+            let blockchain' = addBlock' b1b (addBlock' b1a blockchain)
+
+            return $ longestChain blockchain' == NonEmpty.fromList [b0, b1a]
+
+-- lastBlock :: Blockchain Validated -> Block
+-- lastBlock = NonEmpty.last . longestChain
+
+addBlock' :: Block -> Blockchain Validated -> Blockchain Validated
+addBlock' block = throwLeft . addBlock block
 
 showKeys :: H.HashMap PublicKey v -> H.HashMap String v
 showKeys = H.fromList . fmap (Arrow.first show) . H.toList

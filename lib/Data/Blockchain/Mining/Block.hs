@@ -15,13 +15,14 @@ import qualified Data.Blockchain.Core.Util.Hex   as Hex
 
 mineBlock :: Crypto.PublicKey -> [Blockchain.Transaction] -> Blockchain.Blockchain Blockchain.Validated -> IO Blockchain.Block
 mineBlock pubKey txs blockchain =
+    -- TODO: verify transactions are valid
     mineBlockInternal pubKey reward diff1 difficulty prevBlockHeaderHash txs
   where
     diff1               = Blockchain.difficulty1Target config
     reward              = Blockchain.targetReward config 0
     config              = Blockchain.blockchainConfig blockchain
     difficulty          = Blockchain.initialDifficulty config
-    prevBlock           = NonEmpty.head (Blockchain.longestChain blockchain)
+    prevBlock           = NonEmpty.last (Blockchain.longestChain blockchain)
     prevBlockHeaderHash = Crypto.hash (Blockchain.blockHeader prevBlock)
 
 createBlockchain :: Blockchain.BlockchainConfig -> IO (Blockchain.Blockchain Blockchain.Validated)
