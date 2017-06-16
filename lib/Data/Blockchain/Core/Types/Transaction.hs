@@ -4,9 +4,12 @@ module Data.Blockchain.Core.Types.Transaction
     , TransactionIn(..)
     , TransactionOutRef(..)
     , TransactionOut(..)
+    , signTransaction
+    , verifyTransactionSignature
     ) where
 
 import qualified Data.Aeson                  as Aeson
+import qualified Data.ByteString.Lazy        as Lazy
 import qualified Data.Hashable               as H
 import qualified Data.List.NonEmpty          as NonEmpty
 import qualified Data.Word                   as Word
@@ -70,3 +73,10 @@ data TransactionOut = TransactionOut
 instance Aeson.FromJSON TransactionOut
 instance Aeson.ToJSON TransactionOut
 instance Crypto.ToHash TransactionOut
+
+signTransaction :: Crypto.PrivateKey -> TransactionOut -> IO Crypto.Signature
+signTransaction priv = Crypto.sign priv . Lazy.toStrict . Aeson.encode
+
+verifyTransactionSignature :: Crypto.Signature -> TransactionOut -> Bool
+verifyTransactionSignature sig txOut = Crypto.verify pub sig $ Lazy.toStrict (Aeson.encode txOut)
+  where pub = signaturePubKey txOut

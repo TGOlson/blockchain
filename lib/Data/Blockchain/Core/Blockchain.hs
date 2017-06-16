@@ -23,7 +23,6 @@ module Data.Blockchain.Core.Blockchain
 import qualified Control.Monad                 as M
 import qualified Data.Aeson                    as Aeson
 import qualified Data.Aeson.Types              as Aeson
-import qualified Data.ByteString.Lazy          as Lazy
 import qualified Data.Char                     as Char
 import qualified Data.Either                   as Either
 import qualified Data.Either.Combinators       as Either
@@ -230,7 +229,7 @@ validateTransactions (Block _header coinbaseTx txs) prevBlocks reward = do
         prevTxOut <- sequence $ flip fmap txIn $ \(TransactionIn ref sig) -> do
             tx <- maybeToEither TransactionOutRefNotFound (H.lookup ref unspentTransactions)
             -- TODO: should keep transaction signing & verification round-tripping in same place
-            verify (Crypto.verify (signaturePubKey tx) sig (Lazy.toStrict $ Aeson.encode tx)) InvalidTransactionSignature
+            verify (verifyTransactionSignature sig tx) InvalidTransactionSignature
             return tx
 
         verify (txOutValue prevTxOut >= outputValue) InvalidTransactionValues

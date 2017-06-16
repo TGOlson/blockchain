@@ -4,13 +4,12 @@ module Data.Blockchain.Core.Builder.Transaction
     , createSimpleTransaction
     ) where
 
+-- TODO: better prelude
 import           Control.Monad                   (unless, when)
 import           Control.Monad.Trans.Class       (lift)
 
 import qualified Control.Error.Util              as Error
 import qualified Control.Monad.Except            as Except
-import qualified Data.Aeson                      as Aeson
-import qualified Data.ByteString.Lazy            as Lazy
 import qualified Data.HashMap.Strict             as H
 import qualified Data.List.NonEmpty              as NonEmpty
 import qualified Data.Word                       as Word
@@ -45,10 +44,8 @@ createSimpleTransaction (Crypto.KeyPair srcPubKey srcPrivKey) targetPubKey value
     when (totalValue < (value + fee)) $ Except.throwError SourceAddressInsufficientFunds
 
     txIns <- sequence $ flip fmap txOutPairs $ \(txOutRef, txOut) -> do
-        -- TODO: should keep transaction signing & verification round-tripping in same place
-        let txBs = Lazy.toStrict (Aeson.encode txOut)
-        sig <- lift $ Crypto.sign srcPrivKey txBs
-        unless (Crypto.verify srcPubKey sig txBs) $ Except.throwError InvalidPrivateKey
+        sig <- lift $ Blockchain.signTransaction srcPrivKey txOut
+        unless (Blockchain.verifyTransactionSignature sig txOut) $ Except.throwError InvalidPrivateKey
 
         return (Blockchain.TransactionIn txOutRef sig)
 
