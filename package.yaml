@@ -58,6 +58,8 @@ library:
     - Data.Blockchain.Core.Util.Hex
     - Data.Blockchain.Mining.Block
     - Data.Blockchain.Mining.Blockchain
+    - Data.Blockchain.Test.Mining
+    - Data.Blockchain.Test.Stats
 
 executables:
   blockchain:
