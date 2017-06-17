@@ -15,7 +15,7 @@ spec =
         roundTripJSONSpec (Proxy :: Proxy PrivateKey)
         roundTripJSONSpec (Proxy :: Proxy Signature)
 
-        it "should sign and verify correctly" $ once $
+        propNumTests 5 "should sign and verify correctly" $
             \bs -> ioProperty $ do
                 (KeyPair publicKey privateKey) <- generate
                 sig <- sign privateKey bs

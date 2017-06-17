@@ -62,9 +62,6 @@ instance Aeson.FromJSON TransactionOutRef
 instance Aeson.ToJSON TransactionOutRef
 
 data TransactionOut = TransactionOut
-    -- > maxBound :: Word
-    -- 18,446,744,073,709,551,615
-    -- TODO: too low?
     { value           :: Word.Word
     , signaturePubKey :: Crypto.PublicKey -- aka. address of where funds go
     }
@@ -79,4 +76,5 @@ signTransaction priv = Crypto.sign priv . Lazy.toStrict . Aeson.encode
 
 verifyTransactionSignature :: Crypto.Signature -> TransactionOut -> Bool
 verifyTransactionSignature sig txOut = Crypto.verify pub sig $ Lazy.toStrict (Aeson.encode txOut)
-  where pub = signaturePubKey txOut
+  where
+    pub = signaturePubKey txOut
