@@ -1,6 +1,10 @@
 module Data.Blockchain.TestData
+    -- blockchains
     ( singletonBlockchainUnvalidated
     , singletonBlockchain
+    , blockchain1Block
+    , blockchain2BlockFork
+    , blockchain3Block
     -- blocks
     , genesisBlock
     , block1A
@@ -10,6 +14,8 @@ module Data.Blockchain.TestData
     , block2A
     , block2ACoinbasePrivateKey
     -- utils
+    , validate'
+    , addBlock'
     , throwLeft
     ) where
 
@@ -26,7 +32,12 @@ singletonBlockchainUnvalidated :: IO (Blockchain Unvalidated)
 singletonBlockchainUnvalidated = readJSON "data/singleton_blockchain.json"
 
 singletonBlockchain :: IO (Blockchain Validated)
-singletonBlockchain = throwLeft . validate <$> singletonBlockchainUnvalidated
+singletonBlockchain = validate' <$> singletonBlockchainUnvalidated
+
+blockchain1Block, blockchain2BlockFork, blockchain3Block :: IO (Blockchain Validated)
+blockchain1Block     = blockchainWithBlock singletonBlockchain block1A
+blockchain2BlockFork = blockchainWithBlock blockchain1Block block1B
+blockchain3Block     = blockchainWithBlock blockchain2BlockFork block2A
 
 genesisBlock :: IO Block
 genesisBlock = nodeBlock . blockchainNode <$> singletonBlockchain
@@ -42,6 +53,19 @@ block1BCoinbasePrivateKey = readJSON "data/block_1b_coinbase_private_key.json"
 block2ACoinbasePrivateKey = readJSON "data/block_2a_coinbase_private_key.json"
 
 -- Utils -----------------------------------------------------------------------------------------------------
+
+blockchainWithBlock :: IO (Blockchain Validated) -> IO Block -> IO (Blockchain Validated)
+blockchainWithBlock chain block = do
+    c <- chain
+    b <- block
+
+    return (addBlock' b c)
+
+validate' :: Blockchain Unvalidated -> Blockchain Validated
+validate' = throwLeft . validate
+
+addBlock' :: Block -> Blockchain Validated -> Blockchain Validated
+addBlock' block = throwLeft . addBlock block
 
 readJSON :: Aeson.FromJSON a => FilePath -> IO a
 readJSON path =  throwLeft . Aeson.eitherDecode <$> Lazy.readFile path
