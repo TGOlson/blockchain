@@ -44,16 +44,13 @@ spec = describe "Data.Blockchain.Core.Types.BlockchainConfig" $ do
 
     describe "targetDifficulty" $ do
         prop "should use initial config when no blocks" $
-            \conf -> targetDifficulty conf [] === initialDifficulty conf
+            \conf -> targetDifficulty conf mempty === initialDifficulty conf
 
-        prop "should correctly adjust difficulty" $
-            \block (Positive (n :: Int)) ->
-                let ratio              = toRational n / 600
-                    lastBlock          = adjustTime (Time.addUTCTime $ fromIntegral n) block
-                    blocks             = replicate 9 block <> pure lastBlock
-                    lastDiff           = difficulty (blockHeader block)
-                    expectedDifficulty = Difficulty $ round (toRational lastDiff * ratio)
-                in targetDifficulty testConfig blocks === expectedDifficulty
+        prop "should correctly increase difficulty" $
+            \block -> targetDifficulty testConfig (blocksWithOffset 60 block) === Difficulty 10000
+
+        prop "should correctly decrease difficulty" $
+            \block -> targetDifficulty testConfig (blocksWithOffset 6000 block) === Difficulty 100
 
         propWithSize 20 "should produce the correct difficulty when not recalculating" $
             \(NonEmpty blocks) conf ->
@@ -66,9 +63,14 @@ spec = describe "Data.Blockchain.Core.Types.BlockchainConfig" $ do
         prop "should always find a valid difficulty" $
             \conf blocks -> targetDifficulty conf blocks >= minBound
 
+blocksWithOffset :: Time.NominalDiffTime -> Block -> [Block]
+blocksWithOffset diffTime (Block header coinbase txs) =
+    replicate 9 block <> pure lastBlock
+  where
+    block      = Block (header { difficulty = initialDifficulty testConfig }) coinbase txs
+    endTime    = Time.addUTCTime diffTime $ time header
+    lastBlock  = setTime endTime block
 
-adjustTime :: (Time.UTCTime -> Time.UTCTime) -> Block -> Block
-adjustTime f block = setTime (f $ time $ blockHeader block) block
 
 setTime :: Time.UTCTime -> Block -> Block
 setTime t (Block header tx txs) = Block (header {time = t}) tx txs

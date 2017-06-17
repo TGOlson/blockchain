@@ -29,10 +29,11 @@ mineBlock pubKey txs blockchain =
         Right () -> Right <$> mineBlockInternal pubKey reward diff1 difficulty prevBlockHeaderHash txs
   where
     diff1               = Blockchain.difficulty1Target config
-    reward              = Blockchain.targetReward config 0
+    reward              = Blockchain.targetReward config (fromIntegral $ length prevBlocks + 1)
     config              = Blockchain.blockchainConfig blockchain
-    difficulty          = Blockchain.initialDifficulty config
-    prevBlock           = NonEmpty.last (Blockchain.longestChain blockchain)
+    difficulty          = Blockchain.targetDifficulty config $ NonEmpty.toList prevBlocks -- TODO: next diff?
+    prevBlocks          = Blockchain.longestChain blockchain
+    prevBlock           = NonEmpty.last prevBlocks
     prevBlockHeaderHash = Crypto.hash (Blockchain.blockHeader prevBlock)
 
 
@@ -47,7 +48,7 @@ mineGenesisBlock config = do
     -- Note: ignore private key, coinbase reward in genesis block cannot be spent
     (Crypto.KeyPair pubKey _privKey) <- Crypto.generate
 
-    mineBlockInternal pubKey reward diff1 difficulty prevBlockHeaderHash []
+    mineBlockInternal pubKey reward diff1 difficulty prevBlockHeaderHash mempty
   where
     diff1               = Blockchain.difficulty1Target config
     reward              = Blockchain.initialMiningReward config

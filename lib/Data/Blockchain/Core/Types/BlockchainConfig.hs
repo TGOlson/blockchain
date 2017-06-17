@@ -61,6 +61,7 @@ targetReward config height = either id id $ do
 targetDifficulty :: BlockchainConfig -> [Block] -> Difficulty
 targetDifficulty config []                                            = initialDifficulty config
 targetDifficulty config _ | difficultyRecalculationHeight config == 0 = initialDifficulty config
+targetDifficulty config _ | difficultyRecalculationHeight config == 1 = initialDifficulty config
 targetDifficulty config _ | targetSecondsPerBlock config == 0         = initialDifficulty config
 targetDifficulty config blocks =
     case length blocks `mod` fromIntegral recalcHeight of
@@ -71,9 +72,9 @@ targetDifficulty config blocks =
                 -- TODO: get rid of `abs`, move invariant into types
                 diffTime       = abs $ Time.diffUTCTime (blockTime lastBlock) (blockTime firstBlock)
                 avgSolveTime   = realToFrac diffTime / fromIntegral recalcHeight
-                ratio          = avgSolveTime / fromIntegral (targetSecondsPerBlock config)
+                solveRate      = fromIntegral (targetSecondsPerBlock config) / avgSolveTime
                 lastDifficulty = difficulty (blockHeader lastBlock)
-                nextDifficulty = Difficulty $ round $ ratio * toRational lastDifficulty
+                nextDifficulty = Difficulty $ round $ solveRate * toRational lastDifficulty
             in nextDifficulty
 
         _ -> difficulty $ blockHeader $ last blocks
