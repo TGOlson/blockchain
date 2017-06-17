@@ -1,11 +1,11 @@
 module Data.Blockchain.Mining.Block
-    ( mineBlock
+    ( MineBlockException(..)
+    , mineBlock
     , mineGenesisBlock
-    , createBlockchain
     ) where
 
+import qualified Data.ByteString                 as BS
 import qualified Data.List.NonEmpty              as NonEmpty
-import           Data.Monoid                     ((<>))
 import qualified Data.Time.Clock                 as Time
 import qualified Data.Word                       as Word
 
@@ -14,13 +14,18 @@ import qualified Data.Blockchain.Core.Crypto     as Crypto
 import qualified Data.Blockchain.Core.Types      as Blockchain
 import qualified Data.Blockchain.Core.Util.Hex   as Hex
 
-mineBlock :: Crypto.PublicKey -> [Blockchain.Transaction] -> Blockchain.Blockchain Blockchain.Validated -> IO Blockchain.Block
-mineBlock pubKey txs blockchain = do
-    -- TODO: cleanup
-    either (\e -> error $ "Invalid transaction list: " <> show e) (const $ return ()) $
-        Blockchain.validateTransactions blockchain txs
+data MineBlockException
+    = InvalidTransactionList
+    -- | ...
+  deriving (Eq, Show)
 
-    mineBlockInternal pubKey reward diff1 difficulty prevBlockHeaderHash txs
+mineBlock
+    :: Crypto.PublicKey -> [Blockchain.Transaction] -> Blockchain.Blockchain Blockchain.Validated
+    -> IO (Either MineBlockException Blockchain.Block)
+mineBlock pubKey txs blockchain =
+    case Blockchain.validateTransactions blockchain txs of
+        Left _e  -> return (Left InvalidTransactionList)
+        Right () -> Right <$> mineBlockInternal pubKey reward diff1 difficulty prevBlockHeaderHash txs
   where
     diff1               = Blockchain.difficulty1Target config
     reward              = Blockchain.targetReward config 0
@@ -28,17 +33,6 @@ mineBlock pubKey txs blockchain = do
     difficulty          = Blockchain.initialDifficulty config
     prevBlock           = NonEmpty.last (Blockchain.longestChain blockchain)
     prevBlockHeaderHash = Crypto.hash (Blockchain.blockHeader prevBlock)
-
-createBlockchain :: Blockchain.BlockchainConfig -> IO (Blockchain.Blockchain Blockchain.Validated)
-createBlockchain config = either throwValidationError id <$> do
-    genesisBlock <- mineGenesisBlock config
-
-    let node  = Blockchain.BlockchainNode genesisBlock mempty
-        chain = Blockchain.construct config node
-
-    return (Blockchain.validate chain)
-  where
-    throwValidationError e = error $ "Unexpected error creating blockchain: " <> show e
 
 mineGenesisBlock :: Blockchain.BlockchainConfig -> IO Blockchain.Block
 mineGenesisBlock config = do
@@ -50,7 +44,7 @@ mineGenesisBlock config = do
     diff1               = Blockchain.difficulty1Target config
     reward              = Blockchain.initialMiningReward config
     difficulty          = Blockchain.initialDifficulty config
-    prevBlockHeaderHash = Crypto.unsafeFromByteString "0000000000000000000000000000000000000000000000000000000000000000"
+    prevBlockHeaderHash = Crypto.unsafeFromByteString $ BS.replicate 64 0
 
 -- TODO: accept multiple public keys
 mineBlockInternal
@@ -95,5 +89,7 @@ mineHeader prevBlockHeaderHash coinbaseTransactionHash transactionHashTreeRoot d
             then return header
             else mineHeaderInternal (incNonce header)
 
+
+-- TODO: lenses
 incNonce :: Blockchain.BlockHeader -> Blockchain.BlockHeader
 incNonce header = header { Blockchain.nonce = Blockchain.nonce header + 1 }

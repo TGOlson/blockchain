@@ -12,8 +12,8 @@ import           Data.Blockchain.Core.Types
 
 spec :: Spec
 spec = describe "Data.Blockchain.Core.Blockchain" $ do
-    it "should serialize round-trip" $ once $ ioProperty $ do
-        chain <- singletonBlockchain
+    it "should serialize and validate round-trip" $ once $ ioProperty $ do
+        chain <- blockchain3Block
 
         let unverifiedBlockchain = throwLeft $ Aeson.eitherDecode (Aeson.encode chain)
 
@@ -140,7 +140,7 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
                 ]
 
     describe "flatten" $
-        it "should flatten the chain the longest chain" $ once $ ioProperty $ do
+        it "should flatten the blockchain" $ once $ ioProperty $ do
             blockchain <- blockchain3Block
             b0         <- genesisBlock
             b1a        <- block1A
@@ -148,8 +148,8 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
             b2a        <- block2A
 
             return $ flatten blockchain === NonEmpty.fromList
-                    [ NonEmpty.fromList [b0, b1a, b2a]
-                    , NonEmpty.fromList [b0, b1b]
+                    [ NonEmpty.fromList [b0, b1b]
+                    , NonEmpty.fromList [b0, b1a, b2a]
                     ]
 
     describe "longestChain" $

@@ -11,7 +11,7 @@ import qualified Data.Blockchain.Core.Types.BlockchainConfigSpec
 import qualified Data.Blockchain.Core.Types.DifficultySpec
 import qualified Data.Blockchain.Core.Types.TransactionSpec
 import qualified Data.Blockchain.Core.Util.HexSpec
--- import qualified Data.Blockchain.Mining.SolverSpec
+import qualified Data.Blockchain.Mining.BlockSpec
 
 main :: IO ()
 main = mapM_ Hspec.hspec
@@ -24,5 +24,5 @@ main = mapM_ Hspec.hspec
     , Data.Blockchain.Core.Types.DifficultySpec.spec
     , Data.Blockchain.Core.Types.TransactionSpec.spec
     , Data.Blockchain.Core.Util.HexSpec.spec
-    -- , Data.Blockchain.Mining.SolverSpec.spec
+    , Data.Blockchain.Mining.BlockSpec.spec
     ]

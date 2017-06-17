@@ -10,9 +10,9 @@ module Data.Blockchain.Core.Blockchain
     , BlockException(..)
     -- Construction
     , construct
+    , validate
     , addBlock
     -- Validation
-    , validate
     , validateTransaction
     , validateTransactions
     -- Chain inspection
@@ -108,6 +108,7 @@ data BlockException
 construct :: BlockchainConfig -> BlockchainNode -> Blockchain Unvalidated
 construct = Blockchain
 
+
 validate :: Blockchain Unvalidated -> Either ValidationException (Blockchain Validated)
 validate (Blockchain config (BlockchainNode genesisBlock nodes)) = do
     let (Block header _coinbase txs) = genesisBlock
@@ -119,9 +120,10 @@ validate (Blockchain config (BlockchainNode genesisBlock nodes)) = do
     Either.mapLeft BlockValidationException $ validateBlockDifficulty header config mempty
     Either.mapLeft BlockValidationException $ validateBlockTransactions genesisBlock mempty reward
     Either.mapLeft BlockValidationException $ validateBlockHeaderReferences genesisBlock
-    Either.mapLeft BlockValidationException $ Foldable.foldrM addBlock blockchainHead blocks
+    Either.mapLeft BlockValidationException $ Foldable.foldlM (flip addBlock) blockchainHead blocks
   where
     getBlocks (BlockchainNode block ns) = block : (ns >>= getBlocks)
+
 
 addBlock :: Block -> Blockchain Validated -> Either BlockException (Blockchain Validated)
 addBlock newBlock (Blockchain config node) = Blockchain config <$> addBlockToNode mempty node
@@ -162,11 +164,8 @@ addBlock newBlock (Blockchain config node) = Blockchain config <$> addBlockToNod
     reduceAddBlockResults results = case (blockAlreadyExists, rightResults) of
         (True, _)    -> Left BlockAlreadyExists
         (False, [])  -> Left NoParentFound
-
-        -- Add new chain to list of old chains
-        -- Note: this will cause re-ordering, where newest chain will always appear first
-        -- in list of subsequent chains.
-        (False, [x]) -> Right (x : oldBlockChains)
+        -- Note: put new node at the end of the node list to prevent re-ordering
+        (False, [x]) -> Right (oldBlockChains <> pure x)
         (_, _)       -> error "Unexpected error - block can be inserted into multiple chains"
       where
         (leftResults, rightResults) = Either.partitionEithers results

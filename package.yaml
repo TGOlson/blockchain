@@ -57,6 +57,7 @@ library:
     - Data.Blockchain.Core.Types.Transaction
     - Data.Blockchain.Core.Util.Hex
     - Data.Blockchain.Mining.Block
+    - Data.Blockchain.Mining.Blockchain
 
 executables:
   blockchain:

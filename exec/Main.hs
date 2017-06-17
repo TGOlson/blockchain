@@ -27,7 +27,7 @@ generateSingletonChain = do
     (Crypto.KeyPair targetPublicKey privKey) <- Crypto.generate
     tx <- throwLeft <$> Tx.createSimpleTransaction keyPair targetPublicKey 90 0 blockchain'
 
-    block2 <- Mining.mineBlock pubKey (pure tx) blockchain'
+    block2 <- throwLeft <$> Mining.mineBlock pubKey (pure tx) blockchain'
 
     writeJSON "data/block_2a.json" block2
     writeJSON "data/block_2a_coinbase_private_key.json" privKey
