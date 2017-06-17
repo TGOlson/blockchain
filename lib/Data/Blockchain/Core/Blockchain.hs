@@ -177,12 +177,14 @@ addBlock newBlock (Blockchain config node) = Blockchain config <$> addBlockToNod
 
 -- TODO: transaction-specific exceptions
 validateTransaction :: Blockchain Validated -> Transaction -> Either BlockException ()
-validateTransaction chain = validateTransactionInternal (NonEmpty.toList $ longestChain chain)
+validateTransaction chain = validateTransactions chain . pure
 
 validateTransactions :: Blockchain Validated -> [Transaction] -> Either BlockException ()
-validateTransactions chain = sequence_ . fmap (validateTransactionInternal prevBlocks)
-  where
-    prevBlocks = NonEmpty.toList (longestChain chain)
+validateTransactions chain = \case
+    [] -> return () -- slight optimization - prevents having to calculate unspent transaction outputs
+    xs -> let prevBlocks          = NonEmpty.toList (longestChain chain)
+              unspentTransactions = unspentTransactionOutputsInternal prevBlocks
+          in sequence_ $ validateTransactionInternal unspentTransactions <$> xs
 
 -- Internal Validation ---------------------------------------------------------------------------------------
 
@@ -228,24 +230,21 @@ validateBlockTransactions (Block _header coinbaseTx txs) prevBlocks reward = do
     -- TODO: coinbase can be reward + fees
     verify (txOutValue (coinbaseTransactionOut coinbaseTx) == reward) InvalidCoinbaseTransactionValue
 
-    sequence_ (validateTransactionInternal prevBlocks <$> txs)
+    sequence_ (validateTransactionInternal unspentTransactions <$> txs)
+  where
+    unspentTransactions = unspentTransactionOutputsInternal prevBlocks
 
 txOutValue :: NonEmpty.NonEmpty TransactionOut -> Word.Word
 txOutValue = sum . fmap value
 
-validateTransactionInternal :: [Block] -> Transaction -> Either BlockException ()
-validateTransactionInternal prevBlocks (Transaction txIn txOut) = do
-    let outputValue = txOutValue txOut
-
+validateTransactionInternal :: H.HashMap TransactionOutRef TransactionOut -> Transaction -> Either BlockException ()
+validateTransactionInternal unspentTransactions (Transaction txIn txOut) = do
     prevTxOut <- sequence $ flip fmap txIn $ \(TransactionIn ref sig) -> do
         tx <- maybeToEither TransactionOutRefNotFound (H.lookup ref unspentTransactions)
         verify (verifyTransactionSignature sig tx) InvalidTransactionSignature
         return tx
 
-    verify (txOutValue prevTxOut >= outputValue) InvalidTransactionValues
-  where
-    unspentTransactions :: H.HashMap TransactionOutRef TransactionOut
-    unspentTransactions = unspentTransactionOutputsInternal prevBlocks
+    verify (txOutValue prevTxOut >= txOutValue txOut) InvalidTransactionValues
 
 
 -- Transaction State -----------------------------------------------------------------------------------------
