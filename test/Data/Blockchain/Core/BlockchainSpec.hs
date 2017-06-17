@@ -8,7 +8,6 @@ import qualified Data.HashMap.Strict             as H
 import qualified Data.List.NonEmpty              as NonEmpty
 
 import           Data.Blockchain.Core.Blockchain
-import           Data.Blockchain.Core.Crypto
 import           Data.Blockchain.Core.Types
 
 spec :: Spec
@@ -23,14 +22,11 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
     describe "validate" $ do
         it "should reject a chain with invalid difficulty reference in genesis block" $ once $ ioProperty $ do
             chain <- singletonBlockchainUnvalidated
-            let config  = blockchainConfig chain
-                config' = config { initialDifficulty = minBound }
-                chain'  = construct config' (blockchainNode chain)
+            let config = (blockchainConfig chain) { initialDifficulty = minBound }
+                chain' = construct config (blockchainNode chain)
 
             return $ validate chain' === Left (BlockValidationException InvalidDifficultyReference)
 
-        -- Note: this is a known modification that will change block hash to make it invalid
-        -- if test data is re-generated, it may cause this test to fail
         it "should reject a chain with invalid genesis block difficulty" $ once $ ioProperty $ do
             chain <- singletonBlockchainUnvalidated
 
@@ -56,8 +52,7 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
                 chain <- singletonBlockchainUnvalidated
 
                 let (BlockchainNode block nodes) = blockchainNode chain
-                    txOut'   = txOut { value = 999 }
-                    coinbase = CoinbaseTransaction (pure txOut')
+                    coinbase = CoinbaseTransaction $ pure $ txOut { value = 999 }
                     block'   = block { coinbaseTransaction = coinbase }
                     chain'   = construct (blockchainConfig chain) (BlockchainNode block' nodes)
 
@@ -68,14 +63,13 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
                 chain <- singletonBlockchainUnvalidated
 
                 let (BlockchainNode block nodes) = blockchainNode chain
-                    txOut'   = txOut { value = 100 }
-                    coinbase = CoinbaseTransaction (pure txOut')
+                    coinbase = CoinbaseTransaction $ pure $ txOut { value = 100 }
                     block'   = block { coinbaseTransaction = coinbase }
                     chain'   = construct (blockchainConfig chain) (BlockchainNode block' nodes)
 
                 return $ validate chain' === Left (BlockValidationException InvalidCoinbaseTransactionHash)
 
-        -- TODO: test is possible, hard to do with empty transaction rule & expected header hash
+        -- TODO: test if possible, hard to do with empty transaction rule & expected header hash
         -- it "should reject a chain with invalid transaction hash in genesis block header" $ once $
 
     describe "addBlock" $ do
@@ -118,7 +112,7 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
                 blockchain                   <- singletonBlockchain
                 (Block header _coinbase txs) <- block1A
 
-                let coinbase = CoinbaseTransaction $ pure $ txOut { value = 999 }
+                let coinbase = CoinbaseTransaction $ pure $ txOut { value = 100 }
                     block    = Block header coinbase txs
 
                 return $ addBlock block blockchain === Left InvalidCoinbaseTransactionHash
@@ -171,5 +165,5 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
                      (longestChain blockchain'  == NonEmpty.fromList [b0, b1a]) &&
                      (longestChain blockchain'' == NonEmpty.fromList [b0, b1a, b2a])
 
-showKeys :: H.HashMap PublicKey v -> H.HashMap String v
+showKeys :: Show k => H.HashMap k v -> H.HashMap String v
 showKeys = H.fromList . fmap (Arrow.first show) . H.toList
