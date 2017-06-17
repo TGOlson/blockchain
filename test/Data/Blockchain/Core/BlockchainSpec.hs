@@ -89,8 +89,8 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
             return $ addBlock block blockchain === Left NoParentFound
 
         it "should reject a chain with invalid genesis block difficulty" $ once $ ioProperty $ do
-            blockchain                  <- singletonBlockchain
-            (Block header coinbase txs) <- block1A
+            blockchain                  <- blockchain1Block
+            (Block header coinbase txs) <- block2A
 
             let header' = header { nonce = 1 }
                 block   = Block header' coinbase txs
@@ -99,8 +99,8 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
 
         it "should reject a chain with invalid coinbase reward in block" $ once $
             \txOut -> ioProperty $ do
-                blockchain                   <- singletonBlockchain
-                (Block header _coinbase txs) <- block1A
+                blockchain                   <- blockchain1Block
+                (Block header _coinbase txs) <- block2A
 
                 let coinbase = CoinbaseTransaction $ pure $ txOut { value = 999 }
                     block    = Block header coinbase txs
@@ -109,8 +109,8 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
 
         it "should reject a chain with invalid coinbase hash in block header" $ once $
             \txOut -> ioProperty $ do
-                blockchain                   <- singletonBlockchain
-                (Block header _coinbase txs) <- block1A
+                blockchain                   <- blockchain1Block
+                (Block header _coinbase txs) <- block2A
 
                 let coinbase = CoinbaseTransaction $ pure $ txOut { value = 100 }
                     block    = Block header coinbase txs

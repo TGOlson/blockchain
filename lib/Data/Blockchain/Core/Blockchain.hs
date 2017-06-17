@@ -151,26 +151,17 @@ addBlock newBlock (Blockchain config node) = Blockchain config <$> addBlockToNod
         previousBlocks = priorChain <> pure block
         isParentNode = Crypto.hash (blockHeader block) == prevBlockHeaderHash (blockHeader newBlock)
 
-    -- Rules:
-    --   If all results are `Left NoParentFound` the result is `Left NoParentFound`.
-    --   If any result is `Left BlockAlreadyExists` the result is `Left BlockAlreadyExists`.
-    --   If one result is `Right Blockchain` and the rest are `Left NoParentFound`
-    --      the result is that new block chain and all the previous chains.
-    --   If more than one result is `Right Blockchain` it is an unexpected result and the function will error.
-    -- TODO: this no longer makes sense... write tests and revisit
     reduceAddBlockResults :: [Either (BlockException, BlockchainNode) BlockchainNode] -> Either BlockException [BlockchainNode]
-    reduceAddBlockResults results = case (blockAlreadyExists, rightResults) of
-        (True, _)    -> Left BlockAlreadyExists
-        (False, [])  -> Left NoParentFound
-        -- Note: put new node at the end of the node list to prevent re-ordering
-        (False, [x]) -> Right (oldBlockChains <> pure x)
-        (_, _)       -> error "Unexpected error - block can be inserted into multiple chains"
+    reduceAddBlockResults results =
+        case (rightResults, specificExceptions) of
+            ([x], [])  -> Right (oldBlockChains <> pure x)
+            ([],  [])  -> Left NoParentFound
+            ([],  [e]) -> Left e
+            (_,   _)   -> error "Impossible block insertion error"
       where
-        (leftResults, rightResults) = Either.partitionEithers results
-        (exceptions, oldBlockChains) = unzip leftResults
-        -- Note: this ignores invariant where multiple `BlockAlreadyExists` errors are found
-        -- However, we do expect our reducing function to monitor for that invariant during original insert.
-        blockAlreadyExists = BlockAlreadyExists `elem` exceptions
+        (leftResults, rightResults)     = Either.partitionEithers results
+        (allExceptions, oldBlockChains) = unzip leftResults
+        specificExceptions              = filter (not . (==) NoParentFound) allExceptions
 
 
 -- Exported Validators ---------------------------------------------------------------------------------------
