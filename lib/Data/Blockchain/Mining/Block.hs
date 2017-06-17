@@ -1,10 +1,11 @@
 module Data.Blockchain.Mining.Block
     ( MineBlockException(..)
     , mineBlock
+    , mineEmptyBlock
     , mineGenesisBlock
     ) where
 
-import qualified Data.ByteString                 as BS
+import qualified Data.ByteString.Char8           as Char8
 import qualified Data.List.NonEmpty              as NonEmpty
 import qualified Data.Time.Clock                 as Time
 import qualified Data.Word                       as Word
@@ -34,6 +35,13 @@ mineBlock pubKey txs blockchain =
     prevBlock           = NonEmpty.last (Blockchain.longestChain blockchain)
     prevBlockHeaderHash = Crypto.hash (Blockchain.blockHeader prevBlock)
 
+
+mineEmptyBlock
+    :: Crypto.PublicKey -> Blockchain.Blockchain Blockchain.Validated
+    -> IO (Either MineBlockException Blockchain.Block)
+mineEmptyBlock pubKey = mineBlock pubKey mempty
+
+
 mineGenesisBlock :: Blockchain.BlockchainConfig -> IO Blockchain.Block
 mineGenesisBlock config = do
     -- Note: ignore private key, coinbase reward in genesis block cannot be spent
@@ -44,7 +52,7 @@ mineGenesisBlock config = do
     diff1               = Blockchain.difficulty1Target config
     reward              = Blockchain.initialMiningReward config
     difficulty          = Blockchain.initialDifficulty config
-    prevBlockHeaderHash = Crypto.unsafeFromByteString $ BS.replicate 64 0
+    prevBlockHeaderHash = Crypto.unsafeFromByteString $ Char8.replicate 64 '0'
 
 -- TODO: accept multiple public keys
 mineBlockInternal

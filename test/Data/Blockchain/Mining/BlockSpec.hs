@@ -8,7 +8,7 @@ import           Data.Blockchain.Core.Util.Hex
 import           Data.Blockchain.Mining.Block
 
 spec :: Spec
-spec = describe "Data.Blockchain.Mining.Block" $
+spec = describe "Data.Blockchain.Mining.Block" $ do
     context "mineBlock" $ do
         propNumTests 5 "should find a block with a valid difficulty" $
             \pubKey -> ioProperty $ do
@@ -25,7 +25,6 @@ spec = describe "Data.Blockchain.Mining.Block" $
 
                 return (blockHeaderHashDifficulty diff1 header >= initialDifficulty config)
 
-
         propNumTests 5 "should fail if passed invalid transactions" $
             \pubKey (NonEmpty txs) -> ioProperty $ do
                 blockchain <- blockchain3Block
@@ -33,3 +32,13 @@ spec = describe "Data.Blockchain.Mining.Block" $
                 res <- mineBlock pubKey txs blockchain
 
                 return (res === Left InvalidTransactionList)
+
+    context "mineGenesisBlock" $
+        propNumTests 5 "should find an initial block with a valid difficulty" $
+            \config -> ioProperty $ do
+                let diff1   = hex256LeadingZeros 2
+                    config' = config { difficulty1Target = diff1, initialDifficulty = Difficulty 1 }
+
+                (Block header _ _) <- mineGenesisBlock config'
+
+                return (blockHeaderHashDifficulty diff1 header >= initialDifficulty config')
