@@ -5,6 +5,7 @@ module Data.Blockchain.Mining.Block
     ) where
 
 import qualified Data.List.NonEmpty              as NonEmpty
+import           Data.Monoid                     ((<>))
 import qualified Data.Time.Clock                 as Time
 import qualified Data.Word                       as Word
 
@@ -16,7 +17,7 @@ import qualified Data.Blockchain.Core.Util.Hex   as Hex
 mineBlock :: Crypto.PublicKey -> [Blockchain.Transaction] -> Blockchain.Blockchain Blockchain.Validated -> IO Blockchain.Block
 mineBlock pubKey txs blockchain = do
     -- TODO: cleanup
-    either (\e -> error $ "Invalid transaction list: " ++ show e) (const $ return ()) $
+    either (\e -> error $ "Invalid transaction list: " <> show e) (const $ return ()) $
         Blockchain.validateTransactions blockchain txs
 
     mineBlockInternal pubKey reward diff1 difficulty prevBlockHeaderHash txs
@@ -37,7 +38,7 @@ createBlockchain config = either throwValidationError id <$> do
 
     return (Blockchain.validate chain)
   where
-    throwValidationError e = error $ "Unexpected error creating blockchain: " ++ show e
+    throwValidationError e = error $ "Unexpected error creating blockchain: " <> show e
 
 mineGenesisBlock :: Blockchain.BlockchainConfig -> IO Blockchain.Block
 mineGenesisBlock config = do

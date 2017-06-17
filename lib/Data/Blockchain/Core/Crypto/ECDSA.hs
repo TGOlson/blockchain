@@ -15,6 +15,7 @@ import qualified Crypto.PubKey.ECC.Types       as Crypto
 import qualified Data.Aeson                    as Aeson
 import qualified Data.ByteString               as BS
 import qualified Data.Hashable                 as H
+import           Data.Monoid                   ((<>))
 import qualified Data.Text                     as Text
 
 import           Data.Blockchain.Core.Util.Hex
@@ -32,7 +33,7 @@ newtype Signature = Signature { unSignature :: Crypto.Signature }
   deriving (Eq)
 
 instance Show Signature where
-    show (Signature (Crypto.Signature r s)) = show (hex256FromInteger r) ++ show (hex256FromInteger s)
+    show (Signature (Crypto.Signature r s)) = show (hex256FromInteger r) <> show (hex256FromInteger s)
 
 instance Aeson.ToJSON Signature where
     toJSON = Aeson.toJSON . show
@@ -54,8 +55,8 @@ instance H.Hashable PublicKey where
     hashWithSalt _ = H.hash . show
 
 instance Show PublicKey where
-    show = \case PublicKey Crypto.PointO      -> error "Unexpected pattern match - PointO" -- TODO: move invariant to type level?
-                 PublicKey (Crypto.Point x y) -> show (hex256FromInteger x) ++ show (hex256FromInteger y)
+    show = \case PublicKey Crypto.PointO      -> show $ PublicKey (Crypto.Point 0 0)
+                 PublicKey (Crypto.Point x y) -> show (hex256FromInteger x) <> show (hex256FromInteger y)
 
 instance Aeson.ToJSON PublicKey where
     toJSON = Aeson.toJSON . show

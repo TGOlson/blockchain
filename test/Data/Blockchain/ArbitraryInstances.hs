@@ -10,6 +10,7 @@ import qualified Crypto.PubKey.ECC.ECDSA       as Crypto
 import qualified Crypto.PubKey.ECC.Types       as Crypto
 import qualified Data.ByteString.Char8         as BS
 import qualified Data.List.NonEmpty            as NonEmpty
+import           Data.Monoid                   ((<>))
 import qualified Data.Time.Calendar            as Time
 import qualified Data.Time.Clock               as Time
 import qualified Data.Word                     as Word
@@ -68,7 +69,7 @@ instance Arbitrary Difficulty where
 instance Arbitrary (Hash a) where
     arbitrary = unsafeFromByteString . BS.pack <$> vectorOf 64 hexChar
       where
-        hexChar = elements $ ['0' .. '9'] ++ ['a' .. 'f']
+        hexChar = elements $ ['0' .. '9'] <> ['a' .. 'f']
 
 instance Arbitrary Signature where
     arbitrary = Signature <$> arbitrarySig

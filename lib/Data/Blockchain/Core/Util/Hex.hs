@@ -4,9 +4,10 @@ module Data.Blockchain.Core.Util.Hex
     , hex256LeadingZeros
     ) where
 
-import qualified Control.Monad   as Monad
+import           Control.Monad   (unless)
 import qualified Data.Aeson      as Aeson
 import qualified Data.Maybe      as Maybe
+import           Data.Monoid     ((<>))
 import qualified Data.Text       as Text
 import qualified Data.Word       as Word
 import qualified Numeric
@@ -39,7 +40,7 @@ hex256LeadingZeros n = maxBound `div` Hex256 (16 ^ n)
 
 hex256 :: String -> Maybe Hex256
 hex256 str = do
-    Monad.unless (length str == 64) Nothing
+    unless (length str == 64) Nothing
     x <- readHexMaybe str
     return (Hex256 x)
 
@@ -54,4 +55,4 @@ showHex :: (Show a, Integral a) => a -> String
 showHex x = Numeric.showHex x mempty
 
 zeroPadded :: Int -> String -> String
-zeroPadded x str = replicate (x - length str) '0' ++ str
+zeroPadded x str = replicate (x - length str) '0' <> str

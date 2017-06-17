@@ -2,6 +2,7 @@ module Data.Blockchain.Core.Types.BlockchainConfigSpec (spec) where
 
 import           TestUtil
 
+import           Data.Monoid                   ((<>))
 import qualified Data.Time.Clock               as Time
 
 import           Data.Blockchain.Core.Types
@@ -44,7 +45,7 @@ spec = describe "Data.Blockchain.Core.Types.BlockchainConfig" $ do
             \block (Positive (n :: Int)) ->
                 let ratio              = toRational n / 600
                     lastBlock          = adjustTime (Time.addUTCTime $ fromIntegral n) block
-                    blocks             = replicate 9 block ++ pure lastBlock
+                    blocks             = replicate 9 block <> pure lastBlock
                     lastDiff           = difficulty (blockHeader block)
                     expectedDifficulty = Difficulty $ round (toRational lastDiff * ratio)
                 in targetDifficulty testConfig blocks === expectedDifficulty

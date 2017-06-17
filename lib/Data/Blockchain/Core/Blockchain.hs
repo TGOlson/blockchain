@@ -23,7 +23,7 @@ module Data.Blockchain.Core.Blockchain
     , flatten
     ) where
 
-import qualified Control.Monad                 as M
+import           Control.Monad                 (unless)
 import qualified Data.Aeson                    as Aeson
 import qualified Data.Aeson.Types              as Aeson
 import qualified Data.Char                     as Char
@@ -33,6 +33,7 @@ import qualified Data.Foldable                 as Foldable
 import qualified Data.HashMap.Strict           as H
 import qualified Data.List                     as List
 import qualified Data.List.NonEmpty            as NonEmpty
+import           Data.Monoid                   ((<>))
 import qualified Data.Ord                      as Ord
 import qualified Data.Word                     as Word
 import qualified GHC.Generics                  as Generic
@@ -145,7 +146,7 @@ addBlock newBlock (Blockchain config node) = Blockchain config <$> addBlockToNod
             let eBlockchains = fmap (\bs -> Either.mapLeft (\e -> (e, bs)) (addBlockToNode previousBlocks bs)) nodes in
             BlockchainNode block <$> reduceAddBlockResults eBlockchains
       where
-        previousBlocks = priorChain ++ pure block
+        previousBlocks = priorChain <> pure block
         -- TODO: block headers should contain a hash of themselves,
         -- so that we don't have to hash every single time
         isParentNode = Crypto.hash (blockHeader block) == prevBlockHeaderHash (blockHeader newBlock)
@@ -261,7 +262,7 @@ addressValues blockchain = H.fromListWith (+) (toPair <$> unspentTxOuts)
     unspentTxOuts = H.elems $ unspentTransactionOutputsInternal (NonEmpty.toList $ longestChain blockchain)
 
 unspentTransactionOutputs :: Blockchain Validated -> H.HashMap Crypto.PublicKey [(TransactionOutRef, TransactionOut)]
-unspentTransactionOutputs blockchain = H.fromListWith (++) (toPair <$> unspentTxOuts)
+unspentTransactionOutputs blockchain = H.fromListWith (<>) (toPair <$> unspentTxOuts)
   where
     toPair (txRef, txOut) = (signaturePubKey txOut, pure (txRef, txOut))
     unspentTxOuts = H.toList $ unspentTransactionOutputsInternal (NonEmpty.toList $ longestChain blockchain)
@@ -296,8 +297,8 @@ unspentTransactionOutputsInternal =
         txOutIndexed = zip (NonEmpty.toList txOuts) [0..]
         txOutRefPair = (\(txOut, i) -> (TransactionOutRef eHash i, txOut)) <$> txOutIndexed
 
-    onDuplicateTxOutRef txOutRef = error ("Unexpected error when computing transaction map - duplicate transaction: " ++ show txOutRef)
-    onNotFoundTxOutRef  txOutRef = error ("Unexpected error when computing transaction map - transaction not found: " ++ show txOutRef)
+    onDuplicateTxOutRef txOutRef = error ("Unexpected error when computing transaction map - duplicate transaction: " <> show txOutRef)
+    onNotFoundTxOutRef  txOutRef = error ("Unexpected error when computing transaction map - transaction not found: " <> show txOutRef)
 
 
 -- Chain inspection -----------------------------------------------------------------------------------------
@@ -322,7 +323,7 @@ flatten = flattenInternal . blockchainNode
 -- Utils ----------------------------------------------------------------------------------------------------
 
 verify :: Bool -> a -> Either a ()
-verify cond = M.unless cond . Left
+verify cond = unless cond . Left
 
 maybeToEither :: a -> Maybe b -> Either a b
 maybeToEither e = maybe (Left e) Right

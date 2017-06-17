@@ -17,6 +17,7 @@ import           Control.DeepSeq
 import qualified Data.Aeson                         as Aeson
 import qualified Data.ByteString                    as BS
 import qualified Data.Data                          as Data
+import           Data.Monoid                        ((<>))
 import qualified Data.Proxy                         as Proxy
 
 import           Data.Blockchain.ArbitraryInstances as X
@@ -32,7 +33,7 @@ propNumTests n tag = modifyMaxSuccess (const n) . prop tag
 -- Serialization Utils
 
 roundTripJSONSpec :: (Arbitrary a, Aeson.FromJSON a, Aeson.ToJSON a, Data.Typeable a, Show a, Eq a) => Proxy.Proxy a -> Spec
-roundTripJSONSpec proxy = prop ("should round-trip json serialize " ++ tag) $ testRoundTripJSON proxy
+roundTripJSONSpec proxy = prop ("should round-trip json serialize " <> tag) $ testRoundTripJSON proxy
   where
     tag = show (Data.typeRep proxy)
 
@@ -40,7 +41,7 @@ testRoundTripJSON :: (Aeson.FromJSON a, Aeson.ToJSON a, Show a, Eq a) => Proxy.P
 testRoundTripJSON _ x = Aeson.decode (Aeson.encode x) === Just x
 
 safeJSONDeserializeSpec :: (Aeson.FromJSON a, Show a, Data.Typeable a) => Proxy.Proxy a -> Spec
-safeJSONDeserializeSpec proxy = prop ("should be safe when deserializing " ++ tag) $ testSafeJSONDeserialize proxy
+safeJSONDeserializeSpec proxy = prop ("should be safe when deserializing " <> tag) $ testSafeJSONDeserialize proxy
   where
     tag = show (Data.typeRep proxy)
 

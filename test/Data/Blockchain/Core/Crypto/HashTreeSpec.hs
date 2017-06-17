@@ -4,11 +4,12 @@ import           TestUtil
 
 import qualified Data.ByteString             as BS
 import qualified Data.ByteString.Char8       as Char8
+import           Data.Monoid                 ((<>))
 
 import           Data.Blockchain.Core.Crypto
 
 testData :: [BS.ByteString]
-testData = replicate (numBytes `div` blockSize) block ++ [partialBlock]
+testData = replicate (numBytes `div` blockSize) block <> [partialBlock]
   where
     blockSize    = 64
     numBytes     = (2 ^ (22 :: Int)) + 32

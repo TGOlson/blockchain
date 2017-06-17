@@ -5,7 +5,7 @@ module Data.Blockchain.Core.Types.BlockchainConfig
     , targetDifficulty
     ) where
 
-import qualified Control.Monad                         as Monad
+import           Control.Monad                         (when)
 import qualified Data.Aeson                            as Aeson
 import qualified Data.Time.Clock                       as Time
 import qualified Data.Word                             as Word
@@ -47,13 +47,13 @@ targetReward config height = either id id $ do
     let initialReward = initialMiningReward config
         halveHeight   = miningRewardHalvingHeight config
 
-    Monad.when (halveHeight == 0) $ Left initialReward
+    when (halveHeight == 0) $ Left initialReward
 
     let numHalves = height `div` halveHeight
 
     -- 2^64 is greater than maxBound :: Word
     -- And any word halved 64 times will be zero
-    Monad.when (numHalves >= 64) $ Left 0
+    when (numHalves >= 64) $ Left 0
 
     return $ initialReward `div` (2 ^ numHalves)
 
