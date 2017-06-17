@@ -260,8 +260,10 @@ unspentTransactionOutputsInternal =
     foldr (\(Block _ coinbase txs) -> addTransactions txs . addCoinbaseTransaction coinbase) mempty
   where
     addCoinbaseTransaction :: CoinbaseTransaction -> H.HashMap TransactionOutRef TransactionOut -> H.HashMap TransactionOutRef TransactionOut
-    addCoinbaseTransaction coinbase = H.unionWith onDuplicateTxOutRef coinbaseTxOutRefMap
+    addCoinbaseTransaction coinbase = H.unionWith onDuplicate coinbaseTxOutRefMap
       where
+        -- TODO: revisit what it means to have duplicate coinbase transaction refs... probably ok?
+        onDuplicate (TransactionOut v1 key) (TransactionOut v2 _) = TransactionOut (v1 + v2) key
         coinbaseTxOutRefMap = makeTxOutRefMap (Left $ Crypto.hash coinbase) (coinbaseTransactionOut coinbase)
 
     addTransactions :: [Transaction] -> H.HashMap TransactionOutRef TransactionOut -> H.HashMap TransactionOutRef TransactionOut
