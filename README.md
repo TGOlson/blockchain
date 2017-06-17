@@ -27,8 +27,9 @@ Notable differences from Bitcoin blockchain:
 # todo
 
 Now
+* lenses over blockchain types
+* cleanup design doc and move general info to readme
 * add tests w/ transactions too `addBlock` test
-* generate test chain w/ transactions
 * implement `createTransaction`
 * function that validates transactions
   * https://en.bitcoin.it/wiki/Protocol_rules#.22tx.22_messages
