@@ -9,13 +9,13 @@ import           Data.Blockchain.Core.Builder.Transaction
 import           Data.Blockchain.Core.Crypto
 import           Data.Blockchain.Core.Types
 
-singletonBlockchainItems :: IO (Blockchain Validated, Block, PrivateKey)
-singletonBlockchainItems = do
-    blockchain <- singletonBlockchain
+blockchainItems :: IO (Blockchain Validated, KeyPair)
+blockchainItems = do
+    blockchain <- blockchain1Block
     block      <- block1A
     privateKey <- block1ACoinbasePrivateKey
 
-    return (blockchain, block, privateKey)
+    return (blockchain, KeyPair (coinbasePublicKey block) privateKey)
 
 -- TODO: lenses over blockchain?
 coinbasePublicKey :: Block -> PublicKey
@@ -26,31 +26,26 @@ spec = describe "Data.Blockchain.Core.Builder.Transaction" $
     describe "createSimpleTransaction" $ do
         propNumTests 5 "should create a valid transaction" $
             \(Small value) (Small fee) targetPublicKey -> value + fee < 100 ==> ioProperty $ do
-                (blockchain, block, privateKey) <- singletonBlockchainItems
-
-                let keyPair     = KeyPair (coinbasePublicKey block) privateKey
-                    blockchain' = throwLeft (addBlock block blockchain)
+                (blockchain, keyPair) <- blockchainItems
 
                 (Transaction txIn txOut) <- throwLeft <$>
-                    createSimpleTransaction keyPair targetPublicKey value fee blockchain'
+                    createSimpleTransaction keyPair targetPublicKey value fee blockchain
 
                 return $
                     length txIn == 1 &&
                     txOut == NonEmpty.fromList
-                        [ TransactionOut (100 - value - fee) (coinbasePublicKey block)
+                        [ TransactionOut (100 - value - fee) (publicKey keyPair)
                         , TransactionOut value targetPublicKey
                         ]
 
         propNumTests 5 "should not issue a refund if entire balance is spent" $
             \(Small value) targetPublicKey -> value < 100 ==> ioProperty $ do
-                (blockchain, block, privateKey) <- singletonBlockchainItems
+                (blockchain, keyPair) <- blockchainItems
 
-                let keyPair     = KeyPair (coinbasePublicKey block) privateKey
-                    blockchain' = throwLeft (addBlock block blockchain)
-                    fee         = 100 - value
+                let fee = 100 - value
 
                 (Transaction txIn txOut) <- throwLeft <$>
-                    createSimpleTransaction keyPair targetPublicKey value fee blockchain'
+                    createSimpleTransaction keyPair targetPublicKey value fee blockchain
 
                 return $
                     length txIn == 1 &&
@@ -58,31 +53,25 @@ spec = describe "Data.Blockchain.Core.Builder.Transaction" $
 
         propNumTests 5 "should reject transactions attempting to spend from empty address" $
             \(Small value) (Small fee) publicKey targetPublicKey -> value + fee < 100 ==> ioProperty $ do
-                (blockchain, block, privateKey) <- singletonBlockchainItems
+                (blockchain, KeyPair _ privKey) <- blockchainItems
 
-                let keyPair     = KeyPair publicKey privateKey
-                    blockchain' = throwLeft (addBlock block blockchain)
+                let keyPair = KeyPair publicKey privKey
 
-                res <- createSimpleTransaction keyPair targetPublicKey value fee blockchain'
+                res <- createSimpleTransaction keyPair targetPublicKey value fee blockchain
                 return $ res === Left SourceAddressEmpty
 
         propNumTests 5 "should reject transactions attempting to spend more than is available in the address" $
             \(MediumWord value) (MediumWord fee) targetPublicKey -> value + fee > 100 ==> ioProperty $ do
-                  (blockchain, block, privateKey) <- singletonBlockchainItems
+                  (blockchain, keyPair) <- blockchainItems
 
-                  let keyPair     = KeyPair (coinbasePublicKey block) privateKey
-                      blockchain' = throwLeft (addBlock block blockchain)
-
-                  res <- createSimpleTransaction keyPair targetPublicKey value fee blockchain'
+                  res <- createSimpleTransaction keyPair targetPublicKey value fee blockchain
                   return $ res === Left SourceAddressInsufficientFunds
 
         propNumTests 5 "should reject transactions with invalid private key" $
             \(Small value) (Small fee) privateKey targetPublicKey -> value + fee < 100 ==> ioProperty $ do
-                  blockchain <- singletonBlockchain
-                  block      <- block1A
+                  (blockchain, KeyPair pubKey _) <- blockchainItems
 
-                  let keyPair     = KeyPair (coinbasePublicKey block) privateKey
-                      blockchain' = throwLeft (addBlock block blockchain)
+                  let keyPair = KeyPair pubKey privateKey
 
-                  res <- createSimpleTransaction keyPair targetPublicKey value fee blockchain'
+                  res <- createSimpleTransaction keyPair targetPublicKey value fee blockchain
                   return $ res === Left InvalidPrivateKey
