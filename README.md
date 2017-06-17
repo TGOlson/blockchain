@@ -37,3 +37,4 @@ Now
 
 Later
 * Consider more efficient data format than json
+* Add block header hash as extra field on block headers for more efficient operations

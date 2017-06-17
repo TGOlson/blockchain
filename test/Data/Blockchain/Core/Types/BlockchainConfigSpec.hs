@@ -37,6 +37,11 @@ spec = describe "Data.Blockchain.Core.Types.BlockchainConfig" $ do
                 let reward = targetReward conf height
                 in  reward >= 0 && reward <= initialMiningReward conf
 
+        prop "should always use initial reward if recalc height it zero" $
+            \conf height ->
+                let conf' = conf { miningRewardHalvingHeight = 0 }
+                in targetReward conf' height == initialMiningReward conf
+
     describe "targetDifficulty" $ do
         prop "should use initial config when no blocks" $
             \conf -> targetDifficulty conf [] === initialDifficulty conf

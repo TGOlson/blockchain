@@ -17,7 +17,6 @@ blockchainItems = do
 
     return (blockchain, KeyPair (coinbasePublicKey block) privateKey)
 
--- TODO: lenses over blockchain?
 coinbasePublicKey :: Block -> PublicKey
 coinbasePublicKey = signaturePubKey . NonEmpty.head . coinbaseTransactionOut . coinbaseTransaction
 

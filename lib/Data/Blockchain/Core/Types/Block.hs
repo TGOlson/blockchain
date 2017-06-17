@@ -18,7 +18,6 @@ data Block = Block
     }
   deriving (Generic.Generic, Eq, Show)
 
--- TODO: add block header hash for more efficient hash comparison
 instance Aeson.FromJSON Block
 instance Aeson.ToJSON Block
 

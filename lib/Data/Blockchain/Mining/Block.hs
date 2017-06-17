@@ -65,6 +65,7 @@ mineBlockInternal pubKey reward diff1 difficulty prevBlockHeaderHash txs = do
   where
     coinbaseTx = Blockchain.CoinbaseTransaction $ pure (Blockchain.TransactionOut reward pubKey)
 
+-- TODO: could clean up param list by passing config down to this level
 mineHeader
     :: Crypto.Hash Blockchain.BlockHeader
     -> Crypto.Hash Blockchain.CoinbaseTransaction
@@ -84,12 +85,10 @@ mineHeader prevBlockHeaderHash coinbaseTransactionHash transactionHashTreeRoot d
     -- TODO: get current time in case of int overflow,
     -- or in case current mining operation is getting close to oldest block time
     mineHeaderInternal header =
-        -- TODO: need to pass config down to this level
         if Blockchain.blockHeaderHashDifficulty diff1 header >= difficulty
             then return header
             else mineHeaderInternal (incNonce header)
 
 
--- TODO: lenses
 incNonce :: Blockchain.BlockHeader -> Blockchain.BlockHeader
 incNonce header = header { Blockchain.nonce = Blockchain.nonce header + 1 }

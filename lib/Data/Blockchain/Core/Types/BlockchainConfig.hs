@@ -22,9 +22,7 @@ data BlockchainConfig = BlockchainConfig
     , targetSecondsPerBlock         :: Word.Word
     , difficultyRecalculationHeight :: Word.Word
     , initialMiningReward           :: Word.Word
-    -- Defines num blocks when reward is halved
-    -- `0` means reward never changes
-    -- TODO: should probably test that ^^
+    -- Defines num blocks when reward is halved --  `0` means reward never changes
     , miningRewardHalvingHeight     :: Word.Word
     }
   deriving (Generic.Generic, Eq, Show)

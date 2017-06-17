@@ -1,10 +1,9 @@
 module Data.Blockchain.Core.Builder.Transaction
     ( CreateTransactionException(..)
-    , createTransaction
+    -- , createTransaction
     , createSimpleTransaction
     ) where
 
--- TODO: better prelude
 import           Control.Monad                   (unless, when)
 import           Control.Monad.Trans.Class       (lift)
 
@@ -24,10 +23,11 @@ data CreateTransactionException
     | InvalidPrivateKey
   deriving (Eq, Show)
 
-createTransaction
-    :: [Crypto.KeyPair] -> [(Crypto.PublicKey, Int)] -> Int -> Blockchain.Blockchain Blockchain.Validated
-    -> Either CreateTransactionException Blockchain.Transaction
-createTransaction _srcs _targets _fee _blockchain = undefined
+-- TODO
+-- createTransaction
+--     :: [Crypto.KeyPair] -> [(Crypto.PublicKey, Int)] -> Int -> Blockchain.Blockchain Blockchain.Validated
+--     -> Either CreateTransactionException Blockchain.Transaction
+-- createTransaction _srcs _targets _fee _blockchain = undefined
 
 createSimpleTransaction
     :: Crypto.KeyPair -> Crypto.PublicKey

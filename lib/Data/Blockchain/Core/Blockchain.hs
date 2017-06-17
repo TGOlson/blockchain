@@ -149,8 +149,6 @@ addBlock newBlock (Blockchain config node) = Blockchain config <$> addBlockToNod
             BlockchainNode block <$> reduceAddBlockResults eBlockchains
       where
         previousBlocks = priorChain <> pure block
-        -- TODO: block headers should contain a hash of themselves,
-        -- so that we don't have to hash every single time
         isParentNode = Crypto.hash (blockHeader block) == prevBlockHeaderHash (blockHeader newBlock)
 
     -- Rules:
@@ -232,7 +230,6 @@ validateBlockTransactions (Block _header coinbaseTx txs) prevBlocks reward = do
 
     sequence_ (validateTransactionInternal prevBlocks <$> txs)
 
--- TODO: lenses
 txOutValue :: NonEmpty.NonEmpty TransactionOut -> Word.Word
 txOutValue = sum . fmap value
 
@@ -242,7 +239,6 @@ validateTransactionInternal prevBlocks (Transaction txIn txOut) = do
 
     prevTxOut <- sequence $ flip fmap txIn $ \(TransactionIn ref sig) -> do
         tx <- maybeToEither TransactionOutRefNotFound (H.lookup ref unspentTransactions)
-        -- TODO: should keep transaction signing & verification round-tripping in same place
         verify (verifyTransactionSignature sig tx) InvalidTransactionSignature
         return tx
 
