@@ -88,7 +88,7 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
 
             return $ addBlock block blockchain === Left NoParentFound
 
-        it "should reject a chain with invalid genesis block difficulty" $ once $ ioProperty $ do
+        it "should reject a block with invalid genesis block difficulty" $ once $ ioProperty $ do
             blockchain                  <- blockchain1Block
             (Block header coinbase txs) <- block2A
 
@@ -97,7 +97,7 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
 
             return $ addBlock block blockchain === Left InvalidDifficulty
 
-        it "should reject a chain with invalid coinbase reward in block" $ once $
+        it "should reject a block with invalid coinbase reward in block" $ once $
             \txOut -> ioProperty $ do
                 blockchain                   <- blockchain1Block
                 (Block header _coinbase txs) <- block2A
@@ -107,7 +107,7 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
 
                 return $ addBlock block blockchain === Left InvalidCoinbaseTransactionValue
 
-        it "should reject a chain with invalid coinbase hash in block header" $ once $
+        it "should reject a block with invalid coinbase hash in block header" $ once $
             \txOut -> ioProperty $ do
                 blockchain                   <- blockchain1Block
                 (Block header _coinbase txs) <- block2A
@@ -117,14 +117,47 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
 
                 return $ addBlock block blockchain === Left InvalidCoinbaseTransactionHash
 
-        -- it "should reject a chain with invalid transaction hash in block header" $ once $
+        -- it "should reject a block with invalid transaction hash in block header" $ once $
         --     \tx -> ioProperty $ do
         --         (blockchain, block) <- loadVerifiedTestBlockchainWithValidBlock
         --         let block' = block { transactions = pure tx }
         --
         --         return $ addBlock block' blockchain === Left InvalidTransactionHashTreeRoot
 
-        -- TODO: transaction testing.........
+        it "should reject a block with an invalid transaction out ref" $ once $
+            \txOutRef -> ioProperty $ do
+                blockchain                  <- blockchain1Block
+                (Block header coinbase txs) <- block2A
+
+                let (Transaction txIn txOut) = head txs
+                    txIn'                    = pure $ (NonEmpty.head txIn) { transactionOutRef = txOutRef }
+                    block                    = Block header coinbase $ pure $ Transaction txIn' txOut
+
+                return $ addBlock block blockchain === Left TransactionOutRefNotFound
+
+        it "should reject a block with an invalid transaction signature" $ once $
+            \sig -> ioProperty $ do
+                blockchain                  <- blockchain1Block
+                (Block header coinbase txs) <- block2A
+
+                let (Transaction txIn txOut) = head txs
+                    txIn'                    = pure $ (NonEmpty.head txIn) { signature = sig }
+                    block                    = Block header coinbase $ pure $ Transaction txIn' txOut
+
+                return $ addBlock block blockchain === Left InvalidTransactionSignature
+
+        it "should reject a block with an invalid transaction value" $ once $ ioProperty $ do
+            blockchain                  <- blockchain1Block
+            (Block header coinbase txs) <- block2A
+
+            let (Transaction txIn txOut) = head txs
+                txOut'                   = pure $ (NonEmpty.head txOut) { value = 999 }
+                block                    = Block header coinbase $ pure $ Transaction txIn txOut'
+
+            return $ addBlock block blockchain === Left InvalidTransactionValues
+
+        -- TODO: test
+        -- it "should reject a block with a duplicate transaction" $ once $ ioProperty $ do
 
     describe "addressValues" $
         it "should calculate unspent transaction outputs" $ once $ ioProperty $ do
