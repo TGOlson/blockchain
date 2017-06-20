@@ -37,7 +37,7 @@ $ ./scripts/test_stats <file-path>    -- print blockchain stats
 
 ## docs
 
-A blockchain is a config and a tree of blocks with each node having a potentially infinite set of branches. A `Blockchain` also includes a tag to note whether is has been verified to meet all the expected conditions -- `Blockchain Validated` or `Blockchain Unvalidated`.
+A blockchain is a config and a tree of blocks with each node having a potentially infinite set of branches. A `Blockchain` also includes a tag to note whether is has been verified to meet all the expected conditions -- `Blockchain Validated` or `Blockchain Unvalidated`. Docs are also available on [Hackage](https://hackage.haskell.org/package/blockchain).
 
 ```hs
 data Blockchain a = Blockchain
