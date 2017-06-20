@@ -1,17 +1,17 @@
 name:                blockchain
-version:             0.1.0.0
-synopsis:            Simple project template from stack
+version:             0.0.0.1
+synopsis:            Generic blockchain implementation.
 description:         Please see README.md
-homepage:            https://github.com/githubuser/blockchain#readme
+homepage:            https://github.com/TGOlson/blockchain
 license:             BSD3
-author:              Author name here
-maintainer:          example@example.com
-copyright:           2017 Author name here
-category:            Web
+author:              Tyler Olson
+maintainer:          tydotg@gmail.com
+copyright:           2017 Tyler Olson
+category:            Blockchain
 extra-source-files:
   - README.md
 
-ghc-options: -Wall -Werror
+ghc-options: -Wall
 
 default-extensions:
   - BangPatterns
