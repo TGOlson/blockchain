@@ -1,4 +1,4 @@
-module Data.Blockchain.TestData
+module TestData
     -- blockchains
     ( singletonBlockchainUnvalidated
     , singletonBlockchain
@@ -16,6 +16,7 @@ module Data.Blockchain.TestData
     -- utils
     , validate'
     , addBlock'
+    , readJSON
     , throwLeft
     ) where
 

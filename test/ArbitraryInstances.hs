@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module Data.Blockchain.ArbitraryInstances
+module ArbitraryInstances
     ( MediumWord(..)
     ) where
 

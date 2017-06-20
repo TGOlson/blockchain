@@ -1,2 +1,3 @@
 .stack-work
 blockchain.cabal
+data/test_*

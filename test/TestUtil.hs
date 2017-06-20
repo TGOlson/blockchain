@@ -7,21 +7,20 @@ module TestUtil
     , safeJSONDeserializeSpec
     ) where
 
-import           Test.Hspec                         as X
-import           Test.Hspec.QuickCheck              as X
-import           Test.QuickCheck                    as X hiding (Result, generate, labels, reason,
-                                                          theException)
-import           Test.QuickCheck.Property           as X
+import           Test.Hspec               as X
+import           Test.Hspec.QuickCheck    as X
+import           Test.QuickCheck          as X hiding (Result, generate, labels, reason, theException)
+import           Test.QuickCheck.Property as X
 
 import           Control.DeepSeq
-import qualified Data.Aeson                         as Aeson
-import qualified Data.ByteString                    as BS
-import qualified Data.Data                          as Data
-import           Data.Monoid                        ((<>))
-import qualified Data.Proxy                         as Proxy
+import qualified Data.Aeson               as Aeson
+import qualified Data.ByteString          as BS
+import qualified Data.Data                as Data
+import           Data.Monoid              ((<>))
+import qualified Data.Proxy               as Proxy
 
-import           Data.Blockchain.ArbitraryInstances as X
-import           Data.Blockchain.TestData           as X
+import           ArbitraryInstances       as X
+import           TestData                 as X
 
 
 propWithSize :: Testable prop => Int -> String -> prop -> Spec

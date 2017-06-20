@@ -1,0 +1,10 @@
+#!/bin/bash
+
+numMiners=$1
+
+if [ -z $numMiners ]
+  then echo "Error: must provide number of miners for mining test"
+  exit 1
+fi
+
+stack test --test-arguments "mine $numMiners"

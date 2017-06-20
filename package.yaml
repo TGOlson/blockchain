@@ -25,12 +25,11 @@ default-extensions:
   - ScopedTypeVariables
 
 dependencies:
-  - base >= 4.7 && < 5
   - aeson
+  - base >= 4.7 && < 5
   - byteable
   - bytestring
   - cryptonite
-  - deepseq
   - either
   - errors
   - hashable
@@ -58,15 +57,6 @@ library:
     - Data.Blockchain.Core.Util.Hex
     - Data.Blockchain.Mining.Block
     - Data.Blockchain.Mining.Blockchain
-    - Data.Blockchain.Test.Mining
-    - Data.Blockchain.Test.Stats
-
-executables:
-  blockchain:
-    main: Main.hs
-    source-dirs: exec
-    dependencies:
-      - blockchain
 
 tests:
   spec:
@@ -74,6 +64,8 @@ tests:
     source-dirs:
       - test
     dependencies:
+      - async
       - blockchain
+      - deepseq
       - hspec
       - QuickCheck
