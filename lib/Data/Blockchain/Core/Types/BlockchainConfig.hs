@@ -13,12 +13,12 @@ import qualified GHC.Generics                          as Generic
 
 import           Data.Blockchain.Core.Types.Block
 import           Data.Blockchain.Core.Types.Difficulty
-import qualified Data.Blockchain.Core.Util.Hex         as Hex
+import           Data.Blockchain.Core.Types.Hex
 
 data BlockchainConfig = BlockchainConfig
     { initialDifficulty             :: Difficulty
     -- Maximum hash - difficulties will be calculated using this value
-    , difficulty1Target             :: Hex.Hex256
+    , difficulty1Target             :: Hex256
     , targetSecondsPerBlock         :: Word.Word
     , difficultyRecalculationHeight :: Word.Word
     , initialMiningReward           :: Word.Word
@@ -30,10 +30,11 @@ data BlockchainConfig = BlockchainConfig
 instance Aeson.FromJSON BlockchainConfig
 instance Aeson.ToJSON BlockchainConfig
 
+-- Haddock TODO: show values
 defaultConfig :: BlockchainConfig
 defaultConfig = BlockchainConfig
     { initialDifficulty             = Difficulty 1
-    , difficulty1Target             = Hex.hex256LeadingZeros 4
+    , difficulty1Target             = hex256LeadingZeros 4
     , targetSecondsPerBlock         = 10
     , difficultyRecalculationHeight = 100
     , initialMiningReward           = 100
@@ -58,6 +59,7 @@ targetReward config height = either id id $ do
 -- TODO: array of blocks hold no assurances of expected invariants
 -- for example block1 could be created more recently than blockN
 -- should create a `SingleChain` wrapper
+-- TODO: take in entire blockchain
 targetDifficulty :: BlockchainConfig -> [Block] -> Difficulty
 targetDifficulty config []                                            = initialDifficulty config
 targetDifficulty config _ | difficultyRecalculationHeight config == 0 = initialDifficulty config

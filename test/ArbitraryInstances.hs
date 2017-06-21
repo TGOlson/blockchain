@@ -6,18 +6,17 @@ module ArbitraryInstances
 
 import           Test.QuickCheck
 
-import qualified Crypto.PubKey.ECC.ECDSA       as Crypto
-import qualified Crypto.PubKey.ECC.Types       as Crypto
-import qualified Data.ByteString.Char8         as BS
-import qualified Data.List.NonEmpty            as NonEmpty
-import           Data.Monoid                   ((<>))
-import qualified Data.Time.Calendar            as Time
-import qualified Data.Time.Clock               as Time
-import qualified Data.Word                     as Word
+import qualified Crypto.PubKey.ECC.ECDSA     as Crypto
+import qualified Crypto.PubKey.ECC.Types     as Crypto
+import qualified Data.ByteString.Char8       as BS
+import qualified Data.List.NonEmpty          as NonEmpty
+import           Data.Monoid                 ((<>))
+import qualified Data.Time.Calendar          as Time
+import qualified Data.Time.Clock             as Time
+import qualified Data.Word                   as Word
 
 import           Data.Blockchain.Core.Crypto
 import           Data.Blockchain.Core.Types
-import           Data.Blockchain.Core.Util.Hex
 
 -- Blockchain types
 

@@ -2,10 +2,10 @@ module Data.Blockchain.Core.Builder.TransactionSpec (spec) where
 
 import           TestUtil
 
-import qualified Data.List.NonEmpty                       as NonEmpty
+import qualified Data.List.NonEmpty              as NonEmpty
 
 import           Data.Blockchain.Core.Blockchain
-import           Data.Blockchain.Core.Builder.Transaction
+import           Data.Blockchain.Core.Builder
 import           Data.Blockchain.Core.Crypto
 import           Data.Blockchain.Core.Types
 

@@ -4,8 +4,7 @@ import           TestUtil
 
 import           Data.Blockchain.Core.Blockchain
 import           Data.Blockchain.Core.Types
-import           Data.Blockchain.Core.Util.Hex
-import           Data.Blockchain.Mining.Block
+import           Data.Blockchain.Mining
 
 spec :: Spec
 spec = describe "Data.Blockchain.Mining.Block" $ do

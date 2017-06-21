@@ -44,19 +44,10 @@ library:
   source-dirs: lib
   exposed-modules:
     - Data.Blockchain.Core.Blockchain
-    - Data.Blockchain.Core.Builder.Transaction
+    - Data.Blockchain.Core.Builder
     - Data.Blockchain.Core.Crypto
-    - Data.Blockchain.Core.Crypto.ECDSA
-    - Data.Blockchain.Core.Crypto.Hash
-    - Data.Blockchain.Core.Crypto.HashTree
     - Data.Blockchain.Core.Types
-    - Data.Blockchain.Core.Types.Block
-    - Data.Blockchain.Core.Types.BlockchainConfig
-    - Data.Blockchain.Core.Types.Difficulty
-    - Data.Blockchain.Core.Types.Transaction
-    - Data.Blockchain.Core.Util.Hex
-    - Data.Blockchain.Mining.Block
-    - Data.Blockchain.Mining.Blockchain
+    - Data.Blockchain.Mining
 
 tests:
   spec:

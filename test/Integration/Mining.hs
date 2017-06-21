@@ -2,20 +2,19 @@ module Integration.Mining
     ( mineTestChain
     ) where
 
-import qualified Control.Concurrent.Async          as Async
-import qualified Control.Concurrent.MVar           as MVar
-import           Control.Monad                     (forM, void)
-import qualified Data.Aeson                        as Aeson
-import qualified Data.ByteString.Lazy              as Lazy
-import qualified Data.List.NonEmpty                as NonEmpty
-import           Data.Monoid                       ((<>))
-import qualified Data.Time.Clock                   as Time
+import qualified Control.Concurrent.Async        as Async
+import qualified Control.Concurrent.MVar         as MVar
+import           Control.Monad                   (forM, void)
+import qualified Data.Aeson                      as Aeson
+import qualified Data.ByteString.Lazy            as Lazy
+import qualified Data.List.NonEmpty              as NonEmpty
+import           Data.Monoid                     ((<>))
+import qualified Data.Time.Clock                 as Time
 
-import qualified Data.Blockchain.Core.Blockchain   as B
-import qualified Data.Blockchain.Core.Crypto       as Crypto
-import qualified Data.Blockchain.Core.Types        as B
-import qualified Data.Blockchain.Mining.Block      as Mining
-import qualified Data.Blockchain.Mining.Blockchain as Mining
+import qualified Data.Blockchain.Core.Blockchain as B
+import qualified Data.Blockchain.Core.Crypto     as Crypto
+import qualified Data.Blockchain.Core.Types      as B
+import qualified Data.Blockchain.Mining          as Mining
 
 data MinerSpec = MinerSpec
     { mid               :: Int

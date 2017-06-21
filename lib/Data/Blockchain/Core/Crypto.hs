@@ -1,7 +1,9 @@
 module Data.Blockchain.Core.Crypto
-    ( module X
+    ( module Data.Blockchain.Core.Crypto.ECDSA
+    , module Data.Blockchain.Core.Crypto.Hash
+    , module Data.Blockchain.Core.Crypto.HashTree
     ) where
 
-import           Data.Blockchain.Core.Crypto.ECDSA    as X
-import           Data.Blockchain.Core.Crypto.Hash     as X
-import           Data.Blockchain.Core.Crypto.HashTree as X
+import           Data.Blockchain.Core.Crypto.ECDSA
+import           Data.Blockchain.Core.Crypto.Hash
+import           Data.Blockchain.Core.Crypto.HashTree

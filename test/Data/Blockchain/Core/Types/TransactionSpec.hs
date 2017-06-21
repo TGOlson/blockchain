@@ -2,8 +2,8 @@ module Data.Blockchain.Core.Types.TransactionSpec (spec) where
 
 import           TestUtil
 
-import           Data.Blockchain.Core.Crypto.ECDSA
-import           Data.Blockchain.Core.Types.Transaction
+import           Data.Blockchain.Core.Crypto
+import           Data.Blockchain.Core.Types
 
 spec :: Spec
 spec =

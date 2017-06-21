@@ -1,4 +1,4 @@
-module Data.Blockchain.Core.Builder.Transaction
+module Data.Blockchain.Core.Builder
     ( CreateTransactionException(..)
     -- , createTransaction
     , createSimpleTransaction
@@ -29,6 +29,8 @@ data CreateTransactionException
 --     -> Either CreateTransactionException Blockchain.Transaction
 -- createTransaction _srcs _targets _fee _blockchain = undefined
 
+-- Haddock TODO: why simple? what does this mean
+-- add docs for what each field in type signature means
 createSimpleTransaction
     :: Crypto.KeyPair -> Crypto.PublicKey
     -> Word.Word -> Word.Word -> Blockchain.Blockchain Blockchain.Validated

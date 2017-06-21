@@ -8,17 +8,17 @@ module Data.Blockchain.Core.Crypto.ECDSA
     , generate
     ) where
 
-import qualified Crypto.Hash                   as Crypto
-import qualified Crypto.PubKey.ECC.ECDSA       as Crypto
-import qualified Crypto.PubKey.ECC.Generate    as Crypto
-import qualified Crypto.PubKey.ECC.Types       as Crypto
-import qualified Data.Aeson                    as Aeson
-import qualified Data.ByteString               as BS
-import qualified Data.Hashable                 as H
-import           Data.Monoid                   ((<>))
-import qualified Data.Text                     as Text
+import qualified Crypto.Hash                    as Crypto
+import qualified Crypto.PubKey.ECC.ECDSA        as Crypto
+import qualified Crypto.PubKey.ECC.Generate     as Crypto
+import qualified Crypto.PubKey.ECC.Types        as Crypto
+import qualified Data.Aeson                     as Aeson
+import qualified Data.ByteString                as BS
+import qualified Data.Hashable                  as H
+import           Data.Monoid                    ((<>))
+import qualified Data.Text                      as Text
 
-import           Data.Blockchain.Core.Util.Hex
+import           Data.Blockchain.Core.Types.Hex
 
 -- Types -----------------------------------------------------------------------------------------------------
 

@@ -1,4 +1,4 @@
-module Data.Blockchain.Core.Util.Hex
+module Data.Blockchain.Core.Types.Hex
     ( Hex256(..)
     , hex256
     , hex256LeadingZeros
@@ -35,6 +35,7 @@ instance Aeson.FromJSON Hex256 where
 
 -- Construction helpers --------------------------------------------------------------------------------------
 
+-- Haddock TODO: example, why useful?
 hex256LeadingZeros :: Word.Word -> Hex256
 hex256LeadingZeros n = maxBound `div` Hex256 (16 ^ n)
 

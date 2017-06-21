@@ -23,24 +23,25 @@ module Data.Blockchain.Core.Blockchain
     , flatten
     ) where
 
-import           Control.Monad                 (unless)
-import qualified Data.Aeson                    as Aeson
-import qualified Data.Aeson.Types              as Aeson
-import qualified Data.Char                     as Char
-import qualified Data.Either                   as Either
-import qualified Data.Either.Combinators       as Either
-import qualified Data.Foldable                 as Foldable
-import qualified Data.HashMap.Strict           as H
-import qualified Data.List                     as List
-import qualified Data.List.NonEmpty            as NonEmpty
-import           Data.Monoid                   ((<>))
-import qualified Data.Ord                      as Ord
-import qualified Data.Word                     as Word
-import qualified GHC.Generics                  as Generic
+-- Haddock TODO: ordering/sections of exports ^^^ similar to comments
 
-import qualified Data.Blockchain.Core.Crypto   as Crypto
+import           Control.Monad               (unless)
+import qualified Data.Aeson                  as Aeson
+import qualified Data.Aeson.Types            as Aeson
+import qualified Data.Char                   as Char
+import qualified Data.Either                 as Either
+import qualified Data.Either.Combinators     as Either
+import qualified Data.Foldable               as Foldable
+import qualified Data.HashMap.Strict         as H
+import qualified Data.List                   as List
+import qualified Data.List.NonEmpty          as NonEmpty
+import           Data.Monoid                 ((<>))
+import qualified Data.Ord                    as Ord
+import qualified Data.Word                   as Word
+import qualified GHC.Generics                as Generic
+
+import qualified Data.Blockchain.Core.Crypto as Crypto
 import           Data.Blockchain.Core.Types
-import qualified Data.Blockchain.Core.Util.Hex as Hex
 
 -- Types ----------------------------------------------------------------------------------------------------
 
@@ -191,7 +192,7 @@ validateBlockDifficulty header config blocks = do
 -- Exported util
 -- TODO: find better place for this function
 
-blockHeaderHashDifficulty :: Hex.Hex256 -> BlockHeader -> Difficulty
+blockHeaderHashDifficulty :: Hex256 -> BlockHeader -> Difficulty
 blockHeaderHashDifficulty diff1 header = fromIntegral $ diff1 `div` Crypto.hashToHex (Crypto.hash header)
 
 

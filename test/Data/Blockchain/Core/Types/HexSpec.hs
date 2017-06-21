@@ -1,8 +1,8 @@
-module Data.Blockchain.Core.Util.HexSpec (spec) where
+module Data.Blockchain.Core.Types.HexSpec (spec) where
 
 import           TestUtil
 
-import           Data.Blockchain.Core.Util.Hex
+import           Data.Blockchain.Core.Types
 
 spec :: Spec
 spec =

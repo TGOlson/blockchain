@@ -13,13 +13,12 @@ import qualified Data.Word                       as Word
 import qualified Data.Blockchain.Core.Blockchain as Blockchain
 import qualified Data.Blockchain.Core.Crypto     as Crypto
 import qualified Data.Blockchain.Core.Types      as Blockchain
-import qualified Data.Blockchain.Core.Util.Hex   as Hex
 
 data MineBlockException
     = InvalidTransactionList
-    -- | ...
   deriving (Eq, Show)
 
+-- Haddock TODO: comment about why public is neccessary
 mineBlock
     :: Crypto.PublicKey -> [Blockchain.Transaction] -> Blockchain.Blockchain Blockchain.Validated
     -> IO (Either MineBlockException Blockchain.Block)
@@ -36,13 +35,13 @@ mineBlock pubKey txs blockchain =
     prevBlock           = NonEmpty.last prevBlocks
     prevBlockHeaderHash = Crypto.hash (Blockchain.blockHeader prevBlock)
 
-
+-- Haddock TODO: why useful?
 mineEmptyBlock
     :: Crypto.PublicKey -> Blockchain.Blockchain Blockchain.Validated
     -> IO (Either MineBlockException Blockchain.Block)
 mineEmptyBlock pubKey = mineBlock pubKey mempty
 
-
+-- Haddock TODO: how can you ues this?
 mineGenesisBlock :: Blockchain.BlockchainConfig -> IO Blockchain.Block
 mineGenesisBlock config = do
     -- Note: ignore private key, coinbase reward in genesis block cannot be spent
@@ -57,7 +56,7 @@ mineGenesisBlock config = do
 
 -- TODO: accept multiple public keys
 mineBlockInternal
-    :: Crypto.PublicKey -> Word.Word -> Hex.Hex256 -> Blockchain.Difficulty
+    :: Crypto.PublicKey -> Word.Word -> Blockchain.Hex256 -> Blockchain.Difficulty
     -> Crypto.Hash Blockchain.BlockHeader -> [Blockchain.Transaction]
     -> IO Blockchain.Block
 mineBlockInternal pubKey reward diff1 difficulty prevBlockHeaderHash txs = do
@@ -79,7 +78,7 @@ mineHeader
     :: Crypto.Hash Blockchain.BlockHeader
     -> Crypto.Hash Blockchain.CoinbaseTransaction
     -> Crypto.HashTreeRoot Blockchain.Transaction
-    -> Hex.Hex256
+    -> Blockchain.Hex256
     -> Blockchain.Difficulty
     -> IO Blockchain.BlockHeader
 mineHeader prevBlockHeaderHash coinbaseTransactionHash transactionHashTreeRoot diff1 difficulty = do

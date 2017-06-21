@@ -2,9 +2,9 @@ module Data.Blockchain.Core.Types.DifficultySpec (spec) where
 
 import           TestUtil
 
-import qualified Data.Aeson                            as Aeson
+import qualified Data.Aeson                 as Aeson
 
-import           Data.Blockchain.Core.Types.Difficulty
+import           Data.Blockchain.Core.Types
 
 spec :: Spec
 spec =

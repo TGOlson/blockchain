@@ -2,11 +2,10 @@ module Data.Blockchain.Core.Types.BlockchainConfigSpec (spec) where
 
 import           TestUtil
 
-import           Data.Monoid                   ((<>))
-import qualified Data.Time.Clock               as Time
+import           Data.Monoid                ((<>))
+import qualified Data.Time.Clock            as Time
 
 import           Data.Blockchain.Core.Types
-import           Data.Blockchain.Core.Util.Hex
 
 testConfig :: BlockchainConfig
 testConfig = BlockchainConfig
