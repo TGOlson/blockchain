@@ -5,6 +5,7 @@ module ArbitraryInstances
     ) where
 
 import           Test.QuickCheck
+import           Test.QuickCheck.Arbitrary
 
 import qualified Crypto.PubKey.ECC.ECDSA     as Crypto
 import qualified Crypto.PubKey.ECC.Types     as Crypto
@@ -14,6 +15,7 @@ import           Data.Monoid                 ((<>))
 import qualified Data.Time.Calendar          as Time
 import qualified Data.Time.Clock             as Time
 import qualified Data.Word                   as Word
+import qualified Numeric.Natural             as Natural
 
 import           Data.Blockchain.Core.Crypto
 import           Data.Blockchain.Core.Types
@@ -109,6 +111,9 @@ instance Arbitrary Time.UTCTime where
 newtype MediumWord = MediumWord Word.Word deriving (Eq, Show)
 instance Arbitrary MediumWord where
     arbitrary = elements $ MediumWord <$> [0..1000]
+
+instance Arbitrary Natural.Natural where
+    arbitrary = arbitrarySizedNatural
 
 -- Utils
 

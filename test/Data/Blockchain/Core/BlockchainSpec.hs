@@ -12,7 +12,7 @@ import           Data.Blockchain.Core.Types
 
 spec :: Spec
 spec = describe "Data.Blockchain.Core.Blockchain" $ do
-    it "should serialize and validate round-trip" $ once $ ioProperty $ do
+    it "should serialize and validate round-trip" $ ioProperty $ do
         chain <- blockchain3Block
 
         let unverifiedBlockchain = throwLeft $ Aeson.eitherDecode (Aeson.encode chain)
@@ -20,14 +20,14 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
         return $ validate unverifiedBlockchain === Right chain
 
     describe "validate" $ do
-        it "should reject a chain with invalid difficulty reference in genesis block" $ once $ ioProperty $ do
+        it "should reject a chain with invalid difficulty reference in genesis block" $ ioProperty $ do
             chain <- singletonBlockchainUnvalidated
             let config = (blockchainConfig chain) { initialDifficulty = minBound }
                 chain' = construct config (blockchainNode chain)
 
             return $ validate chain' === Left (BlockValidationException InvalidDifficultyReference)
 
-        it "should reject a chain with invalid genesis block difficulty" $ once $ ioProperty $ do
+        it "should reject a chain with invalid genesis block difficulty" $ ioProperty $ do
             chain <- singletonBlockchainUnvalidated
 
             let (BlockchainNode block nodes) = blockchainNode chain
@@ -37,7 +37,7 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
 
             return $ validate chain' === Left (BlockValidationException InvalidDifficulty)
 
-        it "should reject a chain with transactions in genesis block" $ once $
+        prop "should reject a chain with transactions in genesis block" $ once $
             \tx -> ioProperty $ do
                 chain <- singletonBlockchainUnvalidated
 
@@ -47,7 +47,7 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
 
                 return $ validate chain' === Left GenesisBlockHasTransactions
 
-        it "should reject a chain with invalid coinbase reward in genesis block" $ once $
+        prop "should reject a chain with invalid coinbase reward in genesis block" $ once $
             \txOut -> ioProperty $ do
                 chain <- singletonBlockchainUnvalidated
 
@@ -58,7 +58,7 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
 
                 return $ validate chain' === Left (BlockValidationException InvalidCoinbaseTransactionValue)
 
-        it "should reject a chain with invalid coinbase hash in genesis block header" $ once $
+        prop "should reject a chain with invalid coinbase hash in genesis block header" $ once $
             \txOut -> ioProperty $ do
                 chain <- singletonBlockchainUnvalidated
 
@@ -70,25 +70,25 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
                 return $ validate chain' === Left (BlockValidationException InvalidCoinbaseTransactionHash)
 
         -- TODO: test if possible, hard to do with empty transaction rule & expected header hash
-        -- it "should reject a chain with invalid transaction hash in genesis block header" $ once $
+        -- prop "should reject a chain with invalid transaction hash in genesis block header" $
 
     describe "addBlock" $ do
         -- Note: adding valid blocks is already tested by generating by loading test data
-        -- it "should add a valid block" ...
+        -- prop "should add a valid block" ...
 
-        it "should reject a duplicate block" $ once $ ioProperty $ do
+        it "should reject a duplicate block" $ ioProperty $ do
             blockchain <- blockchain1Block
             block      <- block1A
 
             return $ addBlock block blockchain === Left BlockAlreadyExists
 
-        it "should reject a block without a parent" $ once $ ioProperty $ do
+        it "should reject a block without a parent" $ ioProperty $ do
             blockchain <- singletonBlockchain
             block      <- block2A
 
             return $ addBlock block blockchain === Left NoParentFound
 
-        it "should reject a block with invalid genesis block difficulty" $ once $ ioProperty $ do
+        it "should reject a block with invalid genesis block difficulty" $ ioProperty $ do
             blockchain                  <- blockchain1Block
             (Block header coinbase txs) <- block2A
 
@@ -97,7 +97,7 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
 
             return $ addBlock block blockchain === Left InvalidDifficulty
 
-        it "should reject a block with invalid coinbase reward in block" $ once $
+        prop "should reject a block with invalid coinbase reward in block" $ once $
             \txOut -> ioProperty $ do
                 blockchain                   <- blockchain1Block
                 (Block header _coinbase txs) <- block2A
@@ -107,7 +107,7 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
 
                 return $ addBlock block blockchain === Left InvalidCoinbaseTransactionValue
 
-        it "should reject a block with invalid coinbase hash in block header" $ once $
+        prop "should reject a block with invalid coinbase hash in block header" $ once $
             \txOut -> ioProperty $ do
                 blockchain                   <- blockchain1Block
                 (Block header _coinbase txs) <- block2A
@@ -117,14 +117,14 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
 
                 return $ addBlock block blockchain === Left InvalidCoinbaseTransactionHash
 
-        -- it "should reject a block with invalid transaction hash in block header" $ once $
+        -- prop "should reject a block with invalid transaction hash in block header" $
         --     \tx -> ioProperty $ do
         --         (blockchain, block) <- loadVerifiedTestBlockchainWithValidBlock
         --         let block' = block { transactions = pure tx }
         --
         --         return $ addBlock block' blockchain === Left InvalidTransactionHashTreeRoot
 
-        it "should reject a block with an invalid transaction out ref" $ once $
+        prop "should reject a block with an invalid transaction out ref" $ once $
             \txOutRef -> ioProperty $ do
                 blockchain                  <- blockchain1Block
                 (Block header coinbase txs) <- block2A
@@ -135,10 +135,12 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
 
                 return $ addBlock block blockchain === Left TransactionOutRefNotFound
 
-        it "should reject a block with an invalid transaction signature" $ once $
+        prop "should reject a block with an invalid transaction signature" $ once $
             \sig -> ioProperty $ do
                 blockchain                  <- blockchain1Block
                 (Block header coinbase txs) <- block2A
+
+                putStrLn "testing"
 
                 let (Transaction txIn txOut) = head txs
                     txIn'                    = pure $ (NonEmpty.head txIn) { signature = sig }
@@ -146,7 +148,7 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
 
                 return $ addBlock block blockchain === Left InvalidTransactionSignature
 
-        it "should reject a block with an invalid transaction value" $ once $ ioProperty $ do
+        it "should reject a block with an invalid transaction value" $ ioProperty $ do
             blockchain                  <- blockchain1Block
             (Block header coinbase txs) <- block2A
 
@@ -157,10 +159,10 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
             return $ addBlock block blockchain === Left InvalidTransactionValues
 
         -- TODO: test
-        -- it "should reject a block with a duplicate transaction" $ once $ ioProperty $ do
+        -- prop "should reject a block with a duplicate transaction" $ ioProperty $ do
 
     describe "addressValues" $
-        it "should calculate unspent transaction outputs" $ once $ ioProperty $ do
+        it "should calculate unspent transaction outputs" $ ioProperty $ do
             blockchain <- blockchain3Block
 
             return $ showKeys (addressValues blockchain) === H.fromList
@@ -173,7 +175,7 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
                 ]
 
     describe "flatten" $
-        it "should flatten the blockchain" $ once $ ioProperty $ do
+        it "should flatten the blockchain" $ ioProperty $ do
             blockchain <- blockchain3Block
             b0         <- genesisBlock
             b1a        <- block1A
@@ -186,7 +188,7 @@ spec = describe "Data.Blockchain.Core.Blockchain" $ do
                     ]
 
     describe "longestChain" $
-        it "should find the longest chain" $ once $ ioProperty $ do
+        it "should find the longest chain" $ ioProperty $ do
             blockchain   <- blockchain1Block
             blockchain'  <- blockchain2BlockFork
             blockchain'' <- blockchain3Block

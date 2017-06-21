@@ -1,6 +1,10 @@
-resolver: lts-7.19
+resolver: lts-8.19
+
 packages:
 - '.'
-extra-deps: []
+
+extra-deps:
+- QuickCheck-2.10.0.1 # current stackage version has bug in "once" function
+
 flags: {}
 extra-package-dbs: []
