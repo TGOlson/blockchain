@@ -1,5 +1,5 @@
 module Data.Blockchain.Mining.Blockchain
-    ( createBlockchain
+    ( mineBlockchain
     ) where
 
 import           Data.Monoid                     ((<>))
@@ -8,9 +8,10 @@ import qualified Data.Blockchain.Core.Blockchain as Blockchain
 import qualified Data.Blockchain.Core.Types      as Blockchain
 import           Data.Blockchain.Mining.Block
 
-
-createBlockchain :: Blockchain.BlockchainConfig -> IO (Blockchain.Blockchain Blockchain.Validated)
-createBlockchain config = either throwValidationError id <$> do
+-- | Creates a blockchain from the given config.
+-- This includes mining a genesis block.
+mineBlockchain :: Blockchain.BlockchainConfig -> IO (Blockchain.Blockchain Blockchain.Validated)
+mineBlockchain config = either throwValidationError id <$> do
     genesisBlock <- mineGenesisBlock config
 
     let node  = Blockchain.BlockchainNode genesisBlock mempty

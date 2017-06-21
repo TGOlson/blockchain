@@ -35,7 +35,12 @@ instance Aeson.FromJSON Hex256 where
 
 -- Construction helpers --------------------------------------------------------------------------------------
 
--- Haddock TODO: example, why useful?
+-- | Create a Hex256 value with the specificed amount of leading zeros.
+-- Useful for creating a 'Data.Blockchain.Core.Types.BlockchainConfig.difficulty1Target' when creating a blockchain.
+--
+-- >>> hex256LeadingZeros 4
+-- 0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+--
 hex256LeadingZeros :: Word.Word -> Hex256
 hex256LeadingZeros n = maxBound `div` Hex256 (16 ^ n)
 

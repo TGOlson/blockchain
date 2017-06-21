@@ -18,9 +18,11 @@ data MineBlockException
     = InvalidTransactionList
   deriving (Eq, Show)
 
--- Haddock TODO: comment about why public is neccessary
+-- | Finds the next block of a blockchain. Depending on blockchain configuration, this function may take a long time to complete.
 mineBlock
-    :: Crypto.PublicKey -> [Blockchain.Transaction] -> Blockchain.Blockchain Blockchain.Validated
+    :: Crypto.PublicKey         -- ^ PublicKey address where coinbase reward will be sent
+    -> [Blockchain.Transaction] -- ^ List of transactions to include in transaction
+    -> Blockchain.Blockchain Blockchain.Validated -- ^ Validated blockchain
     -> IO (Either MineBlockException Blockchain.Block)
 mineBlock pubKey txs blockchain =
     case Blockchain.validateTransactions blockchain txs of
@@ -35,16 +37,20 @@ mineBlock pubKey txs blockchain =
     prevBlock           = NonEmpty.last prevBlocks
     prevBlockHeaderHash = Crypto.hash (Blockchain.blockHeader prevBlock)
 
--- Haddock TODO: why useful?
+-- | Finds the next block of a blockchain, without including any transactions.
+-- Most useful for testing - removes the invariant of an invalid transaction list.
+-- Depending on blockchain configuration, this function may take a long time to complete.
 mineEmptyBlock
-    :: Crypto.PublicKey -> Blockchain.Blockchain Blockchain.Validated
+    :: Crypto.PublicKey -- ^ PublicKey address where coinbase reward will be sent
+    -> Blockchain.Blockchain Blockchain.Validated -- ^ Validated blockchain
     -> IO (Either MineBlockException Blockchain.Block)
 mineEmptyBlock pubKey = mineBlock pubKey mempty
 
--- Haddock TODO: how can you ues this?
+-- | Finds the first block of a blockchain.
+-- Depending on blockchain configuration, this function may take a long time to complete.
+-- Note: this generates a keypair but throws away the private key. Coinbase reward in genesis block cannot never be spent.
 mineGenesisBlock :: Blockchain.BlockchainConfig -> IO Blockchain.Block
 mineGenesisBlock config = do
-    -- Note: ignore private key, coinbase reward in genesis block cannot be spent
     (Crypto.KeyPair pubKey _privKey) <- Crypto.generate
 
     mineBlockInternal pubKey reward diff1 difficulty prevBlockHeaderHash mempty

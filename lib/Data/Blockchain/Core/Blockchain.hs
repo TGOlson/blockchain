@@ -1,5 +1,4 @@
 module Data.Blockchain.Core.Blockchain
-    -- Types
     ( Validated
     , Unvalidated
     , Blockchain
@@ -8,22 +7,20 @@ module Data.Blockchain.Core.Blockchain
     , BlockchainNode(..)
     , ValidationException(..)
     , BlockException(..)
-    -- Construction
+    -- * Construction
     , construct
     , validate
     , addBlock
-    -- Validation
+    -- * Validation
     , validateTransaction
     , validateTransactions
-    -- Chain inspection
+    -- * Chain inspection
     , blockHeaderHashDifficulty
     , addressValues
     , unspentTransactionOutputs
     , longestChain
     , flatten
     ) where
-
--- Haddock TODO: ordering/sections of exports ^^^ similar to comments
 
 import           Control.Monad               (unless)
 import qualified Data.Aeson                  as Aeson
@@ -48,6 +45,11 @@ import           Data.Blockchain.Core.Types
 data Validated
 data Unvalidated
 
+-- | Core blockchain data type. Uses a validation tag to declare if it is known to abide by expected blockchain rules.
+-- Will be either @'Blockchain' 'Validated'@ or @'Blockchain' 'Unvalidated'@.
+--
+-- Note: both @'Blockchain' 'Validated'@ and @'Blockchain' 'Unvalidated'@ can be serialized to json,
+-- while only @'Blockchain' 'Unvalidated'@ can be deserialized from json.
 data Blockchain a = Blockchain
     { _config :: BlockchainConfig
     , _node   :: BlockchainNode
@@ -106,10 +108,12 @@ data BlockException
 
 -- Construction ---------------------------------------------------------------------------------------------
 
+-- | Constructs an unvalidated blockchain from a config and a node.
+-- Allows arbitrary blockchains to be constructed. However, blockchains are generally not useful until validated.
 construct :: BlockchainConfig -> BlockchainNode -> Blockchain Unvalidated
 construct = Blockchain
 
-
+-- | Validates a blockchain. Returns a 'ValidationException' if provided blockchain does not meet expected rules.
 validate :: Blockchain Unvalidated -> Either ValidationException (Blockchain Validated)
 validate (Blockchain config (BlockchainNode genesisBlock nodes)) = do
     let (Block header _coinbase txs) = genesisBlock
@@ -125,7 +129,7 @@ validate (Blockchain config (BlockchainNode genesisBlock nodes)) = do
   where
     getBlocks (BlockchainNode block ns) = block : (ns >>= getBlocks)
 
-
+-- | Adds a block to a validated blockchain. Returns a 'BlockException' if block is not able to be inserted into the blockchain.
 addBlock :: Block -> Blockchain Validated -> Either BlockException (Blockchain Validated)
 addBlock newBlock (Blockchain config node) = Blockchain config <$> addBlockToNode mempty node
   where

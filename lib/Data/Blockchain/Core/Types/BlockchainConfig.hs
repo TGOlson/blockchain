@@ -30,17 +30,32 @@ data BlockchainConfig = BlockchainConfig
 instance Aeson.FromJSON BlockchainConfig
 instance Aeson.ToJSON BlockchainConfig
 
--- Haddock TODO: show values
+-- | A reasonable default config to use for testing. Mines blocks quickly and changes difficulty and rewards frequently.
+-- Note: reward will go to zero after 1100 blocks, which will take about 180 minutes of mining.
+--
+-- @
+-- defaultConfig :: BlockchainConfig
+-- defaultConfig = BlockchainConfig
+--     { initialDifficulty             = Difficulty 1
+--     , difficulty1Target             = hex256LeadingZeros 4
+--     , targetSecondsPerBlock         = 10
+--     , difficultyRecalculationHeight = 50
+--     , initialMiningReward           = 1024
+--     , miningRewardHalvingHeight     = 100
+--     }
+-- @
+--
 defaultConfig :: BlockchainConfig
 defaultConfig = BlockchainConfig
     { initialDifficulty             = Difficulty 1
     , difficulty1Target             = hex256LeadingZeros 4
     , targetSecondsPerBlock         = 10
-    , difficultyRecalculationHeight = 100
-    , initialMiningReward           = 100
-    , miningRewardHalvingHeight     = 500
+    , difficultyRecalculationHeight = 50
+    , initialMiningReward           = 1024
+    , miningRewardHalvingHeight     = 100
     }
 
+-- | Calculates the target reward for a blockchain. Uses the longest chain.
 targetReward :: BlockchainConfig -> Word.Word -> Word.Word
 targetReward config height = either id id $ do
     let initialReward = initialMiningReward config
@@ -60,6 +75,7 @@ targetReward config height = either id id $ do
 -- for example block1 could be created more recently than blockN
 -- should create a `SingleChain` wrapper
 -- TODO: take in entire blockchain
+-- | Calculates the target difficulty for a blockchain. Uses the longest chain.
 targetDifficulty :: BlockchainConfig -> [Block] -> Difficulty
 targetDifficulty config []                                            = initialDifficulty config
 targetDifficulty config _ | difficultyRecalculationHeight config == 0 = initialDifficulty config

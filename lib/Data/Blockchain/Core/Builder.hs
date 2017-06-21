@@ -1,6 +1,5 @@
 module Data.Blockchain.Core.Builder
     ( CreateTransactionException(..)
-    -- , createTransaction
     , createSimpleTransaction
     ) where
 
@@ -29,11 +28,13 @@ data CreateTransactionException
 --     -> Either CreateTransactionException Blockchain.Transaction
 -- createTransaction _srcs _targets _fee _blockchain = undefined
 
--- Haddock TODO: why simple? what does this mean
--- add docs for what each field in type signature means
+-- | Create a transaction from a single public key address.
 createSimpleTransaction
-    :: Crypto.KeyPair -> Crypto.PublicKey
-    -> Word.Word -> Word.Word -> Blockchain.Blockchain Blockchain.Validated
+    :: Crypto.KeyPair   -- ^ KeyPair for source address. PrivateKey will be used to sign transaction.
+    -> Crypto.PublicKey -- ^ Target address
+    -> Word.Word        -- ^ Transaction value
+    -> Word.Word        -- ^ Fee
+    -> Blockchain.Blockchain Blockchain.Validated -- ^ Validated blockchain
     -> IO (Either CreateTransactionException Blockchain.Transaction)
 createSimpleTransaction (Crypto.KeyPair srcPubKey srcPrivKey) targetPubKey value fee blockchain = Except.runExceptT $ do
     let unspentTransactionOutputs = Blockchain.unspentTransactionOutputs blockchain

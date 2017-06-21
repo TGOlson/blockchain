@@ -40,8 +40,7 @@ instance Crypto.ToHash CoinbaseTransaction
 
 data TransactionIn = TransactionIn
     { transactionOutRef :: TransactionOutRef
-     -- Signature from prev transaction, using pubkey from prev transaction
-    , signature         :: Crypto.Signature
+    , signature         :: Crypto.Signature -- ^ Signature from prev transaction, using pubkey from prev transaction
     }
   deriving (Generic.Generic, Eq, Show)
 
@@ -49,7 +48,7 @@ instance Aeson.ToJSON TransactionIn
 instance Aeson.FromJSON TransactionIn
 instance Crypto.ToHash TransactionIn
 
--- Pointer to a specific TransactionOut
+-- | Pointer to a specific TransactionOut
 data TransactionOutRef = TransactionOutRef
     { transactionHash     :: Either (Crypto.Hash CoinbaseTransaction) (Crypto.Hash Transaction)
     , transactionOutIndex :: Word.Word
@@ -63,7 +62,7 @@ instance Aeson.ToJSON TransactionOutRef
 
 data TransactionOut = TransactionOut
     { value           :: Word.Word
-    , signaturePubKey :: Crypto.PublicKey -- aka. address of where funds go
+    , signaturePubKey :: Crypto.PublicKey -- ^ Address of where funds go
     }
   deriving (Generic.Generic, Eq, Show)
 

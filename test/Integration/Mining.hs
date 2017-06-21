@@ -41,7 +41,7 @@ runTestMultiMiner
     -> (Int -> B.Blockchain B.Validated -> IO ()) -> IO ()
 runTestMultiMiner numMiners config persist = do
     putStrLn "Creating blockchain and mining genesis block"
-    blockchain <- Mining.createBlockchain config
+    blockchain <- Mining.mineBlockchain config
 
     let idList = [1..numMiners]
 
