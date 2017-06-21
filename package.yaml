@@ -60,3 +60,4 @@ tests:
       - deepseq
       - hspec
       - QuickCheck
+      - quickcheck-instances

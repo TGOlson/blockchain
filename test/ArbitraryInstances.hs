@@ -5,17 +5,13 @@ module ArbitraryInstances
     ) where
 
 import           Test.QuickCheck
-import           Test.QuickCheck.Arbitrary
+import           Test.QuickCheck.Instances   ()
 
 import qualified Crypto.PubKey.ECC.ECDSA     as Crypto
 import qualified Crypto.PubKey.ECC.Types     as Crypto
 import qualified Data.ByteString.Char8       as BS
-import qualified Data.List.NonEmpty          as NonEmpty
 import           Data.Monoid                 ((<>))
-import qualified Data.Time.Calendar          as Time
-import qualified Data.Time.Clock             as Time
 import qualified Data.Word                   as Word
-import qualified Numeric.Natural             as Natural
 
 import           Data.Blockchain.Core.Crypto
 import           Data.Blockchain.Core.Types
@@ -94,26 +90,9 @@ instance Arbitrary PrivateKey where
 instance Arbitrary Hex256 where
     arbitrary = Hex256 <$> arbitrary
 
-instance Arbitrary a => Arbitrary (NonEmpty.NonEmpty a) where
-    arbitrary = NonEmpty.fromList <$> listOf1 arbitrary
-
-instance Arbitrary BS.ByteString where
-    arbitrary = BS.pack <$> arbitrary
-
-instance Arbitrary Time.UTCTime where
-    arbitrary = Time.UTCTime <$> dayDen <*> dayTimeGen
-      where
-        -- The Modified Julian Day is a standard count of days, with zero being the day 1858-11-17.
-        dayDen     = Time.ModifiedJulianDay <$> elements [0 .. 60000]
-        -- The time from midnight, 0 <= t < 86401s (because of leap-seconds)
-        dayTimeGen = Time.secondsToDiffTime <$> elements [0 .. 86400]
-
 newtype MediumWord = MediumWord Word.Word deriving (Eq, Show)
 instance Arbitrary MediumWord where
     arbitrary = elements $ MediumWord <$> [0..1000]
-
-instance Arbitrary Natural.Natural where
-    arbitrary = arbitrarySizedNatural
 
 -- Utils
 
