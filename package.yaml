@@ -35,6 +35,7 @@ dependencies:
   - hashable
   - memory
   - mtl
+  - semigroups # for ghc 7.10
   - text
   - time
   - transformers

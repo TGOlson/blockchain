@@ -1,5 +1,9 @@
 # blockchain
 
+[![Build Status](https://travis-ci.org/TGOlson/blockchain.svg?branch=master)](https://travis-ci.org/TGOlson/blockchain)
+
+[Available on Hackage](https://hackage.haskell.org/package/blockchain)
+
 Generic blockchain implementation in Haskell. Heavily inspired by Bitcoin blockchain, but does not fully comply to the Bitcoin blockchain spec. Should be suitable for creating arbitrary Bitcoin-like blockchains with in various configurations.
 
 Build
@@ -37,7 +41,7 @@ $ ./scripts/test_stats <file-path>    -- print blockchain stats
 
 ## docs
 
-A blockchain is a config and a tree of blocks with each node having a potentially infinite set of branches. A `Blockchain` also includes a tag to note whether is has been verified to meet all the expected conditions -- `Blockchain Validated` or `Blockchain Unvalidated`. Docs are also available on [Hackage](https://hackage.haskell.org/package/blockchain).
+A blockchain is a config and a tree of blocks with each node having a potentially infinite set of branches. A `Blockchain` also includes a tag to note whether is has been verified to meet all the expected conditions -- `Blockchain Validated` or `Blockchain Unvalidated`.
 
 ```hs
 data Blockchain a = Blockchain
@@ -78,6 +82,7 @@ mineBlock :: PublicKey -> [Transaction] -> Blockchain Validated -> IO (Either Mi
 * Implement max transaction count per block
 * Cache block header hash on block (and maybe transactions) for more efficient operations
   * Maybe cache on the blockchain itself, and `validate` computes/checks hashes?
+* Run lint in CI
 
 ## references
 
