@@ -12,7 +12,6 @@ import qualified Data.Word              as Word
 
 import qualified Data.Blockchain        as Blockchain
 import qualified Data.Blockchain.Crypto as Crypto
-import qualified Data.Blockchain.Types  as Blockchain
 
 data MineBlockException
     = InvalidTransactionList

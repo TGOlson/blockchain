@@ -1,9 +1,9 @@
 module Data.Blockchain.Types.TransactionSpec (spec) where
 
-import           TestUtil
+import TestUtil
 
-import           Data.Blockchain.Crypto
-import           Data.Blockchain.Types
+import Data.Blockchain.Crypto
+import Data.Blockchain.Types
 
 spec :: Spec
 spec =

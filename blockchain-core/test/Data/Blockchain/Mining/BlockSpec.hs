@@ -1,9 +1,9 @@
 module Data.Blockchain.Mining.BlockSpec (spec) where
 
-import           TestUtil
+import TestUtil
 
-import           Data.Blockchain
-import           Data.Blockchain.Mining
+import Data.Blockchain
+import Data.Blockchain.Mining
 
 spec :: Spec
 spec = describe "Data.Blockchain.Mining.Block" $ do

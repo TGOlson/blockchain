@@ -38,6 +38,7 @@ import qualified Data.Word                              as Word
 import qualified GHC.Generics                           as Generic
 
 import qualified Data.Blockchain.Crypto                 as Crypto
+
 import           Data.Blockchain.Types.Block
 import           Data.Blockchain.Types.BlockchainConfig
 import           Data.Blockchain.Types.Difficulty

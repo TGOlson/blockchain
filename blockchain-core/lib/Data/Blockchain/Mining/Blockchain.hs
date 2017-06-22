@@ -6,7 +6,6 @@ import           Data.Monoid                  ((<>))
 
 import qualified Data.Blockchain              as Blockchain
 import           Data.Blockchain.Mining.Block
-import qualified Data.Blockchain.Types        as Blockchain
 
 -- | Creates a blockchain from the given config.
 -- This includes mining a genesis block.

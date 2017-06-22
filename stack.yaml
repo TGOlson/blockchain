@@ -1,11 +1,12 @@
 resolver: lts-8.19
 
 packages:
-- blockchain-core
+  - blockchain-core
+  - blockchain-node
 
 extra-deps:
-- QuickCheck-2.10.0.1 # current stackage version has bug in "once" function
-- quickcheck-instances-0.3.16
+  - QuickCheck-2.10.0.1 # current stackage version has bug in "once" function
+  - quickcheck-instances-0.3.16
 
 flags: {}
 extra-package-dbs: []

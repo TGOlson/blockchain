@@ -4,6 +4,6 @@ module Data.Blockchain
     , module Data.Blockchain.Types
     ) where
 
-import           Data.Blockchain.Builder
-import           Data.Blockchain.Crypto
-import           Data.Blockchain.Types
+import Data.Blockchain.Builder
+import Data.Blockchain.Crypto
+import Data.Blockchain.Types

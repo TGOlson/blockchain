@@ -7,9 +7,9 @@ module Data.Blockchain.Types
     , module Data.Blockchain.Types.Transaction
     ) where
 
-import           Data.Blockchain.Types.Block
-import           Data.Blockchain.Types.Blockchain
-import           Data.Blockchain.Types.BlockchainConfig
-import           Data.Blockchain.Types.Difficulty
-import           Data.Blockchain.Types.Hex
-import           Data.Blockchain.Types.Transaction
+import Data.Blockchain.Types.Block
+import Data.Blockchain.Types.Blockchain
+import Data.Blockchain.Types.BlockchainConfig
+import Data.Blockchain.Types.Difficulty
+import Data.Blockchain.Types.Hex
+import Data.Blockchain.Types.Transaction
