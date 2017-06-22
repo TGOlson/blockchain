@@ -1,25 +1,17 @@
 # blockchain
 
-Top level repository for blockchain packages.
+[![Build Status](https://travis-ci.org/TGOlson/blockchain.svg?branch=master)](https://travis-ci.org/TGOlson/blockchain)
 
-`blockchain-core`
+Top level repository for Haskell blockchain packages.
 
-_module `Data.Blockchain`_
+* [blockchain-core](blockchain-core)
 
 Base types and logic for blockchain operations.
 
-`blockchain-node`
+* [blockchain-node](blockchain-node) -- TODO
 
-_module `Network.Blockchain.Node`_
+Network client that creates blocks, verifies entities and persists the blockchain.
 
--- TODO
-
-Network client that creates new blocks, and verifies and persists the blockchain.
-
-`blockchain-wallet`
-
-_module `Network.Blockchain.Wallet`_
-
--- TODO
+* [blockchain-wallet](blockchain-wallet) -- TODO
 
 Network client that creates transactions and monitors changes to a known address.

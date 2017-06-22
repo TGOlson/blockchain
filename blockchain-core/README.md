@@ -1,7 +1,5 @@
 # blockchain-core
 
-[![Build Status](https://travis-ci.org/TGOlson/blockchain.svg?branch=master)](https://travis-ci.org/TGOlson/blockchain)
-
 [Available on Hackage](https://hackage.haskell.org/package/blockchain)
 
 Generic blockchain implementation in Haskell. Heavily inspired by Bitcoin blockchain, but does not fully comply to the Bitcoin blockchain spec. Should be suitable for creating arbitrary Bitcoin-like blockchains with in various configurations.
