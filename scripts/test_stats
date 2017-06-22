@@ -7,4 +7,4 @@ if [ -z $path ]
   exit 1
 fi
 
-stack test --test-arguments "stats $path"
+stack test blockchain-core --test-arguments "stats ../$path"

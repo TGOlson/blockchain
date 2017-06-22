@@ -7,4 +7,4 @@ if [ -z $numMiners ]
   exit 1
 fi
 
-stack test --test-arguments "mine $numMiners"
+stack test blockchain-core --test-arguments "mine $numMiners"
