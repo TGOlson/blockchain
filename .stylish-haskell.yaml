@@ -168,6 +168,7 @@ newline: native
 # No language extensions are enabled by default.
 language_extensions:
   - BangPatterns
+  - DataKinds
   - DefaultSignatures
   - DeriveGeneric
   - GeneralizedNewtypeDeriving
@@ -175,3 +176,4 @@ language_extensions:
   - OverloadedStrings
   - RecordWildCards
   - ScopedTypeVariables
+  - TypeOperators

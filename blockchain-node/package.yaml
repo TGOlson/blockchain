@@ -15,6 +15,7 @@ ghc-options: -Wall
 
 default-extensions:
   - BangPatterns
+  - DataKinds
   - DefaultSignatures
   - DeriveGeneric
   - FlexibleInstances
@@ -23,11 +24,17 @@ default-extensions:
   - OverloadedStrings
   - RecordWildCards
   - ScopedTypeVariables
+  - TypeOperators
 
 dependencies:
   - aeson
   - base >= 4.7 && < 5
   - blockchain-core
+  - bytestring
+  - mtl
+  - servant-server
+  - stm
+  - warp
 
 executables:
   blockchain-node:
