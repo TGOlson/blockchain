@@ -28,6 +28,7 @@ default-extensions:
 
 dependencies:
   - aeson
+  - async
   - base >= 4.7 && < 5
   - blockchain-core
   - bytestring
