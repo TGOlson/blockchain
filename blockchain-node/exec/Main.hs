@@ -1,6 +1,7 @@
 module Main (main) where
 
-import qualified Network.Blockchain.Node
+import Network.Blockchain.Node (runNode)
+import Options.Generic         (unwrapRecord)
 
 main :: IO ()
-main = Network.Blockchain.Node.main
+main = unwrapRecord "Blockchain node" >>= runNode

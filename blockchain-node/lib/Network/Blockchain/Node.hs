@@ -1,5 +1,5 @@
 module Network.Blockchain.Node
-    ( main
+    ( runNode
     ) where
 
 import qualified Control.Concurrent.Async    as Async
@@ -10,24 +10,24 @@ import           Control.Monad.Trans         (liftIO)
 import           Data.Aeson
 import           Data.Blockchain
 import qualified Data.ByteString.Lazy        as Lazy
+import           Data.Maybe                  (fromMaybe)
 import           Data.Monoid                 ((<>))
 import           Data.Proxy                  (Proxy (..))
+import           Network.Blockchain.API      (NodeAPI)
 import qualified Network.Wai.Handler.Warp    as Warp
+import           Options.Generic
 import           Servant
-import           System.Environment          (getArgs)
 
-type NodeAPI
-    =    "blockchain" :> Get  '[JSON] (Blockchain Validated)
-    -- TODO: get block by hash
-    :<|> "block" :> ReqBody '[JSON] Block :> Post '[JSON] ()
-    :<|> "transaction" :> ReqBody '[JSON] Transaction :> Post '[JSON] ()
-    :<|> "transaction-pool" :> Get '[JSON] [Transaction]
 
-data Args = Args
-    { blockchainPath :: FilePath
-    , runAsMiner     :: Bool
-    , port           :: Int
+data Args w = Args
+    { path       :: w ::: FilePath        <?> "Path where the blockchain is stored locally"
+    , runAsMiner :: w ::: Bool            <?> "Run node as a full mining client"
+    , port       :: w ::: Maybe Warp.Port <?> "Port to run node - defaults to 8000"
     }
+  deriving (Generic)
+
+instance ParseRecord (Args Wrapped)
+deriving instance Show (Args Unwrapped)
 
 data NodeConfig = NodeConfig
     { blockchainVar   :: TVar (Blockchain Validated)
@@ -40,23 +40,13 @@ newtype Logger = Logger { runLogger :: String -> IO () }
 nodeAPI :: Proxy NodeAPI
 nodeAPI = Proxy
 
- -- TODO: opt-parse or something
-parseArgs :: IO Args
-parseArgs = getArgs >>= \case
-    [blockchainPath] -> return Args{..}
-    _                -> error "Invalid input args"
-  where
-    runAsMiner = True
-    port       = 8000
 
-main :: IO ()
-main = do
-    Args{..} <- parseArgs
-
+runNode :: Args Unwrapped -> IO ()
+runNode Args{..} = do
     let logger = Logger putStrLn
-    runLogger logger $ "Running node using blockchain at path: " <> blockchainPath
+    runLogger logger $ "Running node using blockchain at path: " <> path
 
-    bs <- Lazy.readFile blockchainPath
+    bs <- Lazy.readFile path
 
     blockchainUnvalidated <- either
         (\e -> error $ "Error: unable to decode blockchain: " <> show e)
@@ -69,12 +59,13 @@ main = do
     blockchainVar   <- newTVarIO blockchain
     transactionPool <- newTVarIO mempty
 
-    serverAsync <- Async.async $ runServer port NodeConfig{..}
+    serverAsync <- Async.async $ runServer NodeConfig{..}
     minerAsync  <- Async.async $ runMining undefined
 
     void (Async.waitAny [serverAsync, minerAsync])
   where
-    runServer p = Warp.run p . serve nodeAPI . server
+    runServer = Warp.run port' . serve nodeAPI . server
+    port'     = fromMaybe 8000 port
     runMining _x = undefined
         -- TODO: args
         --  chan of new blocks - on new block, stop mining, integrate block, then get back to mining!

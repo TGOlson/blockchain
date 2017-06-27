@@ -24,15 +24,18 @@ default-extensions:
   - OverloadedStrings
   - RecordWildCards
   - ScopedTypeVariables
+  - StandaloneDeriving
   - TypeOperators
 
 dependencies:
   - aeson
   - async
   - base >= 4.7 && < 5
+  - blockchain-api
   - blockchain-core
   - bytestring
   - mtl
+  - optparse-generic
   - servant-server
   - stm
   - warp
