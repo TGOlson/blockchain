@@ -38,6 +38,7 @@ dependencies:
   - optparse-generic
   - servant-server
   - stm
+  - time
   - warp
 
 executables:

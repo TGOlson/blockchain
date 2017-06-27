@@ -2,26 +2,30 @@ module Network.Blockchain.Node
     ( runNode
     ) where
 
-import qualified Control.Concurrent.Async    as Async
-import           Control.Concurrent.STM      (atomically)
+import qualified Control.Concurrent.Async        as Async
+import           Control.Concurrent.STM          (atomically)
+import           Control.Concurrent.STM.TChan
 import           Control.Concurrent.STM.TVar
 import           Control.Monad
-import           Control.Monad.Trans         (liftIO)
+import           Control.Monad.Trans             (liftIO)
 import           Data.Aeson
 import           Data.Blockchain
-import qualified Data.ByteString.Lazy        as Lazy
-import           Data.Maybe                  (fromMaybe)
-import           Data.Monoid                 ((<>))
-import           Data.Proxy                  (Proxy (..))
-import           Network.Blockchain.API      (NodeAPI)
-import qualified Network.Wai.Handler.Warp    as Warp
+import qualified Data.ByteString.Lazy            as Lazy
+import           Data.Maybe                      (fromMaybe)
+import           Data.Monoid                     ((<>))
+import           Data.Proxy                      (Proxy (..))
+import           Data.Time.Clock                 (getCurrentTime)
+import           Network.Blockchain.API          (NodeAPI)
+import qualified Network.Wai.Handler.Warp        as Warp
 import           Options.Generic
 import           Servant
 
+import           Network.Blockchain.Node.Logging (Logger (..), stdOutLogger)
+import           Network.Blockchain.Node.Mining  (runMining)
 
 data Args w = Args
     { path       :: w ::: FilePath        <?> "Path where the blockchain is stored locally"
-    , runAsMiner :: w ::: Bool            <?> "Run node as a full mining client"
+    , pubKey     :: w ::: Lazy.ByteString <?> "Public key to use when mining- TODO: make optional to disable mining"
     , port       :: w ::: Maybe Warp.Port <?> "Port to run node - defaults to 8000"
     }
   deriving (Generic)
@@ -35,15 +39,12 @@ data NodeConfig = NodeConfig
     , logger          :: Logger
     }
 
-newtype Logger = Logger { runLogger :: String -> IO () }
-
 nodeAPI :: Proxy NodeAPI
 nodeAPI = Proxy
 
 
 runNode :: Args Unwrapped -> IO ()
 runNode Args{..} = do
-    let logger = Logger putStrLn
     runLogger logger $ "Running node using blockchain at path: " <> path
 
     bs <- Lazy.readFile path
@@ -59,19 +60,26 @@ runNode Args{..} = do
     blockchainVar   <- newTVarIO blockchain
     transactionPool <- newTVarIO mempty
 
-    serverAsync <- Async.async $ runServer NodeConfig{..}
-    minerAsync  <- Async.async $ runMining undefined
 
-    void (Async.waitAny [serverAsync, minerAsync])
+    blockchainChan <- newTChanIO
+    blockChan      <- newTChanIO
+
+    let receiveBlockchain = atomically $ readTChan blockchainChan
+        sendBlock         = atomically . writeTChan blockChan
+
+    serverAsync <- Async.async $ runServer NodeConfig{..}
+    minerAsync  <- Async.async $ runMining logger pubKey' receiveBlockchain sendBlock transactionPool blockchain
+    blockchainUpdatesAsync <- Async.async $ forever $ do
+        (_block, blockchain') <- atomically $ readTChan blockChan
+        atomically $ writeTVar blockchainVar blockchain'
+
+
+    void (Async.waitAny [serverAsync, minerAsync, blockchainUpdatesAsync])
   where
     runServer = Warp.run port' . serve nodeAPI . server
     port'     = fromMaybe 8000 port
-    runMining _x = undefined
-        -- TODO: args
-        --  chan of new blocks - on new block, stop mining, integrate block, then get back to mining!
-        --  pubkey to mine to
-        --  what to do when a block is found
-        --    probably an output chan, where other side posts to known connected clients
+    logger    = stdOutLogger
+    !pubKey'  = fromMaybe (error "Invalid publicKey") $ head <$> decode  ("[\"" <> pubKey <> "\"]")
 
 -- TODO: ReaderT
 -- TODO: request logging
