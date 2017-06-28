@@ -11,6 +11,7 @@ import           Control.Monad.Trans             (liftIO)
 import           Data.Aeson
 import           Data.Blockchain
 import qualified Data.ByteString.Lazy            as Lazy
+import           Data.Either.Combinators         (fromRight, mapLeft)
 import           Data.Maybe                      (fromMaybe)
 import           Data.Monoid                     ((<>))
 import           Data.Proxy                      (Proxy (..))
@@ -19,114 +20,93 @@ import           Network.Blockchain.API          (NodeAPI)
 import qualified Network.Wai.Handler.Warp        as Warp
 import           Options.Generic
 import           Servant
+import           Servant.Client
 
-import           Network.Blockchain.Node.Logging (Logger (..), stdOutLogger)
-import           Network.Blockchain.Node.Mining  (runMining)
+import           Network.Blockchain.Node.Logging
+import           Network.Blockchain.Node.Mining
+import           Network.Blockchain.Node.Server
 
-data Args w = Args
-    { path       :: w ::: FilePath        <?> "Path where the blockchain is stored locally"
-    , pubKey     :: w ::: Lazy.ByteString <?> "Public key to use when mining- TODO: make optional to disable mining"
-    , port       :: w ::: Maybe Warp.Port <?> "Port to run node - defaults to 8000"
+data RawArgs w = RawArgs
+    { path   :: w ::: FilePath        <?> "Path where the blockchain is stored locally"
+    , pubKey :: w ::: Lazy.ByteString <?> "Public key to use when mining- TODO: make optional to disable mining"
+    , port   :: w ::: Maybe Warp.Port <?> "Port to run node - defaults to 8000"
+    , client :: w ::: [String]        <?> "List of network clients to send and receive updates"
     }
   deriving (Generic)
 
-instance ParseRecord (Args Wrapped)
-deriving instance Show (Args Unwrapped)
+instance ParseRecord (RawArgs Wrapped)
+deriving instance Show (RawArgs Unwrapped)
 
-data NodeConfig = NodeConfig
-    { blockchainVar   :: TVar (Blockchain Validated)
-    , transactionPool :: TVar [Transaction]
-    , logger          :: Logger
+data ParsedArgs = ParsedArgs
+    { blockchainPath :: FilePath
+    , miningPubKey   :: PublicKey
+    , nodePort       :: Warp.Port
+    , networkClients :: [BaseUrl]
     }
+  deriving (Show)
 
-nodeAPI :: Proxy NodeAPI
-nodeAPI = Proxy
+parseArgs :: RawArgs Unwrapped -> Either String ParsedArgs
+parseArgs RawArgs{..} = do
+    let blockchainPath = path
+        nodePort       = fromMaybe defaultPort port
 
+    miningPubKey   <- head <$> eitherDecode ("[\"" <> pubKey <> "\"]")
+    networkClients <- maybeToEither "Unable to parse client list" $ mapM parseBaseUrl client
 
-runNode :: Args Unwrapped -> IO ()
-runNode Args{..} = do
-    runLogger logger $ "Running node using blockchain at path: " <> path
+    return ParsedArgs{..}
+  where
+    defaultPort = 8000
 
-    bs <- Lazy.readFile path
+runNode :: RawArgs Unwrapped -> IO ()
+runNode rawArgs = do
+    let logger = stdOutLogger
 
-    blockchainUnvalidated <- either
-        (\e -> error $ "Error: unable to decode blockchain: " <> show e)
-        return (eitherDecode bs)
+    runLogger logger $ "Raw input args\n\t" <> show rawArgs
+    let !args@ParsedArgs{..} = throwLeftTagged "Error parsing input args\n\t" $ parseArgs rawArgs
 
-    blockchain <- either
-        (\e -> error $ "Error: invalid blockchain: " <> show e)
-        return (validate blockchainUnvalidated)
+    runLogger logger $ "Running node using parsed args\n\t" <> show args
 
+    blockchain      <- throwLeftTagged "Error loading blockchain\n\t" <$> loadBlockchain blockchainPath
     blockchainVar   <- newTVarIO blockchain
     transactionPool <- newTVarIO mempty
 
+    receiveBlockchainChan <- newTChanIO
+    sendBlockChan         <- newTChanIO
 
-    blockchainChan <- newTChanIO
-    blockChan      <- newTChanIO
+    let receiveBlockchain = atomically $ readTChan receiveBlockchainChan
+        sendBlock         = atomically . writeTChan sendBlockChan
 
-    let receiveBlockchain = atomically $ readTChan blockchainChan
-        sendBlock         = atomically . writeTChan blockChan
+    -- web server thread
+    serverAsync <- Async.async $ runServer nodePort ServerConfig{..}
 
-    serverAsync <- Async.async $ runServer NodeConfig{..}
-    minerAsync  <- Async.async $ runMining logger pubKey' receiveBlockchain sendBlock transactionPool blockchain
-    blockchainUpdatesAsync <- Async.async $ forever $ do
-        (_block, blockchain') <- atomically $ readTChan blockChan
+    -- mining thread
+    minerAsync <- Async.async $ runMining logger miningPubKey receiveBlockchain sendBlock transactionPool blockchain
+
+    -- miner updates thread
+    minerUpdatesAsync <- Async.async $ forever $ do
+        -- TODO: broadcast blocks to other clients
+        (_block, blockchain') <- atomically $ readTChan sendBlockChan
         atomically $ writeTVar blockchainVar blockchain'
 
+    -- TODO: network updates thread
 
-    void (Async.waitAny [serverAsync, minerAsync, blockchainUpdatesAsync])
+    void (Async.waitAny [serverAsync, minerAsync, minerUpdatesAsync])
+
+
+runServer :: Warp.Port -> ServerConfig -> IO ()
+runServer p = Warp.run p . serve nodeAPI . server
   where
-    runServer = Warp.run port' . serve nodeAPI . server
-    port'     = fromMaybe 8000 port
-    logger    = stdOutLogger
-    !pubKey'  = fromMaybe (error "Invalid publicKey") $ head <$> decode  ("[\"" <> pubKey <> "\"]")
+    nodeAPI = Proxy :: Proxy NodeAPI
 
--- TODO: ReaderT
--- TODO: request logging
-server :: NodeConfig -> Server NodeAPI
-server config = getBlockchain config
-           :<|> insertBlock config
-           :<|> addTransaction config
-           :<|> getTransactionPool config
+loadBlockchain :: FilePath -> IO (Either String (Blockchain Validated))
+loadBlockchain = fmap (eitherDecode' >=> mapLeft show . validate) . Lazy.readFile
 
-getBlockchain :: NodeConfig -> Handler (Blockchain Validated)
-getBlockchain = liftIO . readTVarIO . blockchainVar
 
-getTransactionPool :: NodeConfig -> Handler [Transaction]
-getTransactionPool = liftIO . readTVarIO . transactionPool
+throwLeft :: Either String b -> b
+throwLeft = either error id
 
-insertBlock :: NodeConfig -> Block -> Handler ()
-insertBlock config block = do
-    blockchain <- getBlockchain config
+throwLeftTagged :: String -> Either String b -> b
+throwLeftTagged tag = either (\e -> error $ tag <> e) id
 
-    case addBlock block blockchain of
-        Right blockchain' -> liftIO $ atomically $ writeTVar (blockchainVar config) blockchain' -- TODO: persist, use sqlite
-        Left e            -> throwError (addBlockError e)
-
-addTransaction :: NodeConfig -> Transaction -> Handler ()
-addTransaction config transaction = do
-    blockchain <- getBlockchain config
-
-    -- TODO: make sure we don't already have txin in pool
-    case validateTransaction blockchain transaction of
-        Right ()                       -> addToTransactionPool
-        -- `InvalidTransactionValues` and `TransactionOutRefNotFound` could be issues of timing and/or ordering
-        -- Add to transaction pool incase new transactions come in or chain flips to a sub-chain.
-        -- If the transactions are indeed invalid they will get cleared out later during pool pruning.
-        Left InvalidTransactionValues  -> addToTransactionPool
-        Left TransactionOutRefNotFound -> addToTransactionPool
-        Left e                         -> throwError (addTransactionError e)
-  where
-    addToTransactionPool = liftIO $ atomically $ modifyTVar' (transactionPool config) (\txs -> transaction:txs)
-
-addBlockError :: BlockException -> ServantErr
-addBlockError e = err400 { errBody = body }
-  where
-    body = encode $ object [ "error" .= msg ]
-    msg  = "Invalid block: " <> show e
-
-addTransactionError :: BlockException -> ServantErr
-addTransactionError e = err400 { errBody = body }
-  where
-    body = encode $ object [ "error" .= msg ]
-    msg  = "Invalid transaction: " <> show e
+maybeToEither :: a -> Maybe b -> Either a b
+maybeToEither x = maybe (Left x) Right

@@ -34,8 +34,10 @@ dependencies:
   - blockchain-api
   - blockchain-core
   - bytestring
+  - either
   - mtl
   - optparse-generic
+  - servant-client
   - servant-server
   - stm
   - time
