@@ -14,9 +14,8 @@ import qualified Data.ByteString.Lazy            as Lazy
 import           Data.Either.Combinators         (fromRight, mapLeft)
 import           Data.Maybe                      (fromMaybe)
 import           Data.Monoid                     ((<>))
-import           Data.Proxy                      (Proxy (..))
 import           Data.Time.Clock                 (getCurrentTime)
-import           Network.Blockchain.API          (NodeAPI)
+import           Network.Blockchain.API          (nodeAPI)
 import qualified Network.Wai.Handler.Warp        as Warp
 import           Options.Generic
 import           Servant
@@ -95,8 +94,6 @@ runNode rawArgs = do
 
 runServer :: Warp.Port -> ServerConfig -> IO ()
 runServer p = Warp.run p . serve nodeAPI . server
-  where
-    nodeAPI = Proxy :: Proxy NodeAPI
 
 loadBlockchain :: FilePath -> IO (Either String (Blockchain Validated))
 loadBlockchain = fmap (eitherDecode' >=> mapLeft show . validate) . Lazy.readFile

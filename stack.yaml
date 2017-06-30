@@ -2,6 +2,7 @@ resolver: lts-8.19
 
 packages:
   - blockchain-api
+  - blockchain-client
   - blockchain-core
   - blockchain-node
 

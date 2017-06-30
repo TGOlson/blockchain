@@ -10,6 +10,7 @@ module Data.Blockchain.Types.Blockchain
     -- * Construction
     , construct
     , validate
+    , unvalidate
     , addBlock
     -- * Validation
     , validateTransaction
@@ -133,6 +134,10 @@ validate (Blockchain config (BlockchainNode genesisBlock nodes)) = do
     Either.mapLeft BlockValidationException $ Foldable.foldlM (flip addBlock) blockchainHead blocks
   where
     getBlocks (BlockchainNode block ns) = block : (ns >>= getBlocks)
+
+-- | Isomorphic - useful for sending api responses
+unvalidate :: Blockchain Validated -> Blockchain Unvalidated
+unvalidate (Blockchain config node) = Blockchain config node
 
 -- | Adds a block to a validated blockchain. Returns a 'BlockException' if block is not able to be inserted into the blockchain.
 addBlock :: Block -> Blockchain Validated -> Either BlockException (Blockchain Validated)

@@ -1,0 +1,30 @@
+name:                blockchain-client
+version:             0.0.1
+synopsis:            Generic blockchain implementation.
+description:         Please see README.md
+homepage:            https://github.com/TGOlson/blockchain
+license:             BSD3
+author:              Tyler Olson
+maintainer:          tydotg@gmail.com
+copyright:           2017 Tyler Olson
+category:            Blockchain
+extra-source-files:
+  - README.md
+
+ghc-options: -Wall
+
+default-extensions:
+  - DataKinds
+  - TypeOperators
+
+dependencies:
+  - base >= 4.7 && < 5
+  - blockchain-api
+  - blockchain-core
+  - servant
+  - servant-client
+
+library:
+  source-dirs: lib
+  exposed-modules:
+    - Network.Blockchain.Client.Node

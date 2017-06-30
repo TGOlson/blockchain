@@ -29,15 +29,15 @@ server config = getBlockchain config
            :<|> addTransaction config
            :<|> getTransactionPool config
 
-getBlockchain :: ServerConfig -> Handler (Blockchain Validated)
-getBlockchain = liftIO . readTVarIO . blockchainVar
+getBlockchain :: ServerConfig -> Handler (Blockchain Unvalidated)
+getBlockchain = liftIO . fmap unvalidate . readTVarIO . blockchainVar
 
 getTransactionPool :: ServerConfig -> Handler [Transaction]
 getTransactionPool = liftIO . readTVarIO . transactionPool
 
 insertBlock :: ServerConfig -> Block -> Handler ()
 insertBlock config block = do
-    blockchain <- getBlockchain config
+    blockchain <- liftIO $ readTVarIO (blockchainVar config)
 
     case addBlock block blockchain of
         Right blockchain' -> liftIO $ atomically $ writeTVar (blockchainVar config) blockchain' -- TODO: persist, use sqlite
@@ -45,7 +45,7 @@ insertBlock config block = do
 
 addTransaction :: ServerConfig -> Transaction -> Handler ()
 addTransaction config transaction = do
-    blockchain <- getBlockchain config
+    blockchain <- liftIO $ readTVarIO (blockchainVar config)
 
     -- TODO: make sure we don't already have txin in pool
     case validateTransaction blockchain transaction of
