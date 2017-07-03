@@ -7,19 +7,19 @@ import           Control.Concurrent.STM          (atomically)
 import           Control.Concurrent.STM.TChan
 import           Control.Concurrent.STM.TVar
 import           Control.Monad
-import           Control.Monad.Trans             (liftIO)
 import           Data.Aeson
 import           Data.Blockchain
 import qualified Data.ByteString.Lazy            as Lazy
-import           Data.Either.Combinators         (fromRight, mapLeft)
+import           Data.Either.Combinators         (mapLeft)
 import           Data.Maybe                      (fromMaybe)
 import           Data.Monoid                     ((<>))
-import           Data.Time.Clock                 (getCurrentTime)
 import           Network.Blockchain.API          (nodeAPI)
+import qualified Network.Blockchain.Client.Node  as Client
+import           Network.HTTP.Client
 import qualified Network.Wai.Handler.Warp        as Warp
 import           Options.Generic
 import           Servant
-import           Servant.Client
+import           Servant.Client                  (BaseUrl, ClientEnv (..), parseBaseUrl, runClientM)
 
 import           Network.Blockchain.Node.Logging
 import           Network.Blockchain.Node.Mining
@@ -68,6 +68,7 @@ runNode rawArgs = do
     blockchain      <- throwLeftTagged "Error loading blockchain\n\t" <$> loadBlockchain blockchainPath
     blockchainVar   <- newTVarIO blockchain
     transactionPool <- newTVarIO mempty
+    httpManager     <- newManager defaultManagerSettings
 
     receiveBlockchainChan <- newTChanIO
     sendBlockChan         <- newTChanIO
@@ -75,19 +76,27 @@ runNode rawArgs = do
     let receiveBlockchain = atomically $ readTChan receiveBlockchainChan
         sendBlock         = atomically . writeTChan sendBlockChan
 
+
+    -- miner updates thread
+    minerUpdatesAsync <- Async.async $ forever $ do
+        (block, blockchain') <- atomically $ readTChan sendBlockChan
+        atomically $ writeTVar blockchainVar blockchain'
+        forM_ networkClients $ \client -> do
+            let env = ClientEnv httpManager client
+            runClientM (Client.sendBlock block) env >>= \case
+                Right () -> runLogger logger $ "Successfully sent block to client: " <> show client
+                -- TODO: handle exceptions
+                --   if client disconnected, remove from list
+                Left e   -> runLogger logger $ "Error sending block to client: " <> show client <> " - error: " <> show e
+
     -- web server thread
     serverAsync <- Async.async $ runServer nodePort ServerConfig{..}
 
     -- mining thread
     minerAsync <- Async.async $ runMining logger miningPubKey receiveBlockchain sendBlock transactionPool blockchain
 
-    -- miner updates thread
-    minerUpdatesAsync <- Async.async $ forever $ do
-        -- TODO: broadcast blocks to other clients
-        (_block, blockchain') <- atomically $ readTChan sendBlockChan
-        atomically $ writeTVar blockchainVar blockchain'
-
     -- TODO: network updates thread
+    -- TODO: client management thread - pings other clients, removes dead clients, finds new clients
 
     void (Async.waitAny [serverAsync, minerAsync, minerUpdatesAsync])
 
@@ -97,10 +106,6 @@ runServer p = Warp.run p . serve nodeAPI . server
 
 loadBlockchain :: FilePath -> IO (Either String (Blockchain Validated))
 loadBlockchain = fmap (eitherDecode' >=> mapLeft show . validate) . Lazy.readFile
-
-
-throwLeft :: Either String b -> b
-throwLeft = either error id
 
 throwLeftTagged :: String -> Either String b -> b
 throwLeftTagged tag = either (\e -> error $ tag <> e) id

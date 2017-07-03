@@ -1,6 +1,6 @@
 #!/bin/bash
 
-dirs="blockchain-core/ blockchain-node/"
+dirs="blockchain/ blockchain-network/"
 
 echo "Running stylish-haskell... fixing issues inline"
 find $dirs -name "*.hs" | xargs stack exec -- stylish-haskell -i

@@ -2,7 +2,7 @@
   "config": {
     "initialMiningReward": 100,
     "targetSecondsPerBlock": 10,
-    "difficultyRecalculationHeight": 100,
+    "difficultyRecalculationHeight": 10,
     "initialDifficulty": 1,
     "difficulty1Target": "0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
     "miningRewardHalvingHeight": 500

@@ -1,0 +1,7 @@
+#!/bin/bash
+
+stack exec -- blockchain-node \
+  --port 8001 \
+  --path data/singleton_blockchain.json \
+  --pubKey 4a643ee316d220ee35368409c5132959a6c52859133db7fa4f05531432c76070b549b64c2becb1236202dab75655c16e0f2b2838970d8f3bb06f933b09935782 \
+  --client localhost:8000

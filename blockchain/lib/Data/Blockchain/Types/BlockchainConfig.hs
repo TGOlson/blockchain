@@ -81,10 +81,12 @@ targetDifficulty config []                                            = initialD
 targetDifficulty config _ | difficultyRecalculationHeight config == 0 = initialDifficulty config
 targetDifficulty config _ | difficultyRecalculationHeight config == 1 = initialDifficulty config
 targetDifficulty config _ | targetSecondsPerBlock config == 0         = initialDifficulty config
+-- targetDifficulty config blocks | length blocks == 1                   = initialDifficulty config -- super messy...
 targetDifficulty config blocks =
     case length blocks `mod` fromIntegral recalcHeight of
+        -- Note: this includes the genesis block, is that correct?
         0 ->
-            let recentBlocks   = take (fromIntegral recalcHeight) (reverse blocks)
+            let recentBlocks   = take (fromIntegral recalcHeight) (reverse blocks) -- TODO: (drop (length blocks - recalcHeight))
                 lastBlock      = head recentBlocks
                 firstBlock     = last recentBlocks
                 -- TODO: get rid of `abs`, move invariant into types

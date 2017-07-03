@@ -1,4 +1,4 @@
-# blockchain-core
+# blockchain
 
 [Available on Hackage](https://hackage.haskell.org/package/blockchain)
 

@@ -4,18 +4,10 @@
 
 Top level repository for Haskell blockchain packages.
 
-* [blockchain-core](blockchain-core)
+* [blockchain](blockchain)
 
 Base types and logic for blockchain operations.
 
-* [blockchain-api](blockchain-api)
+* [blockchain-network](blockchain-network)
 
-Network api types.
-
-* [blockchain-node](blockchain-node) -- TODO
-
-Network client that creates blocks, verifies entities and persists the blockchain.
-
-* [blockchain-wallet](blockchain-wallet) -- TODO
-
-Network client that creates transactions and monitors changes to a known address.
+Network client api types and logic.

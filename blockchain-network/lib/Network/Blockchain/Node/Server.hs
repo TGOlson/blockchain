@@ -3,21 +3,23 @@ module Network.Blockchain.Node.Server
     , server
     ) where
 
-import Control.Concurrent.STM          (atomically)
-import Control.Concurrent.STM.TVar
+import Control.Concurrent.STM
 import Control.Monad.Trans             (liftIO)
 import Data.Aeson
 import Data.Blockchain
 import Data.Monoid                     ((<>))
 import Network.Blockchain.API          (NodeAPI)
+import Network.HTTP.Client
 import Servant
 
 import Network.Blockchain.Node.Logging (Logger (..))
 
 data ServerConfig = ServerConfig
-    { blockchainVar   :: TVar (Blockchain Validated)
-    , transactionPool :: TVar [Transaction]
-    , logger          :: Logger
+    { blockchainVar         :: TVar (Blockchain Validated)
+    , transactionPool       :: TVar [Transaction]
+    , logger                :: Logger
+    , httpManager           :: Manager
+    , receiveBlockchainChan :: TChan (Blockchain Validated)
     }
 
 
@@ -40,8 +42,21 @@ insertBlock config block = do
     blockchain <- liftIO $ readTVarIO (blockchainVar config)
 
     case addBlock block blockchain of
-        Right blockchain' -> liftIO $ atomically $ writeTVar (blockchainVar config) blockchain' -- TODO: persist, use sqlite
-        Left e            -> throwError (addBlockError e)
+        Right blockchain' -> liftIO $ do
+            runLogger (logger config) "Received valid block - updating blockchain"
+            atomically $ do
+                -- TODO: Messy cleanup notify channels
+                -- TODO: persist, use sqlite
+                writeTChan (receiveBlockchainChan config) blockchain'
+                writeTVar (blockchainVar config) blockchain'
+        -- TODO: block already exists should be logged and no-op'd
+        -- TODO: no parent found should be added to block pool to be tried later
+        Left e@NoParentFound -> do
+            liftIO $ runLogger (logger config) "NoParentFound DEBUG"
+            liftIO $ runLogger (logger config) (show block)
+            liftIO $ runLogger (logger config) (show blockchain)
+            throwError (addBlockError e)
+        Left e             -> throwError (addBlockError e)
 
 addTransaction :: ServerConfig -> Transaction -> Handler ()
 addTransaction config transaction = do
