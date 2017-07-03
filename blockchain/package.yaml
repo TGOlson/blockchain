@@ -1,5 +1,5 @@
 name:                blockchain
-version:             0.0.2
+version:             0.0.3
 synopsis:            Generic blockchain implementation.
 description:         Please see README.md
 homepage:            https://github.com/TGOlson/blockchain
