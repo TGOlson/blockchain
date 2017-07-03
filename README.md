@@ -10,4 +10,4 @@ Base types and logic for blockchain operations.
 
 * [blockchain-network](blockchain-network)
 
-Network client api types and logic.
+Network client api types and logic. WIP
