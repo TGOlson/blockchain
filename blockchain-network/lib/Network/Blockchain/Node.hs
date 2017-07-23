@@ -76,6 +76,47 @@ runNode rawArgs = do
     let receiveBlockchain = atomically $ readTChan receiveBlockchainChan
         sendBlock         = atomically . writeTChan sendBlockChan
 
+    -- Requirements
+    --  a way to get notified when a miner finds a new block
+    --  a way to tell miner to stop mining current block, and start on new chain
+    --  a way to sync new blocks into blockchain
+
+    -- updates come from
+    --  miner finding new blocks
+    --  other nodes sending new blocks
+
+    -- updates go to
+    --  in memory blockchain var
+    --  miner (to restart)
+    --  connected clients
+
+    -- does conduit fit here?
+    -- merging multiple streams and passing values to multiple syncs?
+    -- seems very useful...
+
+    -- runMiner          :: Source [Block]
+    -- runNetworkUpdates :: Source [Block]
+    --
+    -- blockchainSink :: Sink Block
+    --  persists new blocks
+    --  re-broadcasts valid blocks
+    --  updates in-memory blockchain representation
+
+    (minerBlockChan, restartMiner) <- runMinerThread
+
+    -- networkUpdatesChan <- runNetworkUpdatesThread
+
+    minerAsync <- async $ do
+        newBlock <- takeMVar minerBlockVar
+        -- modify blockchain var w/ new block
+        -- mine again
+
+    networkUpdatesAsync <- async $ do
+        -- wait for new blocks from chan
+        -- update blockchain var w/ valid blocks
+        -- put into block pool if invalid
+        -- restart mining thread
+
 
     -- miner updates thread
     minerUpdatesAsync <- Async.async $ forever $ do
