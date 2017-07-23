@@ -23,7 +23,7 @@ module Data.Blockchain.Types.Blockchain
     , flatten
     ) where
 
-import           Control.Monad                          (unless)
+import           Control.Monad                          (forM, unless, void)
 import qualified Data.Aeson                             as Aeson
 import qualified Data.Aeson.Types                       as Aeson
 import qualified Data.Char                              as Char
@@ -185,12 +185,13 @@ addBlock newBlock (Blockchain config node) = Blockchain config <$> addBlockToNod
 validateTransaction :: Blockchain Validated -> Transaction -> Either BlockException ()
 validateTransaction chain = validateTransactions chain . pure
 
+-- Note: transaction order matters. If tx B is not valid until tx A is applied, tx A must come first in the block.
 validateTransactions :: Blockchain Validated -> [Transaction] -> Either BlockException ()
 validateTransactions chain = \case
-    [] -> return () -- slight optimization - prevents having to calculate unspent transaction outputs
-    xs -> let prevBlocks          = NonEmpty.toList (longestChain chain)
-              unspentTransactions = unspentTransactionOutputsInternal prevBlocks
-          in sequence_ $ validateTransactionInternal unspentTransactions <$> xs
+    []  -> return () -- slight optimization - prevents having to calculate unspent transaction outputs
+    txs -> let prevBlocks          = NonEmpty.toList (longestChain chain)
+               unspentTransactions = unspentTransactionOutputsInternal prevBlocks
+           in validateTransactionsInternal unspentTransactions txs
 
 -- Internal Validation ---------------------------------------------------------------------------------------
 
@@ -205,7 +206,6 @@ validateBlockDifficulty header config blocks = do
 
 -- Exported util
 -- TODO: find better place for this function
-
 blockHeaderHashDifficulty :: Hex256 -> BlockHeader -> Difficulty
 blockHeaderHashDifficulty diff1 header = fromIntegral $ diff1 `div` Crypto.hashToHex (Crypto.hash header)
 
@@ -226,31 +226,47 @@ validateBlockHeaderReferences (Block header coinbase txs) = do
     verify (Crypto.hashTreeRoot txs == transactionHashTreeRoot header) InvalidTransactionHashTreeRoot
 
 
--- TODO: transactions should be able to reference transactions within the same block
--- this means we should try to apply a transaction, if it fails, try to apply next transaction
--- recurse until stable
--- TODO: until this is implemented it will be possible to "double spend" in the same block... : (
+-- Note: transaction order matters. If tx B is not valid until tx A is applied, tx A must come first in the block.
 validateBlockTransactions :: Block -> [Block] -> Word.Word -> Either BlockException ()
 validateBlockTransactions (Block _header coinbaseTx txs) prevBlocks reward = do
     -- ensure coinbase transaction is of correct value
     -- TODO: coinbase can be reward + fees
     verify (txOutValue (coinbaseTransactionOut coinbaseTx) == reward) InvalidCoinbaseTransactionValue
 
-    sequence_ (validateTransactionInternal unspentTransactions <$> txs)
-  where
-    unspentTransactions = unspentTransactionOutputsInternal prevBlocks
+    validateTransactionsInternal (unspentTransactionOutputsInternal prevBlocks) txs
 
 txOutValue :: NonEmpty.NonEmpty TransactionOut -> Word.Word
 txOutValue = sum . fmap value
 
-validateTransactionInternal :: H.HashMap TransactionOutRef TransactionOut -> Transaction -> Either BlockException ()
-validateTransactionInternal unspentTransactions (Transaction txIn txOut) = do
-    prevTxOut <- sequence $ flip fmap txIn $ \(TransactionIn ref sig) -> do
-        tx <- maybeToEither TransactionOutRefNotFound (H.lookup ref unspentTransactions)
-        verify (verifyTransactionSignature sig tx) InvalidTransactionSignature
-        return tx
+validateTransactionsInternal :: H.HashMap TransactionOutRef TransactionOut -> [Transaction] -> Either BlockException ()
+validateTransactionsInternal utxo = void . Foldable.foldrM applyTransactionInternal utxo
 
-    verify (txOutValue prevTxOut >= txOutValue txOut) InvalidTransactionValues
+-- Note: this is the core transaction validation function.
+--  It returns an updated UTXO map if the transaction can be successfully inserted.
+--  As such, callers should reduce a list of transactions using this function.
+--
+--  Steps:
+--    * Find all the previous txouts that are referenced in the list of txins
+--    * For each the txout, verify the txin sig is valid
+--    * Verify the previous txouts have enough value to satisfy new txout values
+--    * Delete previous txouts from hashmap, add new txouts
+applyTransactionInternal
+    :: Transaction -> H.HashMap TransactionOutRef TransactionOut
+    -> Either BlockException (H.HashMap TransactionOutRef TransactionOut)
+applyTransactionInternal tx@(Transaction txIns txOuts) unspentTransactions = do
+    prevTxOuts <- forM txIns $ \(TransactionIn ref sig) -> do
+        txOut <- maybeToEither TransactionOutRefNotFound (H.lookup ref unspentTransactions)
+        verify (verifyTransactionSignature sig txOut) InvalidTransactionSignature
+        return txOut
+
+    verify (txOutValue prevTxOuts >= txOutValue txOuts) InvalidTransactionValues
+
+    let prevTxOutRefs = transactionOutRef <$> txIns
+        updatedMap    = foldr H.delete unspentTransactions prevTxOutRefs
+        txHash        = Right $ Crypto.hash tx
+        newUTXOs      = H.fromList $ zipWith (\txo i -> (TransactionOutRef txHash i, txo)) (NonEmpty.toList txOuts) [0..]
+
+    return $ updatedMap `H.union` newUTXOs
 
 
 -- Transaction State -----------------------------------------------------------------------------------------
@@ -267,9 +283,6 @@ unspentTransactionOutputs blockchain = H.fromListWith (<>) (toPair <$> unspentTx
     toPair (txRef, txOut) = (signaturePubKey txOut, pure (txRef, txOut))
     unspentTxOuts = H.toList $ unspentTransactionOutputsInternal (NonEmpty.toList $ longestChain blockchain)
 
--- Note: this is required to be an internal method
--- As we assume the list of blocks is a verified sub-chain.
--- TODO: similar issue to "verify transactions", does not recursively apply txouts within a transaction
 unspentTransactionOutputsInternal :: [Block] -> H.HashMap TransactionOutRef TransactionOut
 unspentTransactionOutputsInternal =
     foldr (\(Block _ coinbase txs) -> addTransactions txs . addCoinbaseTransaction coinbase) mempty
