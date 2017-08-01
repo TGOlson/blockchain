@@ -1,8 +1,10 @@
 # blockchain
 
+[![Build Status](https://travis-ci.org/TGOlson/blockchain.svg?branch=master)](https://travis-ci.org/TGOlson/blockchain)
+
 [Available on Hackage](https://hackage.haskell.org/package/blockchain)
 
-Generic blockchain implementation in Haskell. Heavily inspired by Bitcoin blockchain, but does not fully comply to the Bitcoin blockchain spec. Should be suitable for creating arbitrary Bitcoin-like blockchains with in various configurations.
+Generic blockchain implementation in Haskell. Heavily inspired by Bitcoin blockchain, but does not fully comply to the Bitcoin blockchain spec. Should be suitable for creating arbitrary Bitcoin-like blockchains with various configurations.
 
 Build
 
@@ -33,7 +35,7 @@ $ ./scripts/test_stats <file-path>    -- print blockchain stats
 * Make it simple to create blockchains with arbitrary configurations
 * Make construction of unverified blockchains easy, but provide assurance any validated blockchain instance conforms to expected rules
 * Blocks & transactions are never presumed to be a valid part of a blockchain unless present in a validated blockchain
-* Adding new blocks to a validated blockchain can assume validity prior parts of the blockchain
+* Adding new blocks to a validated blockchain can assume validity of prior parts of the blockchain
 * Inspecting unspent transaction outputs of a validated blockchain can assume validity of all transactions
 * Blockchain should be readily serializable
 
