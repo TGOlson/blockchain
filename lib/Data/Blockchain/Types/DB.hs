@@ -1,5 +1,5 @@
-module Data.Blockchain.Types.BlockchainInterface
-    ( BlockchainInterface(..)
+module Data.Blockchain.Types.DB
+    ( DB(..)
     ) where
 
 import Data.Blockchain.Crypto
@@ -8,7 +8,7 @@ import Data.Blockchain.Types.Transaction
 
 -- Note: this is basically just a "storage" interface
 -- All core blockchain logic is encapsulated elsewhere
-data BlockchainInterface m = BlockchainInterface
+data DB m = DB
     { persistBlock       :: Block            -> m ()
     , getBlock           :: Hash Block       -> m (Maybe Block)
     , persistTransaction :: Transaction      -> m ()
