@@ -45,7 +45,7 @@ A blockchain is a config and a tree of blocks with each node having a potentiall
 
 ```hs
 data Blockchain a = Blockchain
-    { _config :: BlockchainConfig
+    { _config :: Config
     , _node   :: BlockchainNode
     }
 
@@ -59,7 +59,7 @@ Blockchain construction revolves around three basic functions. Note: the `Blockc
 
 ```hs
 -- build an unvalidated blockchain from a config and node
-construct :: BlockchainConfig -> BlockchainNode -> Blockchain Unvalidated
+construct :: Config -> BlockchainNode -> Blockchain Unvalidated
 
 -- validate the blockchain
 validate :: Blockchain Unvalidated -> Either ValidationException (Blockchain Validated)

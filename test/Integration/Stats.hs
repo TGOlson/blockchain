@@ -21,7 +21,7 @@ data BlockchainStats = BlockchainStats
     , totalHashes           :: Word
     , difficultyProgression :: [Natural]
     , rewardProgression     :: [Word]
-    , config                :: B.BlockchainConfig
+    , config                :: B.Config
     }
 
 printStats :: B.Blockchain B.Validated -> IO ()

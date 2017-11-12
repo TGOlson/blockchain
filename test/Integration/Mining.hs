@@ -35,7 +35,7 @@ mineTestChain miners = runTestMultiMiner miners config persist
 
 
 runTestMultiMiner
-    :: Int -> B.BlockchainConfig
+    :: Int -> B.Config
     -> (Int -> B.Blockchain B.Validated -> IO ()) -> IO ()
 runTestMultiMiner numMiners config persist = do
     putStrLn "Creating blockchain and mining genesis block"

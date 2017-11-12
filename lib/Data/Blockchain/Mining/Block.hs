@@ -48,7 +48,7 @@ mineEmptyBlock pubKey = mineBlock pubKey mempty
 -- | Finds the first block of a blockchain.
 -- Depending on blockchain configuration, this function may take a long time to complete.
 -- Note: this generates a keypair but throws away the private key. Coinbase reward in genesis block cannot never be spent.
-mineGenesisBlock :: Blockchain.BlockchainConfig -> IO Blockchain.Block
+mineGenesisBlock :: Blockchain.Config -> IO Blockchain.Block
 mineGenesisBlock config = do
     (Crypto.KeyPair pubKey _privKey) <- Crypto.generate
 

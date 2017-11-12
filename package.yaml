@@ -20,6 +20,7 @@ default-extensions:
   - FlexibleInstances
   - GeneralizedNewtypeDeriving
   - LambdaCase
+  - MultiParamTypeClasses
   - OverloadedStrings
   - RecordWildCards
   - ScopedTypeVariables

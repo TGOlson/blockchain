@@ -36,7 +36,7 @@ instance Aeson.FromJSON Hex256 where
 -- Construction helpers --------------------------------------------------------------------------------------
 
 -- | Create a Hex256 value with the specificed amount of leading zeros.
--- Useful for creating a 'Data.Blockchain.Types.BlockchainConfig.difficulty1Target' when creating a blockchain.
+-- Useful for creating a 'Data.Blockchain.Types.Config.difficulty1Target' when creating a blockchain.
 --
 -- >>> hex256LeadingZeros 4
 -- 0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff

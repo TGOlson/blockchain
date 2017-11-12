@@ -1,4 +1,4 @@
-module Data.Blockchain.Types.BlockchainConfigSpec (spec) where
+module Data.Blockchain.Types.ConfigSpec (spec) where
 
 import           TestUtil
 
@@ -7,8 +7,8 @@ import qualified Data.Time.Clock       as Time
 
 import           Data.Blockchain.Types
 
-testConfig :: BlockchainConfig
-testConfig = BlockchainConfig
+testConfig :: Config
+testConfig = Config
     { initialDifficulty             = Difficulty 1000
     , difficulty1Target             = hex256LeadingZeros 2
     , targetSecondsPerBlock         = 60
@@ -18,7 +18,7 @@ testConfig = BlockchainConfig
     }
 
 spec :: Spec
-spec = describe "Data.Blockchain.Types.BlockchainConfig" $ do
+spec = describe "Data.Blockchain.Types.Config" $ do
     describe "targetReward" $ do
         it "should produce the correct reward" $
             and [ targetReward testConfig 0   == 100

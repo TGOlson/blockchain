@@ -9,7 +9,7 @@ import qualified Data.Blockchain.Crypto.ECDSASpec
 import qualified Data.Blockchain.Crypto.HashSpec
 import qualified Data.Blockchain.Crypto.HashTreeSpec
 import qualified Data.Blockchain.Mining.BlockSpec
-import qualified Data.Blockchain.Types.BlockchainConfigSpec
+import qualified Data.Blockchain.Types.ConfigSpec
 import qualified Data.Blockchain.Types.BlockchainSpec
 import qualified Data.Blockchain.Types.DifficultySpec
 import qualified Data.Blockchain.Types.HexSpec
@@ -33,7 +33,7 @@ specs = [ Data.Blockchain.Builder.TransactionSpec.spec
         , Data.Blockchain.Crypto.HashSpec.spec
         , Data.Blockchain.Crypto.HashTreeSpec.spec
         , Data.Blockchain.Types.BlockchainSpec.spec
-        , Data.Blockchain.Types.BlockchainConfigSpec.spec
+        , Data.Blockchain.Types.ConfigSpec.spec
         , Data.Blockchain.Types.DifficultySpec.spec
         , Data.Blockchain.Types.HexSpec.spec
         , Data.Blockchain.Types.TransactionSpec.spec

@@ -9,7 +9,7 @@ import           Data.Blockchain.Mining.Block
 
 -- | Creates a blockchain from the given config.
 -- This includes mining a genesis block.
-mineBlockchain :: Blockchain.BlockchainConfig -> IO (Blockchain.Blockchain Blockchain.Validated)
+mineBlockchain :: Blockchain.Config -> IO (Blockchain.Blockchain Blockchain.Validated)
 mineBlockchain config = either throwValidationError id <$> do
     genesisBlock <- mineGenesisBlock config
 

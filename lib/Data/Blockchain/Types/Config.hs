@@ -1,5 +1,5 @@
-module Data.Blockchain.Types.BlockchainConfig
-    ( BlockchainConfig(..)
+module Data.Blockchain.Types.Config
+    ( Config(..)
     , defaultConfig
     , targetReward
     , targetDifficulty
@@ -15,7 +15,7 @@ import           Data.Blockchain.Types.Block
 import           Data.Blockchain.Types.Difficulty
 import           Data.Blockchain.Types.Hex
 
-data BlockchainConfig = BlockchainConfig
+data Config = Config
     { initialDifficulty             :: Difficulty
     -- Maximum hash - difficulties will be calculated using this value
     , difficulty1Target             :: Hex256
@@ -27,15 +27,15 @@ data BlockchainConfig = BlockchainConfig
     }
   deriving (Generic.Generic, Eq, Show)
 
-instance Aeson.FromJSON BlockchainConfig
-instance Aeson.ToJSON BlockchainConfig
+instance Aeson.FromJSON Config
+instance Aeson.ToJSON Config
 
 -- | A reasonable default config to use for testing. Mines blocks quickly and changes difficulty and rewards frequently.
 -- Note: reward will go to zero after 1100 blocks, which will take about 180 minutes of mining.
 --
 -- @
--- defaultConfig :: BlockchainConfig
--- defaultConfig = BlockchainConfig
+-- defaultConfig :: Config
+-- defaultConfig = Config
 --     { initialDifficulty             = Difficulty 1
 --     , difficulty1Target             = hex256LeadingZeros 4
 --     , targetSecondsPerBlock         = 10
@@ -45,8 +45,8 @@ instance Aeson.ToJSON BlockchainConfig
 --     }
 -- @
 --
-defaultConfig :: BlockchainConfig
-defaultConfig = BlockchainConfig
+defaultConfig :: Config
+defaultConfig = Config
     { initialDifficulty             = Difficulty 1
     , difficulty1Target             = hex256LeadingZeros 4
     , targetSecondsPerBlock         = 10
@@ -56,7 +56,7 @@ defaultConfig = BlockchainConfig
     }
 
 -- | Calculates the target reward for a blockchain. Uses the longest chain.
-targetReward :: BlockchainConfig -> Word.Word -> Word.Word
+targetReward :: Config -> Word.Word -> Word.Word
 targetReward config height = either id id $ do
     let initialReward = initialMiningReward config
         halveHeight   = miningRewardHalvingHeight config
@@ -76,7 +76,7 @@ targetReward config height = either id id $ do
 -- should create a `SingleChain` wrapper
 -- TODO: take in entire blockchain
 -- | Calculates the target difficulty for a blockchain. Uses the longest chain.
-targetDifficulty :: BlockchainConfig -> [Block] -> Difficulty
+targetDifficulty :: Config -> [Block] -> Difficulty
 targetDifficulty config []                                            = initialDifficulty config
 targetDifficulty config _ | difficultyRecalculationHeight config == 0 = initialDifficulty config
 targetDifficulty config _ | difficultyRecalculationHeight config == 1 = initialDifficulty config

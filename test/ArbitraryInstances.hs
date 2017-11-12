@@ -17,8 +17,8 @@ import           Data.Blockchain
 
 -- Blockchain types
 
-instance Arbitrary BlockchainConfig where
-    arbitrary = BlockchainConfig
+instance Arbitrary Config where
+    arbitrary = Config
         <$> arbitrary
         <*> arbitrary
         <*> arbitrary

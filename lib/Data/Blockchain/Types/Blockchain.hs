@@ -23,25 +23,25 @@ module Data.Blockchain.Types.Blockchain
     , flatten
     ) where
 
-import           Control.Monad                          (forM, unless, void)
-import qualified Data.Aeson                             as Aeson
-import qualified Data.Aeson.Types                       as Aeson
-import qualified Data.Char                              as Char
-import qualified Data.Either                            as Either
-import qualified Data.Either.Combinators                as Either
-import qualified Data.Foldable                          as Foldable
-import qualified Data.HashMap.Strict                    as H
-import qualified Data.List                              as List
-import qualified Data.List.NonEmpty                     as NonEmpty
-import           Data.Monoid                            ((<>))
-import qualified Data.Ord                               as Ord
-import qualified Data.Word                              as Word
-import qualified GHC.Generics                           as Generic
+import           Control.Monad                     (forM, unless, void)
+import qualified Data.Aeson                        as Aeson
+import qualified Data.Aeson.Types                  as Aeson
+import qualified Data.Char                         as Char
+import qualified Data.Either                       as Either
+import qualified Data.Either.Combinators           as Either
+import qualified Data.Foldable                     as Foldable
+import qualified Data.HashMap.Strict               as H
+import qualified Data.List                         as List
+import qualified Data.List.NonEmpty                as NonEmpty
+import           Data.Monoid                       ((<>))
+import qualified Data.Ord                          as Ord
+import qualified Data.Word                         as Word
+import qualified GHC.Generics                      as Generic
 
-import qualified Data.Blockchain.Crypto                 as Crypto
+import qualified Data.Blockchain.Crypto            as Crypto
 
 import           Data.Blockchain.Types.Block
-import           Data.Blockchain.Types.BlockchainConfig
+import           Data.Blockchain.Types.Config
 import           Data.Blockchain.Types.Difficulty
 import           Data.Blockchain.Types.Hex
 import           Data.Blockchain.Types.Transaction
@@ -57,12 +57,12 @@ data Unvalidated
 -- Note: both @'Blockchain' 'Validated'@ and @'Blockchain' 'Unvalidated'@ can be serialized to json,
 -- while only @'Blockchain' 'Unvalidated'@ can be deserialized from json.
 data Blockchain a = Blockchain
-    { _config :: BlockchainConfig
+    { _config :: Config
     , _node   :: BlockchainNode
     }
   deriving (Generic.Generic, Eq, Show)
 
-blockchainConfig :: Blockchain a -> BlockchainConfig
+blockchainConfig :: Blockchain a -> Config
 blockchainConfig = _config
 
 blockchainNode :: Blockchain a -> BlockchainNode
@@ -116,7 +116,7 @@ data BlockException
 
 -- | Constructs an unvalidated blockchain from a config and a node.
 -- Allows arbitrary blockchains to be constructed. However, blockchains are generally not useful until validated.
-construct :: BlockchainConfig -> BlockchainNode -> Blockchain Unvalidated
+construct :: Config -> BlockchainNode -> Blockchain Unvalidated
 construct = Blockchain
 
 -- | Validates a blockchain. Returns a 'ValidationException' if provided blockchain does not meet expected rules.
@@ -197,7 +197,7 @@ validateTransactions chain = \case
 
 -- block references expected difficulty
 -- block header hashes to expected difficulty
-validateBlockDifficulty :: BlockHeader -> BlockchainConfig -> [Block] -> Either BlockException ()
+validateBlockDifficulty :: BlockHeader -> Config -> [Block] -> Either BlockException ()
 validateBlockDifficulty header config blocks = do
     verify (difficulty header == diff) InvalidDifficultyReference
     verify (blockHeaderHashDifficulty (difficulty1Target config) header >= diff) InvalidDifficulty
